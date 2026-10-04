@@ -1,0 +1,30 @@
+{
+  "name": "flight-booking-workspace",
+  "version": "1.0.0",
+  "description": "Website tìm kiếm và đặt vé chuyến bay nội địa Việt Nam - Monorepo workspace",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build",
+    "prisma:generate": "npm --prefix server run prisma:generate",
+    "prisma:migrate": "npm --prefix server run prisma:migrate",
+    "prisma:seed": "npm --prefix server run prisma:seed",
+    "prisma:studio": "npm --prefix server run prisma:studio"
+  },
+  "keywords": [
+    "flight-booking",
+    "vietnam-flights",
+    "react",
+    "express",
+    "prisma",
+    "typescript"
+  ],
+  "author": "Flight Booking Team",
+  "license": "ISC"
+}
