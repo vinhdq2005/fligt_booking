@@ -11,3 +11,5 @@ Thư mục backend và dữ liệu của dự án. Ở giai đoạn hiện tại
 | `prisma/` | Schema, migration và seed dữ liệu khi nhóm triển khai database |
 
 Khi khởi tạo backend, thêm `server/package.json`, mã nguồn và hướng dẫn chạy thực tế tại đây.
+
+Phạm vi chức năng và tiêu chí nghiệm thu: [Yêu cầu Backend](../docs/BACKEND_REQUIREMENTS.md).
