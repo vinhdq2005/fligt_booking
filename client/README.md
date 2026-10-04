@@ -15,3 +15,5 @@ Thư mục frontend của website. Ở giai đoạn hiện tại, đây chỉ l�
 | `src/styles/` | Kiểu dáng và biến giao diện dùng chung |
 
 Khi khởi tạo ứng dụng, thêm `client/package.json` và hướng dẫn chạy thực tế tại đây.
+
+Quy tắc đặt file, đặt tên và sử dụng dữ liệu mẫu: [Hướng dẫn Frontend](../docs/FRONTEND_GUIDE.md).
