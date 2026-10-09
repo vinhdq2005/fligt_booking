@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { createInterface } from "node:readline/promises";
+import { stdin, stdout } from "node:process";
 import { prisma } from "./lib/prisma";
 import {
   routePairs,
@@ -41,6 +43,7 @@ async function main() {
         adults: 1,
         travelClass: 1,
         currency: "VND",
+        expiresAt: { gt: new Date() },
       },
       select: { id: true },
     });
@@ -48,9 +51,26 @@ async function main() {
     if (!existing) pending.push(task);
   }
 
-  console.log(`Tổng: ${tasks.length}; đã lưu: ${tasks.length - pending.length}; còn thiếu: ${pending.length}`);
-  console.log("Một số mục còn thiếu:", pending.slice(0, 10));
+  console.log(`Tổng: ${tasks.length}; còn hạn: ${tasks.length - pending.length}; thiếu hoặc hết hạn: ${pending.length}`);
+  console.log("Một số mục cần nhập:", pending.slice(0, 10));
   if (!process.argv.includes("--run") || pending.length === 0) return;
+
+  let confirmed = process.argv.includes("--yes");
+  if (!confirmed && stdin.isTTY) {
+    const input = createInterface({ input: stdin, output: stdout });
+    try {
+      const answer = await input.question(
+        `Cho phép kiểm tra hạn mức và nhập tối đa ${Math.min(20, pending.length)} mục từ SerpApi? [y/N] `,
+      );
+      confirmed = /^(y|yes)$/i.test(answer.trim());
+    } finally {
+      input.close();
+    }
+  }
+  if (!confirmed) {
+    console.log("Đã hủy; không gọi SerpApi và không ghi database.");
+    return;
+  }
 
   const apiKey = process.env.SERPAPI_API_KEY;
   if (!apiKey) throw new Error("Thiếu SERPAPI_API_KEY trong server/.env");
@@ -85,7 +105,7 @@ async function main() {
     console.log(`Đang nhập ${task.from} → ${task.to}, ${task.date}`);
     execFileSync(
       process.execPath,
-      ["--import", "tsx", "src/import-flights.ts", task.from, task.to, task.date],
+      ["--import", "tsx", "src/import-flights.ts", task.from, task.to, task.date, "--yes"],
       { cwd: process.cwd(), stdio: "inherit" },
     );
   }

@@ -4,13 +4,16 @@
   "description": "Thư mục backend và dữ liệu của dự án. Ở giai đoạn hiện tại, đây chỉ là khung thư mục; chưa có API, database schema hoặc dependency.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "test": "node --import tsx --test src/app.test.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^24.19.1",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15",
@@ -19,6 +22,7 @@
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
   }
 }
