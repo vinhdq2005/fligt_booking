@@ -1,0 +1,421 @@
+.home-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.hero-section {
+  min-height: 620px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.82),
+      rgba(15, 23, 42, 0.45),
+      rgba(15, 23, 42, 0.2)
+    ),
+    url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1800&q=85')
+    center / cover no-repeat;
+  color: #ffffff;
+}
+
+.hero-overlay {
+  min-height: 620px;
+  display: flex;
+  align-items: center;
+}
+
+.hero-content {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 80px 24px 120px;
+}
+
+.hero-badge {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+
+.hero-content h1 {
+  max-width: 700px;
+  margin: 0 0 16px;
+  font-size: 52px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.hero-content > p {
+  max-width: 620px;
+  margin: 0 0 40px;
+  font-size: 19px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* =========================
+   SEARCH BOX
+========================= */
+
+.search-box {
+  max-width: 1120px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 18px;
+  color: #1f2937;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.trip-type {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.trip-type label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trip-type input {
+  accent-color: #2563eb;
+}
+
+/* =========================
+   SEARCH FIELDS
+========================= */
+
+.search-fields {
+  display: grid;
+  grid-template-columns: 1.2fr 40px 1.2fr 1fr 0.9fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-field {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-field:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.field-icon {
+  font-size: 21px;
+  flex-shrink: 0;
+}
+
+.search-field > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.search-field select,
+.search-field input {
+  width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.search-field select {
+  cursor: pointer;
+}
+
+.swap-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dbe3ef;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 21px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.swap-button:hover {
+  transform: rotate(180deg);
+  background: #eff6ff;
+}
+
+/* =========================
+   SEARCH BUTTON
+========================= */
+
+.search-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.search-button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   HOME CONTENT
+========================= */
+
+.home-bottom {
+  padding: 70px 24px;
+}
+
+.home-section {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 28px;
+}
+
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #2563eb;
+}
+
+.section-heading h2 {
+  margin: 6px 0 0;
+  font-size: 30px;
+  color: #111827;
+}
+
+.section-heading p {
+  margin: 0;
+  color: #6b7280;
+}
+
+/* =========================
+   DESTINATIONS
+========================= */
+
+.destination-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.destination-card {
+  min-height: 240px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 16px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.12);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.destination-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.18);
+}
+
+.destination-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(15, 23, 42, 0.8),
+    rgba(15, 23, 42, 0.05)
+  );
+}
+
+.destination-hanoi {
+  background-image:
+    url('https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?auto=format&fit=crop&w=900&q=80');
+}
+
+.destination-saigon {
+  background-image:
+    url('https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=900&q=80');
+}
+
+.destination-danang {
+  background-image:
+    url('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80');
+}
+
+.destination-content {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+  color: #ffffff;
+}
+
+.destination-content span {
+  font-size: 24px;
+}
+
+.destination-content h3 {
+  margin: 8px 0 4px;
+  font-size: 23px;
+}
+
+.destination-content p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* =========================
+   DEMO BANNER
+========================= */
+
+.demo-banner {
+  max-width: 1180px;
+  margin: 50px auto 0;
+  padding: 22px 26px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #eff6ff;
+}
+
+.demo-banner strong {
+  color: #1e40af;
+}
+
+.demo-banner p {
+  margin: 6px 0 0;
+  color: #475569;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 950px) {
+  .hero-content h1 {
+    font-size: 42px;
+  }
+
+  .search-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .swap-button {
+    display: none;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero-section,
+  .hero-overlay {
+    min-height: auto;
+  }
+
+  .hero-content {
+    padding: 60px 16px 80px;
+  }
+
+  .hero-content h1 {
+    font-size: 36px;
+  }
+
+  .hero-content > p {
+    font-size: 16px;
+    margin-bottom: 28px;
+  }
+
+  .search-box {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .search-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .search-field {
+    min-height: 68px;
+  }
+
+  .home-bottom {
+    padding: 50px 16px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .section-heading h2 {
+    font-size: 26px;
+  }
+
+  .destination-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .destination-card {
+    min-height: 220px;
+  }
+}
