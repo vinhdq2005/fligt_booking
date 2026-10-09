@@ -2,7 +2,7 @@
 
 Website tìm kiếm và đặt chỗ chuyến bay nội địa Việt Nam, được xây dựng như một dự án học tập cho nhóm 3 thành viên.
 
-> **Trạng thái:** đang lập kế hoạch. Repository hiện chưa có mã nguồn ứng dụng. Các công nghệ, mốc thời gian và chức năng bên dưới là định hướng triển khai; nhóm cần chốt lại trước khi bắt đầu code.
+> **Trạng thái:** đã có schema Prisma cho dữ liệu tìm kiếm chuyến bay, script import SerpApi, API quản trị cục bộ và trang admin danh sách chuyến bay. Luồng tài khoản, booking, thanh toán và frontend người dùng vẫn đang được triển khai. Các mốc và chức năng bên dưới là định hướng MVP.
 
 > **Phạm vi đặt chỗ:** booking và thanh toán trong phiên bản đầu là **mô phỏng trên dữ liệu của dự án**. Mã booking do website tạo không phải vé hoặc mã đặt chỗ được hãng bay xác nhận.
 
@@ -22,7 +22,7 @@ Xây dựng một website động có luồng hoàn chỉnh từ tìm chuyến b
 └── README.md
 ```
 
-Xem `client/README.md` và `server/README.md` để biết mục đích từng thư mục con. Đây mới là **khung thư mục**: các lệnh npm ở `package.json` gốc sẽ dùng được sau khi từng workspace có ứng dụng và `package.json` riêng.
+Xem `client/README.md` và `server/README.md` để biết cách chạy trang admin và API hiện có. Các script `dev:client`, `dev:server` và `build:client` trong `package.json` gốc đã dùng được.
 
 ## Phạm vi phiên bản đầu (MVP)
 
@@ -107,7 +107,7 @@ Node.js backend ─────→ MySQL
 | Thanh toán | Mock hoặc sandbox cho MVP |
 | Email | Nhà cung cấp email hoặc SMTP thử nghiệm |
 
-Chưa có dependency nào được cài đặt. Danh sách trên là đề xuất, không phải mô tả hệ thống đã triển khai.
+React/Vite, Express và Prisma đã được cài cho phần admin/dữ liệu. Các thành phần còn lại trong bảng vẫn là định hướng triển khai.
 
 ### Các bảng dữ liệu dự kiến
 

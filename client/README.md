@@ -1,17 +1,13 @@
-# Client
+# Trang quản trị chuyến bay
 
-Thư mục frontend của website. Ở giai đoạn hiện tại, đây chỉ là khung thư mục; chưa có ứng dụng hoặc dependency.
+Ứng dụng React/Vite hiển thị các lựa chọn chuyến bay đã lưu trong MySQL. Trang có bộ lọc tuyến, ngày bay, trạng thái dữ liệu; chi tiết các chặng; và hộp thoại kiểm tra/xác nhận trước khi nhập dữ liệu từ SerpApi.
 
-| Thư mục | Mục đích |
-| --- | --- |
-| `public/` | Tài nguyên tĩnh được phục vụ nguyên bản |
-| `src/assets/` | Ảnh, biểu tượng và tài nguyên được import trong mã nguồn |
-| `src/components/` | Thành phần giao diện dùng lại ở nhiều trang |
-| `src/features/` | Thành phần và logic giao diện theo tính năng |
-| `src/layouts/` | Bố cục trang dùng chung |
-| `src/mocks/` | Dữ liệu mẫu cho giai đoạn làm frontend độc lập |
-| `src/pages/` | Các màn hình của ứng dụng |
-| `src/routes/` | Cấu hình đường dẫn và điều hướng |
-| `src/styles/` | Kiểu dáng và biến giao diện dùng chung |
+## Chạy cục bộ
 
-Khi khởi tạo ứng dụng, thêm `client/package.json` và hướng dẫn chạy thực tế tại đây.
+1. Cấu hình `DATABASE_URL`, `SERPAPI_API_KEY` và `ADMIN_API_TOKEN` trong `server/.env`.
+2. Chạy API bằng `npm run dev:server` từ thư mục gốc.
+3. Chạy giao diện bằng `npm run dev:client`; mở `http://127.0.0.1:5173`.
+
+Vite dev server đọc `ADMIN_API_TOKEN` ở phía Node và gắn vào request proxy `/api`. Token không nằm trong bundle React. Có thể đặt token trong biến môi trường của tiến trình Vite thay cho `server/.env`. Cách này chỉ dành cho phát triển cục bộ; môi trường triển khai cần đăng nhập và phân quyền admin thật.
+
+`npm run build:client` tạo bản build trong `client/dist`. Bản build cần một backend phục vụ `/api/admin/*` có xác thực phù hợp.
