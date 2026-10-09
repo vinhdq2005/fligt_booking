@@ -1,13 +1,11 @@
 # Server
 
-Thư mục backend và dữ liệu của dự án. Ở giai đoạn hiện tại, đây chỉ là khung thư mục; chưa có API, database schema hoặc dependency.
+Backend Express/Prisma dùng MySQL để lưu các lượt tìm kiếm, lựa chọn chuyến bay và từng chặng bay. Hiện có API admin để xem danh sách chuyến bay và nhập dữ liệu SerpApi có xác nhận.
 
-| Thư mục | Mục đích |
-| --- | --- |
-| `src/config/` | Đọc và kiểm tra cấu hình ứng dụng |
-| `src/lib/` | Tiện ích dùng lại ở nhiều module |
-| `src/middleware/` | Middleware dùng chung cho HTTP API |
-| `src/modules/` | Các module nghiệp vụ như tài khoản, chuyến bay và booking |
-| `prisma/` | Schema, migration và seed dữ liệu khi nhóm triển khai database |
+## Chạy cục bộ
 
-Khi khởi tạo backend, thêm `server/package.json`, mã nguồn và hướng dẫn chạy thực tế tại đây.
+Tạo `server/.env` với `DATABASE_URL`, `SERPAPI_API_KEY` và `ADMIN_API_TOKEN`. Từ thư mục gốc chạy `npm run dev:server`; server chỉ lắng nghe tại `127.0.0.1:3001` nếu không đặt `PORT`.
+
+Các endpoint admin yêu cầu `Authorization: Bearer <ADMIN_API_TOKEN>`. Xem [quy tắc import](../docs/admin-flight-import.md) để biết tham số và trạng thái phản hồi. Token này chỉ dùng cho phát triển cục bộ; cần thay bằng xác thực và phân quyền admin trước khi triển khai.
+
+Script `src/import-flights.ts` vẫn hỗ trợ nhập một tuyến/ngày từ CLI, còn `src/import-batch.ts` hỗ trợ kiểm tra và nhập theo lô có giới hạn. Cả hai dùng dữ liệu trong schema Prisma hiện tại.

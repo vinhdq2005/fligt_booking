@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model FlightSearch {
+  id               Int           @id @default(autoincrement())
+  departureCode    String        @db.Char(3)
+  arrivalCode      String        @db.Char(3)
+  outboundDate     DateTime      @db.Date
+  adults           Int           @default(1)
+  travelClass      Int           @default(1)
+  currency         String        @default("VND") @db.Char(3)
+  fetchedAt        DateTime      @default(now())
+  expiresAt        DateTime
+  lowestPrice      Int?
+  priceLevel       String?       @db.VarChar(20)
+  typicalPriceLow  Int?
+  typicalPriceHigh Int?
+  offers           FlightOffer[]
+
+  @@index([departureCode, arrivalCode, outboundDate, adults, travelClass, currency, fetchedAt])
+}
+
+model FlightOffer {
+  id                   Int             @id @default(autoincrement())
+  searchId             Int
+  search               FlightSearch    @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  category             String          @db.VarChar(10)
+  position             Int
+  price                Int
+  totalDurationMinutes Int?
+  segments             FlightSegment[]
+
+  @@unique([searchId, category, position])
+}
+
+model FlightSegment {
+  id              Int         @id @default(autoincrement())
+  offerId         Int
+  offer           FlightOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  position        Int
+  flightNumber    String      @db.VarChar(20)
+  airlineName     String      @db.VarChar(120)
+  departureCode   String      @db.Char(3)
+  arrivalCode     String      @db.Char(3)
+  departureTime   DateTime    @db.DateTime(0)
+  arrivalTime     DateTime    @db.DateTime(0)
+  durationMinutes Int?
+
+  @@unique([offerId, position])
+}
