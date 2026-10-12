@@ -1,0 +1,139 @@
+
+.booking-detail-page {
+  min-height: 70vh;
+  padding: 48px 24px;
+  background: #f5f7fb;
+}
+
+.booking-detail-content {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.booking-detail-content > h1 {
+  margin: 24px 0;
+  color: #172554;
+  font-size: 30px;
+}
+
+.back-bookings-button {
+  padding: 9px 0;
+  border: none;
+  color: #2563eb;
+  background: transparent;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.back-bookings-button:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.booking-detail-card {
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgb(15 23 42 / 5%);
+}
+
+.booking-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.booking-detail-header div {
+  display: grid;
+  gap: 7px;
+}
+
+.booking-detail-header div > span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.booking-detail-header h2 {
+  margin: 0;
+  color: #1d4ed8;
+  font-size: 24px;
+}
+
+.booking-detail-section {
+  padding: 22px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.booking-detail-section h3 {
+  margin: 0 0 16px;
+  color: #172554;
+  font-size: 18px;
+}
+
+.booking-detail-section p {
+  margin: 10px 0;
+  color: #475569;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.booking-detail-section strong {
+  color: #1e293b;
+}
+
+.booking-detail-card > button:not(.back-bookings-button) {
+  margin-top: 22px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 9px;
+  color: #ffffff;
+  background: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.booking-detail-card > button:hover {
+  background: #1d4ed8;
+}
+
+.booking-detail-card button:focus-visible,
+.back-bookings-button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.booking-detail-note {
+  margin: 22px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .booking-detail-page {
+    padding: 28px 16px;
+  }
+
+  .booking-detail-content > h1 {
+    font-size: 25px;
+  }
+
+  .booking-detail-card {
+    padding: 20px;
+  }
+
+  .booking-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .booking-detail-header h2 {
+    font-size: 21px;
+  }
+}
