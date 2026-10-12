@@ -1,0 +1,78 @@
+
+import { prisma } from "../../lib/prisma";
+
+export type CreateFlightInput = {
+  flightNumber: string;
+  airlineId: number;
+  departureCode: string;
+  arrivalCode: string;
+  departureTime: string;
+  arrivalTime: string;
+  capacity: number;
+  basePrice: number;
+};
+
+export async function createFlight(input: CreateFlightInput) {
+  const flightNumber = input.flightNumber.trim().toUpperCase();
+  const departureCode = input.departureCode.trim().toUpperCase();
+  const arrivalCode = input.arrivalCode.trim().toUpperCase();
+
+  if (!flightNumber || flightNumber.length > 20) {
+    throw new Error("Số hiệu chuyến bay không hợp lệ.");
+  }
+
+  if (!/^[A-Z]{3}$/.test(departureCode) ||
+      !/^[A-Z]{3}$/.test(arrivalCode) ||
+      departureCode === arrivalCode) {
+    throw new Error("Mã sân bay đi và đến phải gồm 3 chữ cái và không được trùng nhau.");
+  }
+
+  if (!Number.isInteger(input.airlineId) || input.airlineId < 1) {
+    throw new Error("Mã hãng bay không hợp lệ.");
+  }
+
+  if (!Number.isInteger(input.capacity) || input.capacity < 1) {
+    throw new Error("Số ghế phải là số nguyên dương.");
+  }
+
+  if (!Number.isInteger(input.basePrice) || input.basePrice < 1) {
+    throw new Error("Giá vé phải là số nguyên dương.");
+  }
+
+  const departureTime = new Date(input.departureTime);
+  const arrivalTime = new Date(input.arrivalTime);
+
+  if (Number.isNaN(departureTime.getTime()) ||
+      Number.isNaN(arrivalTime.getTime()) ||
+      arrivalTime <= departureTime) {
+    throw new Error("Thời gian đến phải sau thời gian khởi hành và cả hai phải hợp lệ.");
+  }
+
+  return prisma.flight.create({
+    data: {
+      flightNumber,
+      airlineId: input.airlineId,
+      departureCode,
+      arrivalCode,
+      departureTime,
+      arrivalTime,
+      capacity: input.capacity,
+      basePrice: input.basePrice,
+    },
+    include: {
+      airline: true,
+    },
+  });
+}
+
+export async function listManagedFlights() {
+  return prisma.flight.findMany({
+    orderBy: { departureTime: "asc" },
+    include: {
+      airline: true,
+      _count: {
+        select: { bookings: true },
+      },
+    },
+  });
+}

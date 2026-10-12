@@ -54,3 +54,142 @@ model FlightSegment {
 
   @@unique([offerId, position])
 }
+
+enum FlightStatus {
+  SCHEDULED
+  BOARDING
+  DEPARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum TicketStatus {
+  ISSUED
+  USED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Airline {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(10)
+  name      String   @db.VarChar(120)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  flights Flight[]
+}
+
+model Flight {
+  id            Int          @id @default(autoincrement())
+  flightNumber  String       @db.VarChar(20)
+  airlineId     Int
+  departureCode String       @db.Char(3)
+  arrivalCode   String       @db.Char(3)
+  departureTime DateTime     @db.DateTime(0)
+  arrivalTime   DateTime     @db.DateTime(0)
+  capacity      Int
+  basePrice     Int
+  status        FlightStatus @default(SCHEDULED)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  airline      Airline       @relation(fields: [airlineId], references: [id], onDelete: Restrict)
+  bookings     Booking[]
+  pricingRules PricingRule[]
+
+  @@index([departureCode, arrivalCode, departureTime, status])
+  @@index([airlineId, departureTime])
+}
+
+model Booking {
+  id          Int           @id @default(autoincrement())
+  bookingCode String        @unique @default(cuid()) @db.VarChar(30)
+  flightId    Int
+  contactName String        @db.VarChar(120)
+  contactEmail String?      @db.VarChar(255)
+  contactPhone String?      @db.VarChar(20)
+  totalAmount Int
+  status      BookingStatus @default(PENDING)
+  expiresAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  flight     Flight     @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  passengers Passenger[]
+  payments   Payment[]
+
+  @@index([flightId, status])
+  @@index([createdAt])
+}
+
+model Passenger {
+  id             Int      @id @default(autoincrement())
+  bookingId      Int
+  fullName       String   @db.VarChar(120)
+  documentNumber String?  @db.VarChar(50)
+  dateOfBirth    DateTime? @db.Date
+  nationality    String?  @db.VarChar(80)
+  createdAt      DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  ticket  Ticket?
+
+  @@index([bookingId])
+}
+
+model Ticket {
+  id             Int          @id @default(autoincrement())
+  passengerId    Int          @unique
+  ticketCode     String       @unique @default(cuid()) @db.VarChar(30)
+  qrToken        String       @unique @default(cuid()) @db.VarChar(64)
+  price          Int
+  status         TicketStatus @default(ISSUED)
+  issuedAt       DateTime     @default(now())
+  usedAt         DateTime?
+
+  passenger Passenger @relation(fields: [passengerId], references: [id], onDelete: Restrict)
+}
+
+model PricingRule {
+  id                   Int      @id @default(autoincrement())
+  flightId             Int
+  minOccupancyPercent  Decimal  @db.Decimal(5, 2)
+  maxOccupancyPercent  Decimal  @db.Decimal(5, 2)
+  price                Int
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  flight Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+
+  @@index([flightId, minOccupancyPercent])
+}
+
+model Payment {
+  id                    Int           @id @default(autoincrement())
+  bookingId             Int
+  amount                Int
+  currency              String        @default("VND") @db.Char(3)
+  method                String        @db.VarChar(30)
+  status                PaymentStatus @default(PENDING)
+  providerTransactionId String?       @unique @db.VarChar(120)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, status])
+}

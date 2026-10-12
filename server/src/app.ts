@@ -1,3 +1,11 @@
+import {
+  createFlight,
+  listManagedFlights,
+} from "./modules/flights/flight-management.service";
+import {
+  createAirline,
+  listAirlines,
+} from "./modules/airlines/airline.service";
 import express from "express";
 import { timingSafeEqual } from "node:crypto";
 import type { ImportRequest } from "./modules/flight-import/import.service";
@@ -80,7 +88,110 @@ export function createApp(adminToken: string, importer: FlightImporter, catalog:
       next(error);
     }
   });
+  app.get("/api/admin/airlines", async (_req, res, next) => {
+    try {
+      res.json(await listAirlines());
+    } catch (error) {
+      next(error);
+    }
+  });
 
+  app.post("/api/admin/airlines", async (req, res, next) => {
+    try {
+      const { code, name } = req.body ?? {};
+
+      if (typeof code !== "string" || typeof name !== "string") {
+        res.status(400).json({
+          error: "Cần cung cấp code và name dạng chuỗi.",
+        });
+        return;
+      }
+
+      const airline = await createAirline({ code, name });
+      res.status(201).json(airline);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message.includes("Mã hãng bay") ||
+          error.message.includes("Tên hãng bay"))
+      ) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+
+      next(error);
+    }
+  });
+  app.get("/api/admin/managed-flights", async (_req, res, next) => {
+    try {
+      res.json(await listManagedFlights());
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/admin/managed-flights", async (req, res, next) => {
+    try {
+      const body = req.body ?? {};
+
+      const {
+        flightNumber,
+        airlineId,
+        departureCode,
+        arrivalCode,
+        departureTime,
+        arrivalTime,
+        capacity,
+        basePrice,
+      } = body;
+
+      if (
+        typeof flightNumber !== "string" ||
+        typeof airlineId !== "number" ||
+        typeof departureCode !== "string" ||
+        typeof arrivalCode !== "string" ||
+        typeof departureTime !== "string" ||
+        typeof arrivalTime !== "string" ||
+        typeof capacity !== "number" ||
+        typeof basePrice !== "number"
+      ) {
+        res.status(400).json({
+          error: "Dữ liệu chuyến bay không hợp lệ hoặc thiếu trường bắt buộc.",
+        });
+        return;
+      }
+
+      const flight = await createFlight({
+        flightNumber,
+        airlineId,
+        departureCode,
+        arrivalCode,
+        departureTime,
+        arrivalTime,
+        capacity,
+        basePrice,
+      });
+
+      res.status(201).json(flight);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        [
+          "Số hiệu chuyến bay",
+          "Mã sân bay",
+          "Mã hãng bay",
+          "Số ghế",
+          "Giá vé",
+          "Thời gian đến",
+        ].some((message) => error.message.includes(message))
+      ) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+
+      next(error);
+    }
+  });
   app.get("/api/admin/flight-imports/status", async (req, res, next) => {
     try {
       const request = parseImportRequest(req.query);
