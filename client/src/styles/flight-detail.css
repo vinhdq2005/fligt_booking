@@ -1,0 +1,129 @@
+.flight-detail-page {
+  padding: 40px 20px;
+  background: #f5f7fa;
+  min-height: 500px;
+}
+
+.flight-detail-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.flight-detail-content h1 {
+  margin-bottom: 24px;
+}
+
+.flight-detail-card {
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.flight-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.flight-detail-header h2 {
+  margin: 0 0 6px;
+}
+
+.flight-detail-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.flight-detail-price {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.flight-detail-route {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 30px;
+  padding: 30px 0;
+}
+
+.flight-detail-route div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.flight-detail-route div:last-child {
+  text-align: right;
+}
+
+.flight-detail-route strong {
+  font-size: 28px;
+}
+
+.flight-detail-route span {
+  font-weight: 600;
+}
+
+.flight-detail-route small {
+  color: #6b7280;
+}
+
+.flight-detail-duration {
+  align-items: center;
+  color: #6b7280;
+}
+
+.flight-detail-info {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.flight-detail-info p {
+  margin: 8px 0;
+}
+
+.booking-button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.booking-button:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 700px) {
+  .flight-detail-card {
+    padding: 20px;
+  }
+
+  .flight-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .flight-detail-route {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .flight-detail-route div:last-child {
+    text-align: left;
+  }
+
+  .flight-detail-duration {
+    align-items: flex-start;
+  }
+}

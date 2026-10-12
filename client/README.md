@@ -6,8 +6,10 @@
 
 1. Cấu hình `DATABASE_URL`, `SERPAPI_API_KEY` và `ADMIN_API_TOKEN` trong `server/.env`.
 2. Chạy API bằng `npm run dev:server` từ thư mục gốc.
-3. Chạy giao diện bằng `npm run dev:client`; mở `http://127.0.0.1:5173`.
+3. Chạy giao diện bằng `npm run dev:client`; các trang người dùng ở `/` và trang quản trị ở `/admin`.
 
 Vite dev server đọc `ADMIN_API_TOKEN` ở phía Node và gắn vào request proxy `/api`. Token không nằm trong bundle React. Có thể đặt token trong biến môi trường của tiến trình Vite thay cho `server/.env`. Cách này chỉ dành cho phát triển cục bộ; môi trường triển khai cần đăng nhập và phân quyền admin thật.
 
 `npm run build:client` tạo bản build trong `client/dist`. Bản build cần một backend phục vụ `/api/admin/*` có xác thực phù hợp.
+
+Quy tắc đặt file, đặt tên và sử dụng dữ liệu mẫu: [Hướng dẫn Frontend](../docs/FRONTEND_GUIDE.md).
