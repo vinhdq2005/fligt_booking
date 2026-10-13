@@ -1,3 +1,4 @@
+
 export type Segment = {
   id: number;
   position: number;
@@ -28,8 +29,17 @@ export type Flight = {
 
 export type FlightList = {
   items: Flight[];
-  pagination: { page: number; pageSize: number; total: number; pageCount: number };
-  summary: { fresh: number; expired: number; total: number };
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    pageCount: number;
+  };
+  summary: {
+    fresh: number;
+    expired: number;
+    total: number;
+  };
 };
 
 export type ImportStatus = {
@@ -43,37 +53,74 @@ export type ImportForm = {
   date: string;
 };
 
-async function api<T>(path: string, options?: RequestInit): Promise<T> {
+async function api<T>(
+  path: string,
+  options?: RequestInit,
+): Promise<T> {
   const response = await fetch(path, {
     ...options,
-    headers: { ...(options?.body ? { "content-type": "application/json" } : {}), ...options?.headers },
+    headers: {
+      ...(options?.body
+        ? { "content-type": "application/json" }
+        : {}),
+      ...options?.headers,
+    },
   });
+
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    throw new Error(data.error || `Yêu cầu thất bại (HTTP ${response.status}).`);
+    throw new Error(
+      data.error || `Yêu cầu thất bại (HTTP ${response.status}).`,
+    );
   }
+
   return data as T;
 }
 
 export function getFlights(filters: {
-  from: string; to: string; date: string; status: string; page: number;
+  from: string;
+  to: string;
+  date: string;
+  status: string;
+  page: number;
 }): Promise<FlightList> {
-  const query = new URLSearchParams({ page: String(filters.page), status: filters.status });
+  const query = new URLSearchParams({
+    page: String(filters.page),
+    status: filters.status,
+  });
+
   if (filters.from) query.set("from", filters.from);
   if (filters.to) query.set("to", filters.to);
   if (filters.date) query.set("date", filters.date);
-  return api(`/api/admin/flights?${query}`);
+
+  return api<FlightList>(`/api/admin/flights?${query}`);
 }
 
-export function getImportStatus(form: ImportForm): Promise<ImportStatus> {
+export function getImportStatus(
+  form: ImportForm,
+): Promise<ImportStatus> {
   const query = new URLSearchParams(form);
-  return api(`/api/admin/flight-imports/status?${query}`);
+
+  return api<ImportStatus>(
+    `/api/admin/flight-imports/status?${query}`,
+  );
 }
 
 export function importFlights(form: ImportForm) {
-  return api<{ status: "imported" | "already_fresh"; searchId: number; offerCount?: number }>(
+  return api<{
+    status: "imported" | "already_fresh";
+    searchId: number;
+    offerCount?: number;
+  }>(
     "/api/admin/flight-imports",
-    { method: "POST", body: JSON.stringify({ ...form, confirmed: true }) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        ...form,
+        confirmed: true,
+      }),
+    },
   );
 }
 
@@ -85,6 +132,8 @@ export type PublicFlight = {
   departureTime: string;
   arrivalTime: string;
   capacity: number;
+  occupiedSeats: number;
+  availableSeats: number;
   basePrice: number;
   status: string;
   airline: {
@@ -118,5 +167,7 @@ export async function searchPublicFlights(filters: {
 export async function getPublicFlight(
   id: number,
 ): Promise<{ item: PublicFlight }> {
-  return api<{ item: PublicFlight }>(`/api/flights/${id}`);
+  return api<{ item: PublicFlight }>(
+    `/api/flights/${id}`,
+  );
 }

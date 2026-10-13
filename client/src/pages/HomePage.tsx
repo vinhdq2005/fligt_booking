@@ -11,6 +11,8 @@ function HomePage() {
   const [passengers, setPassengers] = useState(1)
 
 const handleSearch = () => {
+  console.log('Đã bấm Tìm chuyến bay')
+  console.log({ from, to, date, passengers })
   if (!from || !to || !date) {
     alert('Vui lòng chọn điểm đi, điểm đến và ngày đi.')
     return
