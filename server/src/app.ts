@@ -1,3 +1,10 @@
+import { getBookingByCode } from "./modules/bookings/booking-query.service";
+import { payBooking } from "./modules/bookings/payment.service";
+import { createBooking } from "./modules/bookings/booking.service";
+import {
+  searchFlights,
+  getFlightById,
+} from "./modules/flights/flight-search.service";
 import {
   createFlight,
   listManagedFlights,
@@ -192,6 +199,238 @@ export function createApp(adminToken: string, importer: FlightImporter, catalog:
       next(error);
     }
   });
+  app.get("/api/flights/search", async (req, res, next) => {
+  try {
+    const { from, to, date } = req.query;
+
+    if (
+      typeof from !== "string" ||
+      typeof to !== "string" ||
+      typeof date !== "string"
+    ) {
+      res.status(400).json({
+        error: "Vui lòng cung cấp from, to và date.",
+      });
+      return;
+    }
+
+    const flights = await searchFlights({ from, to, date });
+
+    res.json({
+      items: flights,
+      total: flights.length,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      [
+        "Mã sân bay phải gồm 3 chữ cái.",
+        "Sân bay đi và sân bay đến không được trùng nhau.",
+        "Ngày bay phải có định dạng YYYY-MM-DD.",
+        "Ngày bay không hợp lệ.",
+      ].includes(error.message)
+    ) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    next(error);
+  }
+});
+
+app.get("/api/flights/:id", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(400).json({
+        error: "Mã chuyến bay không hợp lệ.",
+      });
+      return;
+    }
+
+    const flight = await getFlightById(id);
+
+    if (!flight) {
+      res.status(404).json({
+        error: "Không tìm thấy chuyến bay.",
+      });
+      return;
+    }
+
+    res.json({ item: flight });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/bookings", async (req, res, next) => {
+  try {
+    const body = req.body ?? {};
+    const {
+      flightId,
+      contactName,
+      contactEmail,
+      contactPhone,
+      passengers,
+    } = body;
+
+    if (
+      typeof flightId !== "number" ||
+      typeof contactName !== "string" ||
+      !Array.isArray(passengers) ||
+      passengers.some(
+        (p: unknown) =>
+          typeof p !== "object" ||
+          p === null ||
+          Array.isArray(p) ||
+          typeof (p as { fullName?: unknown }).fullName !== "string",
+      )
+    ) {
+      res.status(400).json({
+        error: "Thông tin đặt chỗ hoặc danh sách hành khách không hợp lệ.",
+      });
+      return;
+    }
+
+    if (
+      (contactEmail !== undefined && typeof contactEmail !== "string") ||
+      (contactPhone !== undefined && typeof contactPhone !== "string")
+    ) {
+      res.status(400).json({
+        error: "Email và số điện thoại phải là chuỗi.",
+      });
+      return;
+    }
+
+    const booking = await createBooking({
+      flightId,
+      contactName,
+      contactEmail,
+      contactPhone,
+      passengers,
+    });
+
+    res.status(201).json({
+      message: "Tạo đặt chỗ thành công. Vui lòng hoàn tất thanh toán.",
+      item: booking,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      const validationMessages = [
+        "Mã chuyến bay không hợp lệ.",
+        "Tên người liên hệ phải từ 2 đến 120 ký tự.",
+        "Email không hợp lệ.",
+        "Số điện thoại không hợp lệ.",
+        "Số hành khách phải từ 1 đến 9.",
+        "Tên hành khách phải từ 2 đến 120 ký tự.",
+        "Ngày sinh phải có định dạng YYYY-MM-DD.",
+        "Ngày sinh không hợp lệ.",
+        "Không tìm thấy chuyến bay.",
+        "Chuyến bay không còn nhận đặt chỗ.",
+        "Không đủ ghế cho số hành khách yêu cầu.",
+        "Tổng tiền vượt giới hạn cho phép.",
+      ];
+
+      if (validationMessages.includes(error.message)) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+    }
+
+    next(error);
+  }
+});
+
+app.post(
+  "/api/bookings/:code/pay",
+  async (req, res, next) => {
+    try {
+      const code = req.params.code;
+
+      if (typeof code !== "string" || !code.trim()) {
+        res.status(400).json({
+          message: "Mã đặt chỗ không hợp lệ.",
+        });
+        return;
+      }
+
+      const result = await payBooking(code);
+
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof Error) {
+        const message = error.message;
+
+        if (message === "Không tìm thấy đặt chỗ.") {
+          res.status(404).json({ message });
+          return;
+        }
+
+        if (
+          message === "Đặt chỗ đã hết hạn thanh toán." ||
+          message ===
+            "Đặt chỗ không ở trạng thái chờ thanh toán." ||
+          message ===
+            "Đặt chỗ đã có vé; không thể thanh toán lại."
+        ) {
+          res.status(409).json({ message });
+          return;
+        }
+
+        if (
+          message === "Mã đặt chỗ không hợp lệ." ||
+          message === "Đặt chỗ chưa có hành khách." ||
+          message === "Chuyến bay không còn khả dụng."
+        ) {
+          res.status(400).json({ message });
+          return;
+        }
+      }
+
+      next(error);
+    }
+  },
+);
+
+app.get("/api/bookings/:code", async (req, res, next) => {
+  try {
+    const code = req.params.code;
+
+    if (typeof code !== "string" || !code.trim()) {
+      res.status(400).json({
+        message: "Mã đặt chỗ không hợp lệ.",
+      });
+      return;
+    }
+
+    const item = await getBookingByCode(code);
+
+    res.status(200).json({ item });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Không tìm thấy đặt chỗ."
+    ) {
+      res.status(404).json({
+        message: error.message,
+      });
+      return;
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Mã đặt chỗ không hợp lệ."
+    ) {
+      res.status(400).json({
+        message: error.message,
+      });
+      return;
+    }
+
+    next(error);
+  }
+});
   app.get("/api/admin/flight-imports/status", async (req, res, next) => {
     try {
       const request = parseImportRequest(req.query);
@@ -234,4 +473,48 @@ export function createApp(adminToken: string, importer: FlightImporter, catalog:
   });
 
   return app;
+}
+
+export type PublicFlight = {
+  id: number;
+  flightNumber: string;
+  departureCode: string;
+  arrivalCode: string;
+  departureTime: string;
+  arrivalTime: string;
+  capacity: number;
+  basePrice: number;
+  status: string;
+  airline: {
+    id: number;
+    code: string;
+    name: string;
+  };
+};
+
+export type PublicFlightSearchResult = {
+  items: PublicFlight[];
+  total: number;
+};
+
+export async function searchPublicFlights(filters: {
+  from: string;
+  to: string;
+  date: string;
+}): Promise<PublicFlightSearchResult> {
+  const query = new URLSearchParams({
+    from: filters.from,
+    to: filters.to,
+    date: filters.date,
+  });
+
+  return api<PublicFlightSearchResult>(
+    `/api/flights/search?${query.toString()}`,
+  );
+}
+
+export async function getPublicFlight(
+  id: number,
+): Promise<{ item: PublicFlight }> {
+  return api<{ item: PublicFlight }>(`/api/flights/${id}`);
 }

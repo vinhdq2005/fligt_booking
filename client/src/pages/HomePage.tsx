@@ -10,17 +10,31 @@ function HomePage() {
   const [date, setDate] = useState('')
   const [passengers, setPassengers] = useState(1)
 
-  const handleSearch = () => {
-    const searchParams = new URLSearchParams({
-      from,
-      to,
-      date,
-      passengers: String(passengers),
-    })
-
-    navigate(`/flights/results?${searchParams.toString()}`)
+const handleSearch = () => {
+  if (!from || !to || !date) {
+    alert('Vui lòng chọn điểm đi, điểm đến và ngày đi.')
+    return
   }
 
+  if (from === to) {
+    alert('Điểm đi và điểm đến không được trùng nhau.')
+    return
+  }
+
+  if (passengers < 1 || passengers > 9) {
+    alert('Số hành khách phải từ 1 đến 9.')
+    return
+  }
+
+  const searchParams = new URLSearchParams({
+    from,
+    to,
+    date,
+    passengers: String(passengers),
+  })
+
+  navigate(`/flights/results?${searchParams.toString()}`)
+}
   return (
     <section className="home-page">
       <div className="hero-section">

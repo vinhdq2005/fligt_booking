@@ -1,7 +1,10 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { mockFlights } from '../mocks/mockFlights'
+import {
+  getPublicFlight,
+  type PublicFlight,
+} from '../api'
 import '../styles/passenger-info.css'
 
 type Passenger = {
@@ -15,14 +18,16 @@ function PassengerInfoPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const flightId = searchParams.get('flightId') || 'flight-001'
+  const flightId = searchParams.get('flightId') || ''
   const passengers = Math.min(
     9,
-    Math.max(1, Number(searchParams.get('passengers') || '1')),
+    Math.max(1, Number(searchParams.get('passengers') || '1') || 1),
   )
   const date = searchParams.get('date') || ''
 
-  const flight = mockFlights.find((item) => item.id === flightId)
+  const [flight, setFlight] = useState<PublicFlight | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   const [passengerList, setPassengerList] = useState<Passenger[]>(
     () =>
@@ -36,21 +41,49 @@ function PassengerInfoPage() {
 
   const [error, setError] = useState('')
 
-  if (!flight) {
-    return (
-      <section className="passenger-info-page">
-        <div className="passenger-info-content">
-          <h1>Không tìm thấy chuyến bay</h1>
-          <button
-            type="button"
-            onClick={() => navigate('/flights/results')}
-          >
-            Quay lại kết quả
-          </button>
-        </div>
-      </section>
-    )
-  }
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadFlight() {
+      const id = Number(flightId)
+
+      if (!flightId || !Number.isInteger(id) || id <= 0) {
+        setLoadError('Mã chuyến bay không hợp lệ.')
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        const result = await getPublicFlight(id)
+
+        if (!cancelled) {
+          setFlight(result.item)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setFlight(null)
+          setLoadError(
+            err instanceof Error
+              ? err.message
+              : 'Không thể tải thông tin chuyến bay.',
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadFlight()
+
+    return () => {
+      cancelled = true
+    }
+  }, [flightId])
 
   const updatePassenger = (
     index: number,
@@ -67,13 +100,15 @@ function PassengerInfoPage() {
   }
 
   const handleContinue = () => {
-    const hasMissingInfo = passengerList.some(
-      (passenger) =>
-        !passenger.fullName.trim() ||
-        !passenger.gender ||
-        !passenger.phone.trim() ||
-        !passenger.email.trim(),
-    )
+  if (!flight) return
+
+  const hasMissingInfo = passengerList.some(
+    (passenger) =>
+      !passenger.fullName.trim() ||
+      !passenger.gender ||
+      !passenger.phone.trim() ||
+      !passenger.email.trim(),
+  )
 
     if (hasMissingInfo) {
       setError('Vui lòng điền đầy đủ thông tin của tất cả hành khách.')
@@ -93,7 +128,36 @@ function PassengerInfoPage() {
     setError('')
 
     navigate(
-      `/booking/review?flightId=${flight.id}&passengers=${passengers}&date=${date}`,
+      `/booking/review?flightId=${flight.id}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+    )
+  }
+
+  if (loading) {
+    return (
+      <section className="passenger-info-page">
+        <div className="passenger-info-content">
+          <h1>Thông tin hành khách</h1>
+          <p>Đang tải thông tin chuyến bay...</p>
+        </div>
+      </section>
+    )
+  }
+
+  if (loadError || !flight) {
+    return (
+      <section className="passenger-info-page">
+        <div className="passenger-info-content">
+          <h1>Không tìm thấy chuyến bay</h1>
+          <p>{loadError || 'Không tìm thấy thông tin chuyến bay.'}</p>
+          <button
+            type="button"
+            className="back-button"
+            onClick={() => navigate(-1)}
+          >
+            Quay lại kết quả
+          </button>
+        </div>
+      </section>
     )
   }
 
@@ -107,7 +171,7 @@ function PassengerInfoPage() {
         </p>
 
         <p>
-          <strong>Chuyến bay:</strong> {flight.airline} {flight.flightNumber}
+          <strong>Chuyến bay:</strong> {flight.airline.name} {flight.flightNumber}
           {' · '}
           <strong>Số hành khách:</strong> {passengers}
         </p>

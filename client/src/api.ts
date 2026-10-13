@@ -76,3 +76,47 @@ export function importFlights(form: ImportForm) {
     { method: "POST", body: JSON.stringify({ ...form, confirmed: true }) },
   );
 }
+
+export type PublicFlight = {
+  id: number;
+  flightNumber: string;
+  departureCode: string;
+  arrivalCode: string;
+  departureTime: string;
+  arrivalTime: string;
+  capacity: number;
+  basePrice: number;
+  status: string;
+  airline: {
+    id: number;
+    code: string;
+    name: string;
+  };
+};
+
+export type PublicFlightSearchResult = {
+  items: PublicFlight[];
+  total: number;
+};
+
+export async function searchPublicFlights(filters: {
+  from: string;
+  to: string;
+  date: string;
+}): Promise<PublicFlightSearchResult> {
+  const query = new URLSearchParams({
+    from: filters.from,
+    to: filters.to,
+    date: filters.date,
+  });
+
+  return api<PublicFlightSearchResult>(
+    `/api/flights/search?${query.toString()}`,
+  );
+}
+
+export async function getPublicFlight(
+  id: number,
+): Promise<{ item: PublicFlight }> {
+  return api<{ item: PublicFlight }>(`/api/flights/${id}`);
+}
