@@ -1,8 +1,37 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getPublicFlight, type PublicFlight } from '../api'
+import {
+  createBooking,
+  getPublicFlight,
+  payBooking,
+  type PublicFlight,
+} from '../api'
 import '../styles/payment.css'
+
+type Passenger = {
+  fullName: string
+  gender: string
+  phone: string
+  email: string
+}
+
+type SavedPassengerInfo = {
+  flightId: number
+  date: string
+  passengers: Passenger[]
+}
+
+type PendingBooking = {
+  flightId: number
+  date: string
+  passengers: number
+  bookingCode: string
+}
+
+const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
+const PENDING_BOOKING_KEY = 'flight-booking-pending'
+const BOOKING_CODES_KEY = 'flight-booking-codes'
 
 function PaymentPage() {
   const navigate = useNavigate()
@@ -11,18 +40,21 @@ function PaymentPage() {
   const flightId = searchParams.get('flightId') || ''
   const date = searchParams.get('date') || ''
 
-  const passengerValue = Number(searchParams.get('passengers') || '1')
+  const passengerParam = Number(searchParams.get('passengers') || '1')
   const passengers = Math.min(
     9,
     Math.max(
       1,
-      Number.isFinite(passengerValue) ? Math.floor(passengerValue) : 1,
+      Number.isFinite(passengerParam) ? Math.floor(passengerParam) : 1,
     ),
   )
 
   const [flight, setFlight] = useState<PublicFlight | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [paymentError, setPaymentError] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const paymentLock = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -41,17 +73,17 @@ function PaymentPage() {
       setLoadError('')
 
       try {
-        const response = await getPublicFlight(id)
+        const result = await getPublicFlight(id)
 
         if (cancelled) return
 
-        if (response.item) {
-          setFlight(response.item)
+        if (result.item) {
+          setFlight(result.item)
         } else {
           setFlight(null)
-          setLoadError('Không tìm thấy thông tin chuyến bay.')
+          setLoadError('Không tìm thấy chuyến bay.')
         }
-      } catch (error: unknown) {
+      } catch (error) {
         if (cancelled) return
 
         setFlight(null)
@@ -74,156 +106,273 @@ function PaymentPage() {
     }
   }, [flightId])
 
-  const formatPrice = (price: number) => {
-    return Number(price).toLocaleString('vi-VN') + ' ₫'
+  const formatPrice = (price: number) =>
+    `${Number(price).toLocaleString('vi-VN')} ₫`
+
+  const formatTime = (value: string) => {
+    const parsed = new Date(value)
+
+    if (Number.isNaN(parsed.getTime())) return '--:--'
+
+    return parsed.toLocaleTimeString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
   }
 
-  const handlePayment = (status: 'success' | 'failure') => {
-    if (!flight) return
+  function getSavedPassengers(): SavedPassengerInfo {
+    const saved = sessionStorage.getItem(PASSENGER_STORAGE_KEY)
 
-    navigate(
-      '/payment/result?status=' +
-        status +
-        '&flightId=' +
-        String(flight.id) +
-        '&passengers=' +
-        String(passengers) +
-        '&date=' +
-        encodeURIComponent(date),
+    if (!saved) {
+      throw new Error(
+        'Không tìm thấy thông tin hành khách. Vui lòng quay lại nhập thông tin.',
+      )
+    }
+
+    const parsed = JSON.parse(saved) as SavedPassengerInfo
+
+    if (
+      parsed.flightId !== Number(flightId) ||
+      parsed.date !== date ||
+      !Array.isArray(parsed.passengers) ||
+      parsed.passengers.length !== passengers
+    ) {
+      throw new Error(
+        'Thông tin hành khách không khớp với chuyến bay. Vui lòng quay lại kiểm tra.',
+      )
+    }
+
+    const validPassengers = parsed.passengers.every(
+      (passenger) =>
+        typeof passenger.fullName === 'string' &&
+        passenger.fullName.trim().length > 0 &&
+        typeof passenger.email === 'string' &&
+        typeof passenger.phone === 'string',
     )
+
+    if (!validPassengers) {
+      throw new Error('Thông tin hành khách không hợp lệ.')
+    }
+
+    return parsed
+  }
+
+  function saveBookingCode(code: string) {
+    const saved = localStorage.getItem(BOOKING_CODES_KEY)
+    const codes: string[] = saved ? JSON.parse(saved) : []
+
+    if (!Array.isArray(codes)) {
+      throw new Error('Danh sách mã đặt chỗ đã lưu không hợp lệ.')
+    }
+
+    if (!codes.includes(code)) {
+      localStorage.setItem(
+        BOOKING_CODES_KEY,
+        JSON.stringify([...codes, code]),
+      )
+    }
+  }
+
+  async function handlePayment(success: boolean) {
+    if (paymentLock.current || processing) return
+
+    if (!success) {
+      navigate(
+        `/payment/result?status=failure&flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+      )
+      return
+    }
+
+    if (!flight) {
+      setPaymentError('Không có thông tin chuyến bay để thanh toán.')
+      return
+    }
+
+    paymentLock.current = true
+    setProcessing(true)
+    setPaymentError('')
+
+    try {
+      const savedInfo = getSavedPassengers()
+      const firstPassenger = savedInfo.passengers[0]
+
+      let pendingBooking: PendingBooking | null = null
+
+      const pendingRaw = sessionStorage.getItem(PENDING_BOOKING_KEY)
+
+      if (pendingRaw) {
+        try {
+          const parsed = JSON.parse(pendingRaw) as PendingBooking
+
+          if (
+            parsed.flightId === flight.id &&
+            parsed.date === date &&
+            parsed.passengers === passengers &&
+            typeof parsed.bookingCode === 'string' &&
+            parsed.bookingCode.length > 0
+          ) {
+            pendingBooking = parsed
+          }
+        } catch {
+          sessionStorage.removeItem(PENDING_BOOKING_KEY)
+        }
+      }
+
+      let bookingCode: string
+
+      if (pendingBooking) {
+        bookingCode = pendingBooking.bookingCode
+      } else {
+        const result = await createBooking({
+          flightId: flight.id,
+          contactName: firstPassenger.fullName.trim(),
+          contactEmail: firstPassenger.email.trim(),
+          contactPhone: firstPassenger.phone.trim(),
+          passengers: savedInfo.passengers.map((passenger) => ({
+            fullName: passenger.fullName.trim(),
+          })),
+        })
+
+        if (!result.item?.bookingCode) {
+          throw new Error('Backend không trả về mã đặt chỗ.')
+        }
+
+        bookingCode = result.item.bookingCode
+
+        const pending: PendingBooking = {
+          flightId: flight.id,
+          date,
+          passengers,
+          bookingCode,
+        }
+
+        sessionStorage.setItem(
+          PENDING_BOOKING_KEY,
+          JSON.stringify(pending),
+        )
+      }
+
+      // API thanh toán hiện tại là thanh toán mô phỏng của backend.
+      await payBooking(bookingCode)
+
+      // Lưu mã để trang Đặt chỗ của tôi tra cứu lại dữ liệu backend.
+      saveBookingCode(bookingCode)
+
+      sessionStorage.removeItem(PENDING_BOOKING_KEY)
+      sessionStorage.removeItem(PASSENGER_STORAGE_KEY)
+
+      navigate(
+        `/payment/result?status=success&code=${encodeURIComponent(bookingCode)}`,
+      )
+    } catch (error) {
+      setPaymentError(
+        error instanceof Error
+          ? error.message
+          : 'Thanh toán không thành công. Vui lòng thử lại.',
+      )
+    } finally {
+      paymentLock.current = false
+      setProcessing(false)
+    }
   }
 
   if (loading) {
     return (
       <section className="payment-page">
         <div className="payment-content">
-          <h1>Đang tải thông tin thanh toán...</h1>
-          <p>Vui lòng chờ trong giây lát.</p>
+          <h1>Thanh toán</h1>
+          <p>Đang tải thông tin chuyến bay...</p>
         </div>
       </section>
     )
   }
 
-  if (!flight) {
+  if (loadError || !flight) {
     return (
       <section className="payment-page">
         <div className="payment-content">
-          <h1>Không tìm thấy chuyến bay</h1>
-          <p>
-            {loadError || 'Vui lòng quay lại và chọn chuyến bay khác.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/flights/results')}
-          >
-            Quay lại kết quả
+          <h1>Không thể thanh toán</h1>
+          <p>{loadError || 'Không tìm thấy chuyến bay.'}</p>
+          <button type="button" onClick={() => navigate(-1)}>
+            Quay lại
           </button>
         </div>
       </section>
     )
   }
 
-  const ticketPrice = Number(flight.basePrice)
+  const ticketPrice = Number(flight.basePrice ?? 0)
   const totalPrice = ticketPrice * passengers
 
   return (
     <section className="payment-page">
       <div className="payment-content">
-        <h1>Thanh toán</h1>
+        <h1>Thanh toán đặt vé</h1>
 
         <p className="demo-notice">
-          Đây là trang thanh toán giả lập. Không sử dụng thông tin thẻ
-          hoặc tài khoản thật.
+          Đây là chức năng thanh toán mô phỏng dùng cho bài tập lớn.
+          Không nhập hoặc cung cấp thông tin thẻ ngân hàng thật.
         </p>
 
         <div className="payment-card">
-          <div className="payment-section">
-            <h2>Thông tin chuyến bay</h2>
+          <h2>Thông tin chuyến bay</h2>
 
-            <p>
-              <strong>Hãng bay:</strong> {flight.airline.name}
+          <p>
+            <strong>Hãng hàng không:</strong> {flight.airline.name}
+          </p>
+
+          <p>
+            <strong>Mã chuyến bay:</strong> {flight.flightNumber}
+          </p>
+
+          <p>
+            <strong>Hành trình:</strong> {flight.departureCode} →{' '}
+            {flight.arrivalCode}
+          </p>
+
+          <p>
+            <strong>Giờ khởi hành:</strong>{' '}
+            {formatTime(flight.departureTime)}
+          </p>
+
+          <p>
+            <strong>Giờ đến:</strong> {formatTime(flight.arrivalTime)}
+          </p>
+
+          <p>
+            <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
+          </p>
+
+          <hr />
+
+          <h2>Chi tiết chi phí</h2>
+
+          <p>
+            Giá vé mỗi người: <strong>{formatPrice(ticketPrice)}</strong>
+          </p>
+
+          <p>
+            Số hành khách: <strong>{passengers}</strong>
+          </p>
+
+          <p>
+            Tổng thanh toán:{' '}
+            <strong>{formatPrice(totalPrice)}</strong>
+          </p>
+
+          {paymentError && (
+            <p className="demo-notice" role="alert">
+              {paymentError}
             </p>
+          )}
 
-            <p>
-              <strong>Chuyến bay:</strong> {flight.flightNumber}
-            </p>
-
-            <p>
-              <strong>Hành trình:</strong> {flight.departureCode} →{' '}
-              {flight.arrivalCode}
-            </p>
-
-            <p>
-              <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
-            </p>
-
-            <p>
-              <strong>Số hành khách:</strong> {passengers} người
-            </p>
-          </div>
-
-          <div className="payment-section">
-            <h2>Phương thức thanh toán</h2>
-
-            <label className="payment-option">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="bank"
-                defaultChecked
-              />
-              <div>
-                <strong>Chuyển khoản ngân hàng</strong>
-                <span>Thanh toán giả lập</span>
-              </div>
-            </label>
-
-            <label className="payment-option">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="card"
-              />
-              <div>
-                <strong>Thẻ thanh toán</strong>
-                <span>Chỉ mô phỏng, không sử dụng thẻ thật</span>
-              </div>
-            </label>
-
-            <label className="payment-option">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="wallet"
-              />
-              <div>
-                <strong>Ví điện tử</strong>
-                <span>Phương thức thanh toán minh họa</span>
-              </div>
-            </label>
-          </div>
-
-          <div className="payment-summary">
-            <div className="summary-row">
-              <span>Giá vé / người</span>
-              <strong>{formatPrice(ticketPrice)}</strong>
-            </div>
-
-            <div className="summary-row">
-              <span>Số hành khách</span>
-              <strong>{passengers} người</strong>
-            </div>
-
-            <div className="summary-total">
-              <span>Tổng thanh toán</span>
-              <strong>{formatPrice(totalPrice)}</strong>
-            </div>
-          </div>
-
-          <div className="payment-actions">
+          <div className="form-actions">
             <button
               type="button"
               className="back-button"
+              disabled={processing}
               onClick={() => navigate(-1)}
             >
               Quay lại
@@ -231,18 +380,20 @@ function PaymentPage() {
 
             <button
               type="button"
-              className="payment-button"
-              onClick={() => handlePayment('success')}
+              className="continue-button"
+              disabled={processing}
+              onClick={() => void handlePayment(true)}
             >
-              Mô phỏng thanh toán thành công
+              {processing ? 'Đang xử lý...' : 'Thanh toán thành công'}
             </button>
 
             <button
               type="button"
               className="back-button"
-              onClick={() => handlePayment('failure')}
+              disabled={processing}
+              onClick={() => void handlePayment(false)}
             >
-              Mô phỏng thanh toán thất bại
+              Mô phỏng thất bại
             </button>
           </div>
         </div>

@@ -5,6 +5,21 @@ import { mockAirports } from '../mocks/mockAirports'
 import { getPublicFlight, type PublicFlight } from '../api'
 import '../styles/booking-review.css'
 
+type Passenger = {
+  fullName: string
+  gender: string
+  phone: string
+  email: string
+}
+
+type SavedPassengerInfo = {
+  flightId: number
+  date: string
+  passengers: Passenger[]
+}
+
+const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
+
 function BookingReviewPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -15,12 +30,17 @@ function BookingReviewPage() {
   const passengerParam = Number(searchParams.get('passengers') || '1')
   const passengers = Math.min(
     9,
-    Math.max(1, Number.isFinite(passengerParam) ? Math.floor(passengerParam) : 1),
+    Math.max(
+      1,
+      Number.isFinite(passengerParam) ? Math.floor(passengerParam) : 1,
+    ),
   )
 
   const [flight, setFlight] = useState<PublicFlight | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [passengerList, setPassengerList] = useState<Passenger[]>([])
+  const [passengerError, setPassengerError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -49,16 +69,15 @@ function BookingReviewPage() {
           setFlight(null)
           setLoadError('Không tìm thấy thông tin chuyến bay.')
         }
-      } catch (error: unknown) {
+      } catch (error) {
         if (cancelled) return
 
         setFlight(null)
-
-        if (error instanceof Error) {
-          setLoadError(error.message)
-        } else {
-          setLoadError('Không thể tải thông tin chuyến bay.')
-        }
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : 'Không thể tải thông tin chuyến bay.',
+        )
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -72,6 +91,47 @@ function BookingReviewPage() {
       cancelled = true
     }
   }, [flightId])
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(PASSENGER_STORAGE_KEY)
+
+      if (!saved) {
+        setPassengerList([])
+        setPassengerError(
+          'Không tìm thấy thông tin hành khách. Vui lòng quay lại nhập thông tin.',
+        )
+        return
+      }
+
+      const parsed = JSON.parse(saved) as SavedPassengerInfo
+
+      if (
+        parsed.flightId !== Number(flightId) ||
+        parsed.date !== date ||
+        !Array.isArray(parsed.passengers) ||
+        parsed.passengers.length !== passengers ||
+        parsed.passengers.some(
+          (p) =>
+            typeof p.fullName !== 'string' ||
+            typeof p.email !== 'string' ||
+            typeof p.phone !== 'string',
+        )
+      ) {
+        setPassengerList([])
+        setPassengerError(
+          'Thông tin hành khách không khớp với chuyến bay. Vui lòng nhập lại.',
+        )
+        return
+      }
+
+      setPassengerList(parsed.passengers)
+      setPassengerError('')
+    } catch {
+      setPassengerList([])
+      setPassengerError('Không thể đọc thông tin hành khách đã lưu.')
+    }
+  }, [flightId, date, passengers])
 
   function formatTime(value: string): string {
     const parsedDate = new Date(value)
@@ -104,41 +164,54 @@ function BookingReviewPage() {
     const hours = Math.floor(totalMinutes / 60)
     const remainingMinutes = totalMinutes % 60
 
-    if (hours > 0) {
-      return (
-        String(hours) +
-        ' giờ ' +
-        String(remainingMinutes) +
-        ' phút'
-      )
+    if (hours > 0 && remainingMinutes > 0) {
+      return `${hours} giờ ${remainingMinutes} phút`
     }
 
-    return String(remainingMinutes) + ' phút'
+    if (hours > 0) {
+      return `${hours} giờ`
+    }
+
+    return `${remainingMinutes} phút`
+  }
+
+  function formatPrice(price: number): string {
+    return `${Number(price).toLocaleString('vi-VN')} ₫`
+  }
+
+  function handleContinue() {
+    if (!flight) return
+
+    if (passengerError || passengerList.length !== passengers) {
+      setPassengerError(
+        'Vui lòng quay lại nhập đầy đủ thông tin hành khách.',
+      )
+      return
+    }
+
+    navigate(
+      `/payment?flightId=${flight.id}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+    )
   }
 
   if (loading) {
     return (
       <section className="booking-review-page">
         <div className="booking-review-content">
-          <h1>Đang tải thông tin đặt vé...</h1>
-          <p>Vui lòng chờ trong giây lát.</p>
+          <h1>Xem lại thông tin đặt vé</h1>
+          <p>Đang tải thông tin chuyến bay...</p>
         </div>
       </section>
     )
   }
 
-  if (flight === null) {
+  if (loadError || !flight) {
     return (
       <section className="booking-review-page">
         <div className="booking-review-content">
           <h1>Không tìm thấy chuyến bay</h1>
-          <p>
-            {loadError || 'Vui lòng quay lại và chọn chuyến bay khác.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/flights/results')}
-          >
+          <p>{loadError || 'Không tìm thấy thông tin chuyến bay.'}</p>
+          <button type="button" onClick={() => navigate('/flights/results')}>
             Quay lại kết quả
           </button>
         </div>
@@ -163,7 +236,7 @@ function BookingReviewPage() {
         <h1>Xem lại thông tin đặt vé</h1>
 
         <p className="demo-notice">
-          Vui lòng kiểm tra thông tin trước khi tiếp tục thanh toán.
+          Vui lòng kiểm tra thông tin chuyến bay và hành khách trước khi thanh toán.
         </p>
 
         <div className="booking-review-card">
@@ -180,7 +253,7 @@ function BookingReviewPage() {
                 <div>
                   <strong>{formatTime(flight.departureTime)}</strong>
                   <span>
-                    {fromAirport ? fromAirport.city : flight.departureCode}
+                    {fromAirport?.city || flight.departureCode}
                     {' ('}
                     {flight.departureCode}
                     {')'}
@@ -200,7 +273,7 @@ function BookingReviewPage() {
                 <div>
                   <strong>{formatTime(flight.arrivalTime)}</strong>
                   <span>
-                    {toAirport ? toAirport.city : flight.arrivalCode}
+                    {toAirport?.city || flight.arrivalCode}
                     {' ('}
                     {flight.arrivalCode}
                     {')'}
@@ -215,47 +288,51 @@ function BookingReviewPage() {
           <div className="review-section">
             <h2>Hành khách</h2>
 
-            <div className="passenger-summary">
-              <div>
-                <span>Số hành khách</span>
-                <strong>{passengers} người</strong>
-              </div>
+            {passengerError ? (
+              <p className="demo-notice" role="alert">
+                {passengerError}
+              </p>
+            ) : (
+              <div className="passenger-summary">
+                <div>
+                  <span>Số hành khách</span>
+                  <strong>{passengers} người</strong>
+                </div>
 
-              <div>
-                <span>Số chỗ</span>
-                <strong>{passengers} chỗ</strong>
+                {passengerList.map((passenger, index) => (
+                  <div key={index}>
+                    <span>Hành khách {index + 1}</span>
+                    <strong>{passenger.fullName}</strong>
+                    <p>Email: {passenger.email}</p>
+                    <p>Điện thoại: {passenger.phone}</p>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <p className="review-note">
-              Thông tin hành khách được nhập ở bước trước.
-            </p>
+            )}
           </div>
 
-          <div className="review-section price-section">
+          <div className="review-section">
             <h2>Chi phí</h2>
 
-            <div className="price-row">
-              <span>Giá vé / người</span>
-              <strong>
-                {Number(ticketPrice || 0).toLocaleString('vi-VN')} ₫
-              </strong>
-            </div>
+            <div className="passenger-summary">
+              <div>
+                <span>Giá vé mỗi người</span>
+                <strong>{formatPrice(ticketPrice)}</strong>
+              </div>
 
-            <div className="price-row">
-              <span>Số hành khách</span>
-              <strong>{passengers}</strong>
-            </div>
+              <div>
+                <span>Số hành khách</span>
+                <strong>{passengers}</strong>
+              </div>
 
-            <div className="total-row">
-              <span>Tổng cộng</span>
-              <strong>
-                {Number(totalPrice || 0).toLocaleString('vi-VN')} ₫
-              </strong>
+              <div>
+                <span>Tổng tiền dự kiến</span>
+                <strong>{formatPrice(totalPrice)}</strong>
+              </div>
             </div>
           </div>
 
-          <div className="review-actions">
+          <div className="form-actions">
             <button
               type="button"
               className="back-button"
@@ -267,16 +344,8 @@ function BookingReviewPage() {
             <button
               type="button"
               className="continue-button"
-              onClick={() =>
-                navigate(
-                  '/payment?flightId=' +
-                    String(flight.id) +
-                    '&passengers=' +
-                    String(passengers) +
-                    '&date=' +
-                    encodeURIComponent(date),
-                )
-              }
+              disabled={Boolean(passengerError)}
+              onClick={handleContinue}
             >
               Tiếp tục thanh toán
             </button>

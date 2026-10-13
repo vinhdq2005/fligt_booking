@@ -171,3 +171,95 @@ export async function getPublicFlight(
     `/api/flights/${id}`,
   );
 }
+// ===== BOOKING =====
+
+export type BookingPassengerInput = {
+  fullName: string
+  documentNumber?: string
+  dateOfBirth?: string
+  nationality?: string
+}
+
+export type CreateBookingInput = {
+  flightId: number
+  contactName: string
+  contactEmail?: string
+  contactPhone?: string
+  passengers: BookingPassengerInput[]
+}
+
+export type CreatedBooking = {
+  bookingCode: string
+  totalAmount: number
+  status: string
+  expiresAt: string
+}
+
+export async function createBooking(
+  input: CreateBookingInput,
+): Promise<{ message: string; item: CreatedBooking }> {
+  return api<{ message: string; item: CreatedBooking }>(
+    '/api/bookings',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  )
+}
+
+export async function payBooking(
+  bookingCode: string,
+): Promise<Record<string, unknown>> {
+  return api<Record<string, unknown>>(
+    `/api/bookings/${encodeURIComponent(bookingCode)}/pay`,
+    {
+      method: 'POST',
+    },
+  )
+}
+
+export type BookingDetails = {
+  bookingCode: string
+  contactName: string
+  totalAmount: number
+  status: string
+  expiresAt: string
+  createdAt: string
+  flight: {
+    flightNumber: string
+    departureCode: string
+    arrivalCode: string
+    departureTime: string
+    arrivalTime: string
+    basePrice: number
+    airline: {
+      code: string
+      name: string
+    }
+  }
+  passengers: Array<{
+    id: number
+    fullName: string
+    ticket: {
+      ticketCode: string
+      price: number
+      status: string
+      issuedAt: string
+    } | null
+  }>
+  payments: Array<{
+    amount: number
+    currency: string
+    method: string
+    status: string
+    createdAt: string
+  }>
+}
+
+export async function getBookingByCode(
+  bookingCode: string,
+): Promise<{ item: BookingDetails }> {
+  return api<{ item: BookingDetails }>(
+    `/api/bookings/${encodeURIComponent(bookingCode)}`,
+  )
+}

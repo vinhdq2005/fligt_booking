@@ -100,15 +100,15 @@ function PassengerInfoPage() {
   }
 
   const handleContinue = () => {
-  if (!flight) return
+    if (!flight) return
 
-  const hasMissingInfo = passengerList.some(
-    (passenger) =>
-      !passenger.fullName.trim() ||
-      !passenger.gender ||
-      !passenger.phone.trim() ||
-      !passenger.email.trim(),
-  )
+    const hasMissingInfo = passengerList.some(
+      (passenger) =>
+        !passenger.fullName.trim() ||
+        !passenger.gender ||
+        !passenger.phone.trim() ||
+        !passenger.email.trim(),
+    )
 
     if (hasMissingInfo) {
       setError('Vui lòng điền đầy đủ thông tin của tất cả hành khách.')
@@ -122,6 +122,20 @@ function PassengerInfoPage() {
 
     if (invalidEmail) {
       setError('Vui lòng nhập địa chỉ email hợp lệ.')
+      return
+    }
+
+    try {
+      sessionStorage.setItem(
+        'flight-booking-passenger-info',
+        JSON.stringify({
+          flightId: flight.id,
+          date,
+          passengers: passengerList,
+        }),
+      )
+    } catch {
+      setError('Không thể lưu thông tin tạm thời. Vui lòng thử lại.')
       return
     }
 

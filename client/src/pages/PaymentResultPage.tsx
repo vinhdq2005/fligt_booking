@@ -1,9 +1,10 @@
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { mockFlights } from '../mocks/mockFlights'
-import { saveBooking } from '../mocks/bookingStorage'
-import type { Booking } from '../mocks/mockBookings'
+import {
+  getBookingByCode,
+  type BookingDetails,
+} from '../api'
 import '../styles/payment-result.css'
 
 function PaymentResultPage() {
@@ -11,137 +12,246 @@ function PaymentResultPage() {
   const [searchParams] = useSearchParams()
 
   const status = searchParams.get('status')
-  const flightId = searchParams.get('flightId') || 'flight-001'
+  const code = searchParams.get('code') || ''
+  const flightId = searchParams.get('flightId') || ''
+  const date = searchParams.get('date') || ''
 
   const rawPassengers = Number(searchParams.get('passengers') || '1')
   const passengers = Number.isFinite(rawPassengers)
     ? Math.min(9, Math.max(1, Math.floor(rawPassengers)))
     : 1
 
-  const date = searchParams.get('date') || ''
   const isSuccess = status === 'success'
 
-  const flight = mockFlights.find(
-    (item) => item.id === flightId,
-  )
-
-  const totalPrice = flight ? flight.price * passengers : 0
-  const bookingCode = `FB${flightId.replace('flight-', '')}2026`
+  const [booking, setBooking] = useState<BookingDetails | null>(null)
+  const [loading, setLoading] = useState(isSuccess)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
-    if (!isSuccess || !flight) {
-      return
+    let cancelled = false
+
+    async function loadBooking() {
+      if (!isSuccess) {
+        setLoading(false)
+        return
+      }
+
+      if (!code) {
+        setLoadError('Không tìm thấy mã đặt chỗ trong kết quả thanh toán.')
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        const result = await getBookingByCode(code)
+
+        if (cancelled) return
+
+        if (result.item) {
+          setBooking(result.item)
+        } else {
+          setLoadError('Không tìm thấy thông tin đặt chỗ.')
+        }
+      } catch (error) {
+        if (cancelled) return
+
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : 'Không thể tải thông tin đặt chỗ từ máy chủ.',
+        )
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
     }
 
-    const booking: Booking = {
-      id: `booking-${bookingCode}`,
-      bookingCode,
-      flightId: flight.id,
-      passengerName: 'Người dùng demo',
-      passengerCount: passengers,
-      totalPrice,
-      status: 'paid',
-      date,
+    void loadBooking()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isSuccess, code])
+
+  function formatPrice(value: number): string {
+    return `${Number(value).toLocaleString('vi-VN')} ₫`
+  }
+
+  function formatTime(value: string): string {
+    const parsed = new Date(value)
+
+    if (Number.isNaN(parsed.getTime())) {
+      return '--:--'
     }
 
-    saveBooking(booking)
-  }, [
-    isSuccess,
-    flight,
-    bookingCode,
-    passengers,
-    totalPrice,
-    date,
-  ])
+    return parsed.toLocaleTimeString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  }
 
   return (
     <section className="payment-result-page">
       <div className="payment-result-content">
         {isSuccess ? (
-          <>
-            <div className="result-icon success">✓</div>
-
-            <h1>Thanh toán thành công</h1>
-
-            <p>Đặt vé demo của bạn đã được ghi nhận.</p>
-
-            <div className="booking-code">
-              <span>Mã đặt chỗ demo</span>
-              <strong>{bookingCode}</strong>
-            </div>
-
-            <div className="result-info">
-              <p>
-                <strong>Chuyến bay:</strong>{' '}
-                {flight
-                  ? `${flight.airline} ${flight.flightNumber}`
-                  : 'Không xác định'}
+          loading ? (
+            <>
+              <h1>Đang xác nhận đặt chỗ</h1>
+              <p>Đang tải thông tin từ máy chủ...</p>
+            </>
+          ) : loadError || !booking ? (
+            <>
+              <div className="result-icon failure">!</div>
+              <h1>Không tải được thông tin đặt chỗ</h1>
+              <p role="alert">
+                {loadError || 'Không tìm thấy dữ liệu đặt chỗ.'}
               </p>
-
               <p>
-                <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
+                Mã đặt chỗ: <strong>{code || 'Chưa có'}</strong>
               </p>
-
               <p>
-                <strong>Số hành khách:</strong> {passengers} người
+                Nếu thanh toán đã hoàn tất, hãy thử tải lại trang hoặc kiểm tra
+                kết nối backend.
               </p>
+              <div className="result-actions">
+                <button type="button" onClick={() => window.location.reload()}>
+                  Tải lại
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/my-bookings')}
+                >
+                  Xem đặt chỗ
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="result-icon success">✓</div>
 
-              <p>
-                <strong>Tổng tiền:</strong>{' '}
-                {totalPrice.toLocaleString('vi-VN')} ₫
-              </p>
+              <h1>Thanh toán thành công</h1>
+              <p>Thông tin đặt chỗ được lấy từ backend.</p>
 
-              <p>
-                <strong>Trạng thái:</strong> Thanh toán demo thành công
-              </p>
+              <div className="booking-code">
+                <span>Mã đặt chỗ</span>
+                <strong>{booking.bookingCode}</strong>
+              </div>
 
-              <p>
-                <strong>Lưu ý:</strong> Mã đặt chỗ và kết quả chỉ phục vụ trình diễn.
-              </p>
-            </div>
+              <div className="result-info">
+                <p>
+                  <strong>Hãng hàng không:</strong>{' '}
+                  {booking.flight.airline.name}
+                </p>
 
-            <div className="result-actions">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-              >
-                Về trang chủ
-              </button>
+                <p>
+                  <strong>Chuyến bay:</strong>{' '}
+                  {booking.flight.flightNumber}
+                </p>
 
-              <button
-                type="button"
-                onClick={() => navigate('/my-bookings')}
-              >
-                Xem đặt chỗ
-              </button>
-            </div>
-          </>
+                <p>
+                  <strong>Hành trình:</strong>{' '}
+                  {booking.flight.departureCode} →{' '}
+                  {booking.flight.arrivalCode}
+                </p>
+
+                <p>
+                  <strong>Giờ khởi hành:</strong>{' '}
+                  {formatTime(booking.flight.departureTime)}
+                </p>
+
+                <p>
+                  <strong>Ngày đi:</strong>{' '}
+                  {date || booking.flight.departureTime.slice(0, 10)}
+                </p>
+
+                <p>
+                  <strong>Số hành khách:</strong>{' '}
+                  {booking.passengers.length} người
+                </p>
+
+                <p>
+                  <strong>Người liên hệ:</strong> {booking.contactName}
+                </p>
+
+                <p>
+                  <strong>Tổng tiền:</strong>{' '}
+                  {formatPrice(booking.totalAmount)}
+                </p>
+
+                <p>
+                  <strong>Trạng thái đặt chỗ:</strong>{' '}
+                  {booking.status}
+                </p>
+
+                <p>
+                  <strong>Trạng thái thanh toán:</strong>{' '}
+                  {booking.payments.some(
+                    (payment) => payment.status.toUpperCase() === 'SUCCESS',
+                  )
+                    ? 'Đã thanh toán'
+                    : booking.status.toUpperCase() === 'CONFIRMED'
+                      ? 'Đã xác nhận'
+                      : booking.payments.length > 0
+                        ? booking.payments[booking.payments.length - 1].status
+                        : 'Chưa có thông tin thanh toán'}
+                </p>
+
+                <div>
+                  <strong>Danh sách hành khách:</strong>
+                  <ul>
+                    {booking.passengers.map((passenger) => (
+                      <li key={passenger.id}>
+                        {passenger.fullName}
+                        {passenger.ticket
+                          ? ` — Mã vé: ${passenger.ticket.ticketCode}`
+                          : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="result-actions">
+                <button type="button" onClick={() => navigate('/')}>
+                  Về trang chủ
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/my-bookings')}
+                >
+                  Xem đặt chỗ
+                </button>
+              </div>
+            </>
+          )
         ) : (
           <>
             <div className="result-icon failure">!</div>
 
             <h1>Thanh toán thất bại</h1>
-
-            <p>Thanh toán demo chưa thành công.</p>
+            <p>Giao dịch mô phỏng chưa hoàn tất.</p>
 
             <div className="result-info">
               <p>
-                <strong>Chuyến bay:</strong>{' '}
-                {flight
-                  ? `${flight.airline} ${flight.flightNumber}`
-                  : 'Không xác định'}
-              </p>
-
-              <p>
                 <strong>Số hành khách:</strong> {passengers} người
               </p>
-
               <p>
-                <strong>Tổng tiền dự kiến:</strong>{' '}
-                {totalPrice.toLocaleString('vi-VN')} ₫
+                <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
               </p>
-
-              <p>Bạn có thể quay lại bước thanh toán để thử lại.</p>
+              <p>
+                Bạn có thể quay lại bước thanh toán để thử lại.
+              </p>
+              <p>
+                Nếu một mã đặt chỗ đã được tạo ở lần thử trước, hệ thống sẽ
+                kiểm tra mã tạm đã lưu để tránh tạo thêm đặt chỗ không cần thiết.
+              </p>
             </div>
 
             <div className="result-actions">
@@ -149,17 +259,14 @@ function PaymentResultPage() {
                 type="button"
                 onClick={() =>
                   navigate(
-                    `/payment?flightId=${flightId}&passengers=${passengers}&date=${date}`,
+                    `/payment?flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
                   )
                 }
               >
                 Thử lại thanh toán
               </button>
 
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-              >
+              <button type="button" onClick={() => navigate('/')}>
                 Về trang chủ
               </button>
             </div>
