@@ -143,6 +143,11 @@ export type PublicFlight = {
   };
 };
 
+export async function getAirportCodes(): Promise<string[]> {
+  const result = await api<{ codes: string[] }>("/api/airports");
+  return result.codes;
+}
+
 export type PublicFlightSearchResult = {
   items: PublicFlight[];
   total: number;

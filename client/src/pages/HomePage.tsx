@@ -1,6 +1,96 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getAirportCodes } from '../api'
+import { mockAirports } from '../mocks/mockAirports'
 import '../styles/home.css'
+
+type AirportPickerProps = {
+  id: string
+  label: string
+  icon: string
+  value: string
+  onChange: (code: string) => void
+  codes: string[]
+  loading: boolean
+  error: string
+}
+
+function AirportPicker({ id, label, icon, value, onChange, codes, loading, error }: AirportPickerProps) {
+  const [open, setOpen] = useState(false)
+  const matches = codes.filter((code) => code.startsWith(value))
+  const selectedAirport = mockAirports.find((airport) => airport.code === value)
+
+  return (
+    <div className="airport-picker">
+      <div className="search-field airport-field">
+        <span className="field-icon" aria-hidden="true">{icon}</span>
+        <div>
+          <label htmlFor={id}>{label}</label>
+          <div className="airport-entry">
+            <input
+              id={id}
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              maxLength={3}
+              placeholder="Mã sân bay"
+              value={value}
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={`${id}-suggestions`}
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              onFocus={() => setOpen(true)}
+              onBlur={() => setOpen(false)}
+              onChange={(event) => {
+                onChange(event.target.value.replace(/[^a-z]/gi, '').toUpperCase())
+                setOpen(true)
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setOpen(false)
+                if (event.key === 'Enter' && open && matches.length > 0) {
+                  event.preventDefault()
+                  onChange(matches[0])
+                  setOpen(false)
+                }
+              }}
+            />
+            {selectedAirport && <span className="airport-city">{selectedAirport.city}</span>}
+          </div>
+        </div>
+      </div>
+      {open && (
+        <div className="airport-suggestions" id={`${id}-suggestions`} role="listbox" aria-label={`Gợi ý ${label.toLowerCase()}`}>
+          {loading && <p className="airport-message">Đang tải sân bay...</p>}
+          {!loading && error && <p className="airport-message">{error}</p>}
+          {!loading && !error && matches.length === 0 && (
+            <p className="airport-message">Không tìm thấy sân bay trong dữ liệu chuyến bay.</p>
+          )}
+          {!loading && !error && matches.map((code) => {
+            const airport = mockAirports.find((item) => item.code === code)
+            return (
+              <button
+                key={code}
+                type="button"
+                className="airport-option"
+                role="option"
+                aria-selected={value === code}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onChange(code)
+                  setOpen(false)
+                }}
+              >
+                <span><strong>{airport?.city || `Sân bay ${code}`}</strong><small>{airport?.name || 'Sân bay trong dữ liệu chuyến bay'}</small></span>
+                <span className="airport-code">{code}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function HomePage() {
   const navigate = useNavigate()
@@ -9,12 +99,27 @@ function HomePage() {
   const [to, setTo] = useState('')
   const [date, setDate] = useState('')
   const [passengers, setPassengers] = useState(1)
+  const [airportCodes, setAirportCodes] = useState<string[]>([])
+  const [airportsLoading, setAirportsLoading] = useState(true)
+  const [airportsError, setAirportsError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    getAirportCodes()
+      .then((codes) => { if (active) setAirportCodes(codes) })
+      .catch(() => { if (active) setAirportsError('Không tải được danh sách sân bay.') })
+      .finally(() => { if (active) setAirportsLoading(false) })
+    return () => { active = false }
+  }, [])
 
 const handleSearch = () => {
-  console.log('Đã bấm Tìm chuyến bay')
-  console.log({ from, to, date, passengers })
   if (!from || !to || !date) {
     alert('Vui lòng chọn điểm đi, điểm đến và ngày đi.')
+    return
+  }
+
+  if (!airportCodes.includes(from) || !airportCodes.includes(to)) {
+    alert('Vui lòng nhập mã sân bay có trong danh sách gợi ý.')
     return
   }
 
@@ -71,41 +176,7 @@ const handleSearch = () => {
               </div>
 
               <div className="search-fields">
-                <div className="search-field">
-                  <span className="field-icon">🛫</span>
-
-                  <div>
-                    <label htmlFor="from">Điểm đi</label>
-
-                    <select
-                      id="from"
-                      value={from}
-                      onChange={(event) =>
-                        setFrom(event.target.value)
-                      }
-                    >
-                      <option value="">
-                        Chọn điểm đi
-                      </option>
-
-                      <option value="HAN">
-                        Hà Nội (HAN)
-                      </option>
-
-                      <option value="SGN">
-                        TP. Hồ Chí Minh (SGN)
-                      </option>
-
-                      <option value="DAD">
-                        Đà Nẵng (DAD)
-                      </option>
-
-                      <option value="HPH">
-                        Hải Phòng (HPH)
-                      </option>
-                    </select>
-                  </div>
-                </div>
+                <AirportPicker id="from" label="Điểm đi" icon="🛫" value={from} onChange={setFrom} codes={airportCodes} loading={airportsLoading} error={airportsError} />
 
                 <button
                   type="button"
@@ -120,41 +191,7 @@ const handleSearch = () => {
                   ⇄
                 </button>
 
-                <div className="search-field">
-                  <span className="field-icon">🛬</span>
-
-                  <div>
-                    <label htmlFor="to">Điểm đến</label>
-
-                    <select
-                      id="to"
-                      value={to}
-                      onChange={(event) =>
-                        setTo(event.target.value)
-                      }
-                    >
-                      <option value="">
-                        Chọn điểm đến
-                      </option>
-
-                      <option value="HAN">
-                        Hà Nội (HAN)
-                      </option>
-
-                      <option value="SGN">
-                        TP. Hồ Chí Minh (SGN)
-                      </option>
-
-                      <option value="DAD">
-                        Đà Nẵng (DAD)
-                      </option>
-
-                      <option value="HPH">
-                        Hải Phòng (HPH)
-                      </option>
-                    </select>
-                  </div>
-                </div>
+                <AirportPicker id="to" label="Điểm đến" icon="🛬" value={to} onChange={setTo} codes={airportCodes} loading={airportsLoading} error={airportsError} />
 
                 <div className="search-field">
                   <span className="field-icon">📅</span>

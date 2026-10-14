@@ -5,6 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
 import { createBooking } from "./modules/bookings/booking.service";
+import { listAirportCodes } from "./modules/airports/airport.service";
 
 import {
   searchFlights,
@@ -294,6 +295,14 @@ export function createApp(
   // =========================
   // PUBLIC: TÌM CHUYẾN BAY
   // =========================
+
+  app.get("/api/airports", async (_req, res, next) => {
+    try {
+      res.json({ codes: await listAirportCodes() });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.get("/api/flights/search", async (req, res, next) => {
     try {
