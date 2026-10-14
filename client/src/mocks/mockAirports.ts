@@ -30,4 +30,10 @@ export const mockAirports: Airport[] = [
     name: 'Sân bay Quốc tế Cát Bi',
     city: 'Hải Phòng',
   },
+  {
+    id: 'airport-pqc',
+    code: 'PQC',
+    name: 'Sân bay Phú Quốc',
+    city: 'Phú Quốc',
+  },
 ]

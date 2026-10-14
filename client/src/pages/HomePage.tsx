@@ -103,6 +103,7 @@ type AirlinePickerProps = {
 function AirlinePicker({ value, onChange, airlines, loading, error }: AirlinePickerProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(value)
+  const selectedAirline = airlines.find((airline) => airline.code === value)
   const matches = airlines.filter((airline) =>
     airline.code.toLowerCase().includes(query.toLowerCase()) ||
     airline.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')),
@@ -129,12 +130,16 @@ function AirlinePicker({ value, onChange, airlines, loading, error }: AirlinePic
               onFocus={() => setOpen(true)}
               onBlur={() => {
                 setOpen(false)
-                setQuery(value)
+                setQuery(selectedAirline?.name || '')
               }}
               onChange={(event) => {
                 const nextQuery = event.target.value
                 setQuery(nextQuery)
-                onChange(airlines.find((item) => item.code === nextQuery.trim().toUpperCase())?.code || '')
+                const matched = airlines.find((item) =>
+                  item.code === nextQuery.trim().toUpperCase() ||
+                  item.name.toLocaleLowerCase('vi') === nextQuery.trim().toLocaleLowerCase('vi'),
+                )
+                onChange(matched?.code || '')
                 setOpen(true)
               }}
               onKeyDown={(event) => {
@@ -142,7 +147,7 @@ function AirlinePicker({ value, onChange, airlines, loading, error }: AirlinePic
                 if (event.key === 'Enter' && open && matches.length > 0) {
                   event.preventDefault()
                   onChange(matches[0].code)
-                  setQuery(matches[0].code)
+                  setQuery(matches[0].name)
                   setOpen(false)
                 }
               }}
@@ -181,7 +186,7 @@ function AirlinePicker({ value, onChange, airlines, loading, error }: AirlinePic
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 onChange(airline.code)
-                setQuery(airline.code)
+                setQuery(airline.name)
                 setOpen(false)
               }}
             >

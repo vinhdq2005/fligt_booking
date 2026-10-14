@@ -202,6 +202,97 @@
   background: #fef2f2;
 }
 
+.flight-results-page .summary-edit-form {
+  padding-bottom: 24px;
+}
+
+.flight-results-page .summary-edit-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr) minmax(0, 1fr) minmax(110px, 0.8fr);
+  align-items: end;
+  gap: 14px;
+}
+
+.flight-results-page .summary-edit-fields label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.flight-results-page .summary-edit-fields label:last-child {
+  grid-column: 1 / -1;
+}
+
+.flight-results-page .summary-edit-fields input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font: inherit;
+  color: #172b4d;
+  background: #fff;
+}
+
+.flight-results-page .summary-edit-fields input:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+}
+
+.flight-results-page .summary-swap-button {
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #1769e0;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.flight-results-page .summary-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.flight-results-page .summary-edit-actions button {
+  padding: 11px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #172b4d;
+  cursor: pointer;
+}
+
+.flight-results-page .summary-edit-actions button[type="submit"] {
+  border-color: #1769e0;
+  background: #1769e0;
+  color: #fff;
+  font-weight: 700;
+}
+
+.flight-results-page .summary-edit-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.flight-results-page .summary-edit-message,
+.flight-results-page .summary-edit-error {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.flight-results-page .summary-edit-error {
+  color: #b91c1c;
+}
+
 /* ===== Flight list ===== */
 .flight-results-page .flight-list {
   display: flex;
@@ -395,6 +486,17 @@
 
 /* ===== Responsive ===== */
 @media (max-width: 1050px) {
+  .flight-results-page .summary-edit-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flight-results-page .summary-swap-button {
+    display: none;
+  }
+
+  .flight-results-page .summary-edit-fields label:last-child {
+    grid-column: auto;
+  }
   .flight-results-page .flight-card {
     grid-template-columns: 130px minmax(0, 1fr) 160px;
     gap: 20px;
@@ -408,6 +510,9 @@
 }
 
 @media (max-width: 700px) {
+  .flight-results-page .summary-edit-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .flight-results-page {
     padding: 28px 14px 44px;
   }

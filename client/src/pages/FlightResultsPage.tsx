@@ -2,7 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
+  getAirportCodes,
+  getPublicAirlines,
   searchPublicFlights,
+  type PublicAirline,
   type PublicFlight,
 } from '../api'
 import { mockAirports } from '../mocks/mockAirports'
@@ -37,6 +40,14 @@ function formatDate(value: string) {
   return `${day}/${month}/${year}`
 }
 
+type SearchDraft = {
+  from: string
+  to: string
+  date: string
+  passengers: string
+  airline: string
+}
+
 function FlightResultsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -55,6 +66,90 @@ function FlightResultsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<SearchDraft>({ from, to, date, passengers: String(passengers), airline })
+  const [airportCodes, setAirportCodes] = useState<string[]>([])
+  const [airlines, setAirlines] = useState<PublicAirline[]>([])
+  const [optionsLoading, setOptionsLoading] = useState(false)
+  const [editError, setEditError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    getPublicAirlines()
+      .then((items) => { if (active) setAirlines(items) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  function openEditor() {
+    setDraft({ from, to, date, passengers: String(passengers), airline })
+    setEditError('')
+    setEditing(true)
+    setOptionsLoading(true)
+    setAirportCodes([])
+    setAirlines([])
+    void Promise.all([getAirportCodes(), getPublicAirlines()])
+      .then(([codes, items]) => {
+        setAirportCodes(codes)
+        setAirlines(items)
+        setDraft((current) => {
+          const selected = items.find((item) => item.code === current.airline)
+          return selected ? { ...current, airline: selected.name } : current
+        })
+      })
+      .catch(() => setEditError('Không tải được danh sách sân bay hoặc hãng bay. Vui lòng thử lại.'))
+      .finally(() => setOptionsLoading(false))
+  }
+
+  function updateDraft(field: keyof SearchDraft, value: string) {
+    setDraft((current) => ({ ...current, [field]: value }))
+    setEditError('')
+  }
+
+  function applySearch() {
+    const nextFrom = draft.from.trim().toUpperCase()
+    const nextTo = draft.to.trim().toUpperCase()
+    const airlineText = draft.airline.trim()
+    const matchedAirline = airlines.find((item) =>
+      item.code === airlineText.toUpperCase() ||
+      item.name.toLocaleLowerCase('vi') === airlineText.toLocaleLowerCase('vi'),
+    )
+    const nextAirline = matchedAirline?.code || ''
+    const nextPassengers = Number(draft.passengers)
+    const parsedDate = new Date(`${draft.date}T00:00:00.000Z`)
+
+    if (!airportCodes.includes(nextFrom) || !airportCodes.includes(nextTo)) {
+      setEditError('Vui lòng chọn mã sân bay có trong danh sách gợi ý.')
+      return
+    }
+    if (nextFrom === nextTo) {
+      setEditError('Điểm đi và điểm đến không được trùng nhau.')
+      return
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.date) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== draft.date) {
+      setEditError('Ngày đi không hợp lệ.')
+      return
+    }
+    if (!Number.isInteger(nextPassengers) || nextPassengers < 1 || nextPassengers > 9) {
+      setEditError('Số hành khách phải từ 1 đến 9.')
+      return
+    }
+    if (airlineText && !matchedAirline) {
+      setEditError('Vui lòng chọn hãng bay có trong danh sách gợi ý.')
+      return
+    }
+
+    const nextSearch = new URLSearchParams({
+      from: nextFrom,
+      to: nextTo,
+      date: draft.date,
+      passengers: String(nextPassengers),
+    })
+    if (nextAirline) nextSearch.set('airline', nextAirline)
+    setSearchParams(nextSearch)
+    setEditing(false)
+    setRetryCount((count) => count + 1)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -133,12 +228,88 @@ function FlightResultsPage() {
             <button
               type="button"
               className="summary-edit-button"
-              onClick={() => navigate('/')}
+              onClick={() => editing ? setEditing(false) : openEditor()}
             >
-              ✎ Sửa tìm kiếm
+              {editing ? 'Hủy sửa' : '✎ Sửa tìm kiếm'}
             </button>
           </div>
 
+          {editing ? (
+            <form className="summary-edit-form" onSubmit={(event) => { event.preventDefault(); applySearch() }}>
+              <div className="summary-edit-fields">
+                <label>
+                  <span>Điểm đi</span>
+                  <input
+                    value={draft.from}
+                    maxLength={3}
+                    list="results-airport-codes"
+                    placeholder="HAN"
+                    autoComplete="off"
+                    onChange={(event) => updateDraft('from', event.target.value.replace(/[^a-z]/gi, '').toUpperCase())}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="summary-swap-button"
+                  aria-label="Đổi điểm đi và điểm đến"
+                  onClick={() => setDraft((current) => ({ ...current, from: current.to, to: current.from }))}
+                >⇄</button>
+                <label>
+                  <span>Điểm đến</span>
+                  <input
+                    value={draft.to}
+                    maxLength={3}
+                    list="results-airport-codes"
+                    placeholder="SGN"
+                    autoComplete="off"
+                    onChange={(event) => updateDraft('to', event.target.value.replace(/[^a-z]/gi, '').toUpperCase())}
+                  />
+                </label>
+                <label>
+                  <span>Ngày đi</span>
+                  <input type="date" value={draft.date} onChange={(event) => updateDraft('date', event.target.value)} />
+                </label>
+                <label>
+                  <span>Hành khách</span>
+                  <input type="number" min="1" max="9" value={draft.passengers} onChange={(event) => updateDraft('passengers', event.target.value)} />
+                </label>
+                <label>
+                  <span>Hãng bay (không bắt buộc)</span>
+                  <input
+                    value={draft.airline}
+                    maxLength={120}
+                    list="results-airlines"
+                    placeholder="Tất cả hãng bay"
+                    autoComplete="off"
+                    onChange={(event) => updateDraft('airline', event.target.value)}
+                    onBlur={() => {
+                      const selected = airlines.find((item) =>
+                        item.code === draft.airline.trim().toUpperCase() ||
+                        item.name.toLocaleLowerCase('vi') === draft.airline.trim().toLocaleLowerCase('vi'),
+                      )
+                      if (selected) setDraft((current) => ({ ...current, airline: selected.name }))
+                    }}
+                  />
+                </label>
+              </div>
+              <datalist id="results-airport-codes">
+                {airportCodes.map((code) => {
+                  const airport = mockAirports.find((item) => item.code === code)
+                  return <option key={code} value={code} label={airport ? `${airport.city} — ${airport.name}` : code} />
+                })}
+              </datalist>
+              <datalist id="results-airlines">
+                {airlines.map((item) => <option key={item.code} value={item.name} label={item.code} />)}
+              </datalist>
+              {optionsLoading && <p className="summary-edit-message">Đang tải sân bay và hãng bay...</p>}
+              {editError && <p className="summary-edit-error" role="alert">{editError}</p>}
+              <div className="summary-edit-actions">
+                <button type="button" onClick={() => setEditing(false)}>Hủy</button>
+                <button type="submit" disabled={optionsLoading || airportCodes.length === 0}>Cập nhật tìm kiếm</button>
+              </div>
+            </form>
+          ) : (
+          <>
           <div className="summary-route">
             <div className="summary-airport">
               <span className="summary-label">
@@ -190,18 +361,24 @@ function FlightResultsPage() {
             {airline && (
               <div className="summary-detail-item">
                 <span className="summary-detail-icon">✈</span>
-                <div><span>Hãng bay</span><strong>{airline}</strong></div>
+                <div><span>Hãng bay</span><strong>{airlines.find((item) => item.code === airline)?.name || flights.find((item) => item.airline.code === airline)?.airline.name || airline}</strong></div>
               </div>
             )}
 
-            <button
+            {airline && <button
               type="button"
               className="summary-clear-button"
-              onClick={() => setSearchParams({})}
+              onClick={() => {
+                const nextSearch = new URLSearchParams(searchParams)
+                nextSearch.delete('airline')
+                setSearchParams(nextSearch)
+              }}
             >
-              Xóa bộ lọc
-            </button>
+              Bỏ lọc hãng
+            </button>}
           </div>
+          </>
+          )}
         </div>
 
         {loading ? (
@@ -222,7 +399,7 @@ function FlightResultsPage() {
 
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={openEditor}
             >
               Thay đổi tìm kiếm
             </button>
@@ -237,7 +414,7 @@ function FlightResultsPage() {
 
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={openEditor}
             >
               Thay đổi tìm kiếm
             </button>
