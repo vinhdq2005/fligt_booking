@@ -3,16 +3,17 @@ import { prisma } from "../../lib/prisma";
 
 type PassengerInput = {
   fullName: string;
-  documentNumber?: string;
-  dateOfBirth?: string;
-  nationality?: string;
+  documentNumber: string;
+  gender: "MALE" | "FEMALE";
+  dateOfBirth: string;
+  nationality: string;
 };
 
 export type CreateBookingInput = {
   flightId: number;
   contactName: string;
-  contactEmail?: string;
-  contactPhone?: string;
+  contactEmail: string;
+  contactPhone: string;
   passengers: PassengerInput[];
 };
 
@@ -27,17 +28,13 @@ export async function createBooking(input: CreateBookingInput) {
     throw new Error("Tên người liên hệ phải từ 2 đến 120 ký tự.");
   }
 
-  if (
-    input.contactEmail !== undefined &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.contactEmail.trim())
-  ) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.contactEmail.trim()) ||
+      input.contactEmail.trim().length > 255) {
     throw new Error("Email không hợp lệ.");
   }
 
-  if (
-    input.contactPhone !== undefined &&
-    !/^[0-9+().\-\s]{8,20}$/.test(input.contactPhone.trim())
-  ) {
+  if (!/^\+[1-9]\d{7,18}$/.test(input.contactPhone.trim()) ||
+      input.contactPhone.trim().length > 20) {
     throw new Error("Số điện thoại không hợp lệ.");
   }
 
@@ -56,32 +53,39 @@ export async function createBooking(input: CreateBookingInput) {
       throw new Error("Tên hành khách phải từ 2 đến 120 ký tự.");
     }
 
-    let dateOfBirth: Date | undefined;
+    const documentNumber = p.documentNumber.trim();
+    if (!/^\d{12}$/.test(documentNumber)) {
+      throw new Error("CCCD phải gồm đúng 12 chữ số.");
+    }
 
-    if (p.dateOfBirth !== undefined) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.dateOfBirth)) {
-        throw new Error("Ngày sinh phải có định dạng YYYY-MM-DD.");
-      }
+    if (p.gender !== "MALE" && p.gender !== "FEMALE") {
+      throw new Error("Giới tính không hợp lệ.");
+    }
 
-      dateOfBirth = new Date(`${p.dateOfBirth}T00:00:00.000Z`);
+    const nationality = p.nationality.trim();
+    if (nationality.length < 2 || nationality.length > 80) {
+      throw new Error("Quốc tịch phải từ 2 đến 80 ký tự.");
+    }
 
-      if (
-        Number.isNaN(dateOfBirth.getTime()) ||
-        dateOfBirth.toISOString().slice(0, 10) !== p.dateOfBirth
-      ) {
-        throw new Error("Ngày sinh không hợp lệ.");
-      }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.dateOfBirth)) {
+      throw new Error("Ngày sinh phải có định dạng YYYY-MM-DD.");
+    }
+
+    const dateOfBirth = new Date(`${p.dateOfBirth}T00:00:00.000Z`);
+    if (
+      Number.isNaN(dateOfBirth.getTime()) ||
+      dateOfBirth.toISOString().slice(0, 10) !== p.dateOfBirth ||
+      dateOfBirth > new Date()
+    ) {
+      throw new Error("Ngày sinh không hợp lệ.");
     }
 
     return {
       fullName,
-      ...(p.documentNumber !== undefined
-        ? { documentNumber: p.documentNumber.trim() }
-        : {}),
-      ...(dateOfBirth ? { dateOfBirth } : {}),
-      ...(p.nationality !== undefined
-        ? { nationality: p.nationality.trim() }
-        : {}),
+      documentNumber,
+      gender: p.gender,
+      dateOfBirth,
+      nationality,
     };
   });
 
@@ -151,8 +155,8 @@ export async function createBooking(input: CreateBookingInput) {
       data: {
         flightId: flight.id,
         contactName,
-        contactEmail: input.contactEmail?.trim() || null,
-        contactPhone: input.contactPhone?.trim() || null,
+        contactEmail: input.contactEmail.trim(),
+        contactPhone: input.contactPhone.trim(),
         totalAmount,
         status: "PENDING",
         expiresAt,

@@ -189,16 +189,17 @@ export async function getPublicFlight(
 
 export type BookingPassengerInput = {
   fullName: string
-  documentNumber?: string
-  dateOfBirth?: string
-  nationality?: string
+  documentNumber: string
+  gender: 'MALE' | 'FEMALE'
+  dateOfBirth: string
+  nationality: string
 }
 
 export type CreateBookingInput = {
   flightId: number
   contactName: string
-  contactEmail?: string
-  contactPhone?: string
+  contactEmail: string
+  contactPhone: string
   passengers: BookingPassengerInput[]
 }
 
@@ -235,6 +236,8 @@ export async function payBooking(
 export type BookingDetails = {
   bookingCode: string
   contactName: string
+  contactEmail: string | null
+  contactPhone: string | null
   totalAmount: number
   status: string
   expiresAt: string

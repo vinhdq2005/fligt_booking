@@ -11,15 +11,18 @@ import '../styles/payment.css'
 
 type Passenger = {
   fullName: string
+  documentNumber: string
   gender: string
-  phone: string
-  email: string
+  dateOfBirth: string
+  nationality: string
 }
 
 type SavedPassengerInfo = {
   flightId: number
   date: string
   passengers: Passenger[]
+  contactEmail: string
+  contactPhone: string
 }
 
 type PendingBooking = {
@@ -27,6 +30,7 @@ type PendingBooking = {
   date: string
   passengers: number
   bookingCode: string
+  detailsSignature: string
 }
 
 const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
@@ -137,7 +141,11 @@ function PaymentPage() {
       parsed.flightId !== Number(flightId) ||
       parsed.date !== date ||
       !Array.isArray(parsed.passengers) ||
-      parsed.passengers.length !== passengers
+      parsed.passengers.length !== passengers ||
+      typeof parsed.contactEmail !== 'string' ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parsed.contactEmail) ||
+      typeof parsed.contactPhone !== 'string' ||
+      !/^\+[1-9]\d{7,18}$/.test(parsed.contactPhone)
     ) {
       throw new Error(
         'Thông tin hành khách không khớp với chuyến bay. Vui lòng quay lại kiểm tra.',
@@ -148,8 +156,13 @@ function PaymentPage() {
       (passenger) =>
         typeof passenger.fullName === 'string' &&
         passenger.fullName.trim().length > 0 &&
-        typeof passenger.email === 'string' &&
-        typeof passenger.phone === 'string',
+        typeof passenger.documentNumber === 'string' &&
+        /^\d{12}$/.test(passenger.documentNumber) &&
+        ['MALE', 'FEMALE'].includes(passenger.gender) &&
+        typeof passenger.dateOfBirth === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(passenger.dateOfBirth) &&
+        typeof passenger.nationality === 'string' &&
+        passenger.nationality.trim().length >= 2,
     )
 
     if (!validPassengers) {
@@ -197,6 +210,7 @@ function PaymentPage() {
     try {
       const savedInfo = getSavedPassengers()
       const firstPassenger = savedInfo.passengers[0]
+      const detailsSignature = JSON.stringify(savedInfo)
 
       let pendingBooking: PendingBooking | null = null
 
@@ -210,6 +224,7 @@ function PaymentPage() {
             parsed.flightId === flight.id &&
             parsed.date === date &&
             parsed.passengers === passengers &&
+            parsed.detailsSignature === detailsSignature &&
             typeof parsed.bookingCode === 'string' &&
             parsed.bookingCode.length > 0
           ) {
@@ -228,10 +243,14 @@ function PaymentPage() {
         const result = await createBooking({
           flightId: flight.id,
           contactName: firstPassenger.fullName.trim(),
-          contactEmail: firstPassenger.email.trim(),
-          contactPhone: firstPassenger.phone.trim(),
+          contactEmail: savedInfo.contactEmail.trim(),
+          contactPhone: savedInfo.contactPhone,
           passengers: savedInfo.passengers.map((passenger) => ({
             fullName: passenger.fullName.trim(),
+            documentNumber: passenger.documentNumber,
+            gender: passenger.gender as 'MALE' | 'FEMALE',
+            dateOfBirth: passenger.dateOfBirth,
+            nationality: passenger.nationality.trim(),
           })),
         })
 
@@ -246,6 +265,7 @@ function PaymentPage() {
           date,
           passengers,
           bookingCode,
+          detailsSignature,
         }
 
         sessionStorage.setItem(

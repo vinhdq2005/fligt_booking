@@ -13,6 +13,8 @@ export async function getBookingByCode(bookingCode: string) {
     select: {
       bookingCode: true,
       contactName: true,
+      contactEmail: true,
+      contactPhone: true,
       totalAmount: true,
       status: true,
       expiresAt: true,

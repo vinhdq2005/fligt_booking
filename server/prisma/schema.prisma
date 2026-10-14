@@ -83,6 +83,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PassengerGender {
+  MALE
+  FEMALE
+}
+
 model Airline {
   id        Int      @id @default(autoincrement())
   code      String   @unique @db.VarChar(10)
@@ -141,6 +146,7 @@ model Passenger {
   bookingId      Int
   fullName       String   @db.VarChar(120)
   documentNumber String?  @db.VarChar(50)
+  gender         PassengerGender?
   dateOfBirth    DateTime? @db.Date
   nationality    String?  @db.VarChar(80)
   createdAt      DateTime @default(now())

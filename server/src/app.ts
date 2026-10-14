@@ -408,31 +408,24 @@ export function createApp(
       if (
         typeof flightId !== "number" ||
         typeof contactName !== "string" ||
+        typeof contactEmail !== "string" ||
+        typeof contactPhone !== "string" ||
         !Array.isArray(passengers) ||
         passengers.some(
           (p: unknown) =>
             typeof p !== "object" ||
             p === null ||
             Array.isArray(p) ||
-            typeof (p as { fullName?: unknown }).fullName !==
-              "string",
+            typeof (p as { fullName?: unknown }).fullName !== "string" ||
+            typeof (p as { documentNumber?: unknown }).documentNumber !== "string" ||
+            typeof (p as { gender?: unknown }).gender !== "string" ||
+            typeof (p as { dateOfBirth?: unknown }).dateOfBirth !== "string" ||
+            typeof (p as { nationality?: unknown }).nationality !== "string",
         )
       ) {
         res.status(400).json({
           error:
             "Thông tin đặt chỗ hoặc danh sách hành khách không hợp lệ.",
-        });
-        return;
-      }
-
-      if (
-        (contactEmail !== undefined &&
-          typeof contactEmail !== "string") ||
-        (contactPhone !== undefined &&
-          typeof contactPhone !== "string")
-      ) {
-        res.status(400).json({
-          error: "Email và số điện thoại phải là chuỗi.",
         });
         return;
       }
@@ -459,6 +452,9 @@ export function createApp(
           "Số điện thoại không hợp lệ.",
           "Số hành khách phải từ 1 đến 9.",
           "Tên hành khách phải từ 2 đến 120 ký tự.",
+          "CCCD phải gồm đúng 12 chữ số.",
+          "Giới tính không hợp lệ.",
+          "Quốc tịch phải từ 2 đến 80 ký tự.",
           "Ngày sinh phải có định dạng YYYY-MM-DD.",
           "Ngày sinh không hợp lệ.",
           "Không tìm thấy chuyến bay.",

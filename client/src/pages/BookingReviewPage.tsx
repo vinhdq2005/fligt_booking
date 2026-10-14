@@ -7,15 +7,18 @@ import '../styles/booking-review.css'
 
 type Passenger = {
   fullName: string
+  documentNumber: string
   gender: string
-  phone: string
-  email: string
+  dateOfBirth: string
+  nationality: string
 }
 
 type SavedPassengerInfo = {
   flightId: number
   date: string
   passengers: Passenger[]
+  contactEmail: string
+  contactPhone: string
 }
 
 const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
@@ -41,6 +44,8 @@ function BookingReviewPage() {
   const [loadError, setLoadError] = useState('')
   const [passengerList, setPassengerList] = useState<Passenger[]>([])
   const [passengerError, setPassengerError] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -111,11 +116,20 @@ function BookingReviewPage() {
         parsed.date !== date ||
         !Array.isArray(parsed.passengers) ||
         parsed.passengers.length !== passengers ||
+        typeof parsed.contactEmail !== 'string' ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parsed.contactEmail) ||
+        typeof parsed.contactPhone !== 'string' ||
+        !/^\+[1-9]\d{7,18}$/.test(parsed.contactPhone) ||
         parsed.passengers.some(
           (p) =>
             typeof p.fullName !== 'string' ||
-            typeof p.email !== 'string' ||
-            typeof p.phone !== 'string',
+            typeof p.documentNumber !== 'string' ||
+            !/^\d{12}$/.test(p.documentNumber) ||
+            !['MALE', 'FEMALE'].includes(p.gender) ||
+            typeof p.dateOfBirth !== 'string' ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(p.dateOfBirth) ||
+            typeof p.nationality !== 'string' ||
+            p.nationality.trim().length < 2,
         )
       ) {
         setPassengerList([])
@@ -126,6 +140,8 @@ function BookingReviewPage() {
       }
 
       setPassengerList(parsed.passengers)
+      setContactEmail(parsed.contactEmail)
+      setContactPhone(parsed.contactPhone)
       setPassengerError('')
     } catch {
       setPassengerList([])
@@ -303,10 +319,24 @@ function BookingReviewPage() {
                   <div key={index}>
                     <span>Hành khách {index + 1}</span>
                     <strong>{passenger.fullName}</strong>
-                    <p>Email: {passenger.email}</p>
-                    <p>Điện thoại: {passenger.phone}</p>
+                    <p>CCCD: {passenger.documentNumber}</p>
+                    <p>Giới tính: {passenger.gender === 'MALE' ? 'Nam' : 'Nữ'}</p>
+                    <p>Ngày sinh: {passenger.dateOfBirth.split('-').reverse().join('/')}</p>
+                    <p>Quốc tịch: {passenger.nationality}</p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div className="review-section">
+            <h2>Thông tin liên lạc</h2>
+            {passengerError ? (
+              <p className="demo-notice">Vui lòng quay lại nhập thông tin liên lạc.</p>
+            ) : (
+              <div className="passenger-summary">
+                <div><span>Email</span><strong>{contactEmail}</strong></div>
+                <div><span>Số điện thoại</span><strong>{contactPhone}</strong></div>
               </div>
             )}
           </div>
