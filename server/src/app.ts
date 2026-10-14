@@ -20,6 +20,7 @@ import {
 import {
   createAirline,
   listAirlines,
+  listPublicAirlines,
 } from "./modules/airlines/airline.service";
 
 import type { ImportRequest } from "./modules/flight-import/import.service";
@@ -296,6 +297,14 @@ export function createApp(
   // PUBLIC: TÌM CHUYẾN BAY
   // =========================
 
+  app.get("/api/airlines", async (_req, res, next) => {
+    try {
+      res.json({ items: await listPublicAirlines() });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/airports", async (_req, res, next) => {
     try {
       res.json({ codes: await listAirportCodes() });
@@ -306,12 +315,13 @@ export function createApp(
 
   app.get("/api/flights/search", async (req, res, next) => {
     try {
-      const { from, to, date } = req.query;
+      const { from, to, date, airline } = req.query;
 
       if (
         typeof from !== "string" ||
         typeof to !== "string" ||
-        typeof date !== "string"
+        typeof date !== "string" ||
+        (airline !== undefined && typeof airline !== "string")
       ) {
         res.status(400).json({
           error: "Vui lòng cung cấp from, to và date.",
@@ -323,6 +333,7 @@ export function createApp(
         from,
         to,
         date,
+        airline,
       });
 
       res.json({
@@ -337,6 +348,7 @@ export function createApp(
           "Sân bay đi và sân bay đến không được trùng nhau.",
           "Ngày bay phải có định dạng YYYY-MM-DD.",
           "Ngày bay không hợp lệ.",
+          "Mã hãng bay không hợp lệ.",
         ].includes(error.message)
       ) {
         res.status(400).json({ error: error.message });

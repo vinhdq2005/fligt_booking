@@ -126,6 +126,18 @@
   min-width: 0;
 }
 
+.airline-picker {
+  grid-column: 1 / -1;
+}
+
+.airline-picker .airport-field .airport-entry input {
+  width: 100%;
+  flex: 1;
+  font-size: 15px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .airport-entry {
   display: flex;
   align-items: center;

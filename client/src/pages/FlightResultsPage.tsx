@@ -44,6 +44,7 @@ function FlightResultsPage() {
   const from = (searchParams.get('from') || '').toUpperCase()
   const to = (searchParams.get('to') || '').toUpperCase()
   const date = searchParams.get('date') || ''
+  const airline = (searchParams.get('airline') || '').toUpperCase()
 
   const passengers = Math.max(
     1,
@@ -74,6 +75,7 @@ function FlightResultsPage() {
           from,
           to,
           date,
+          airline,
         })
 
         if (!cancelled) {
@@ -100,7 +102,7 @@ function FlightResultsPage() {
     return () => {
       cancelled = true
     }
-  }, [from, to, date, retryCount])
+  }, [from, to, date, airline, retryCount])
 
   const fromAirport = mockAirports.find(
     (airport) => airport.code === from,
@@ -184,6 +186,13 @@ function FlightResultsPage() {
                 <strong>{passengers} người lớn</strong>
               </div>
             </div>
+
+            {airline && (
+              <div className="summary-detail-item">
+                <span className="summary-detail-icon">✈</span>
+                <div><span>Hãng bay</span><strong>{airline}</strong></div>
+              </div>
+            )}
 
             <button
               type="button"

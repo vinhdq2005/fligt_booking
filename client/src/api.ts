@@ -148,6 +148,13 @@ export async function getAirportCodes(): Promise<string[]> {
   return result.codes;
 }
 
+export type PublicAirline = { code: string; name: string };
+
+export async function getPublicAirlines(): Promise<PublicAirline[]> {
+  const result = await api<{ items: PublicAirline[] }>("/api/airlines");
+  return result.items;
+}
+
 export type PublicFlightSearchResult = {
   items: PublicFlight[];
   total: number;
@@ -157,12 +164,14 @@ export async function searchPublicFlights(filters: {
   from: string;
   to: string;
   date: string;
+  airline?: string;
 }): Promise<PublicFlightSearchResult> {
   const query = new URLSearchParams({
     from: filters.from,
     to: filters.to,
     date: filters.date,
   });
+  if (filters.airline) query.set("airline", filters.airline);
 
   return api<PublicFlightSearchResult>(
     `/api/flights/search?${query.toString()}`,

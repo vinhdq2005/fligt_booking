@@ -17,6 +17,13 @@ export async function listAirlines() {
   });
 }
 
+export async function listPublicAirlines() {
+  return prisma.airline.findMany({
+    select: { code: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export async function createAirline(input: CreateAirlineInput) {
   const code = input.code.trim().toUpperCase();
   const name = input.name.trim();

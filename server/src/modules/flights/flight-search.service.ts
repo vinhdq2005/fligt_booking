@@ -5,11 +5,17 @@ export type FlightSearchInput = {
   from: string;
   to: string;
   date: string;
+  airline?: string;
 };
 
 export async function searchFlights(input: FlightSearchInput) {
   const from = input.from.trim().toUpperCase();
   const to = input.to.trim().toUpperCase();
+  const airline = input.airline?.trim().toUpperCase();
+
+  if (airline && !/^[A-Z0-9]{2,10}$/.test(airline)) {
+    throw new Error("Mã hãng bay không hợp lệ.");
+  }
 
   if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to)) {
     throw new Error("Mã sân bay phải gồm 3 chữ cái.");
@@ -44,6 +50,7 @@ export async function searchFlights(input: FlightSearchInput) {
         lt: end,
       },
       status: "SCHEDULED",
+      ...(airline ? { airline: { code: airline } } : {}),
     },
     include: {
       airline: true,

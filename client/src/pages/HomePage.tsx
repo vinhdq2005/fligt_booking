@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAirportCodes } from '../api'
+import { getAirportCodes, getPublicAirlines, type PublicAirline } from '../api'
 import { mockAirports } from '../mocks/mockAirports'
 import '../styles/home.css'
 
@@ -92,6 +92,109 @@ function AirportPicker({ id, label, icon, value, onChange, codes, loading, error
   )
 }
 
+type AirlinePickerProps = {
+  value: string
+  onChange: (code: string) => void
+  airlines: PublicAirline[]
+  loading: boolean
+  error: string
+}
+
+function AirlinePicker({ value, onChange, airlines, loading, error }: AirlinePickerProps) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState(value)
+  const matches = airlines.filter((airline) =>
+    airline.code.toLowerCase().includes(query.toLowerCase()) ||
+    airline.name.toLocaleLowerCase('vi').includes(query.toLocaleLowerCase('vi')),
+  )
+
+  return (
+    <div className="airport-picker airline-picker">
+      <div className="search-field airport-field">
+        <span className="field-icon" aria-hidden="true">✈</span>
+        <div>
+          <label htmlFor="airline">Hãng bay</label>
+          <div className="airport-entry">
+            <input
+              id="airline"
+              type="text"
+              autoComplete="off"
+              placeholder="Tất cả hãng bay"
+              value={query}
+              role="combobox"
+              aria-expanded={open}
+              aria-controls="airline-suggestions"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              onFocus={() => setOpen(true)}
+              onBlur={() => {
+                setOpen(false)
+                setQuery(value)
+              }}
+              onChange={(event) => {
+                const nextQuery = event.target.value
+                setQuery(nextQuery)
+                onChange(airlines.find((item) => item.code === nextQuery.trim().toUpperCase())?.code || '')
+                setOpen(true)
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setOpen(false)
+                if (event.key === 'Enter' && open && matches.length > 0) {
+                  event.preventDefault()
+                  onChange(matches[0].code)
+                  setQuery(matches[0].code)
+                  setOpen(false)
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+      {open && (
+        <div className="airport-suggestions" id="airline-suggestions" role="listbox" aria-label="Gợi ý hãng bay">
+          {!loading && !error && (
+            <button
+              type="button"
+              className="airport-option"
+              role="option"
+              aria-selected={!value}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange('')
+                setQuery('')
+                setOpen(false)
+              }}
+            >
+              <strong>Tất cả hãng bay</strong>
+            </button>
+          )}
+          {loading && <p className="airport-message">Đang tải hãng bay...</p>}
+          {!loading && error && <p className="airport-message">{error}</p>}
+          {!loading && !error && matches.length === 0 && <p className="airport-message">Không tìm thấy hãng bay.</p>}
+          {!loading && !error && matches.map((airline) => (
+            <button
+              key={airline.code}
+              type="button"
+              className="airport-option"
+              role="option"
+              aria-selected={value === airline.code}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(airline.code)
+                setQuery(airline.code)
+                setOpen(false)
+              }}
+            >
+              <strong>{airline.name}</strong>
+              <span className="airport-code">{airline.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function HomePage() {
   const navigate = useNavigate()
 
@@ -102,6 +205,10 @@ function HomePage() {
   const [airportCodes, setAirportCodes] = useState<string[]>([])
   const [airportsLoading, setAirportsLoading] = useState(true)
   const [airportsError, setAirportsError] = useState('')
+  const [airline, setAirline] = useState('')
+  const [airlines, setAirlines] = useState<PublicAirline[]>([])
+  const [airlinesLoading, setAirlinesLoading] = useState(true)
+  const [airlinesError, setAirlinesError] = useState('')
 
   useEffect(() => {
     let active = true
@@ -109,6 +216,15 @@ function HomePage() {
       .then((codes) => { if (active) setAirportCodes(codes) })
       .catch(() => { if (active) setAirportsError('Không tải được danh sách sân bay.') })
       .finally(() => { if (active) setAirportsLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    getPublicAirlines()
+      .then((items) => { if (active) setAirlines(items) })
+      .catch(() => { if (active) setAirlinesError('Không tải được danh sách hãng bay.') })
+      .finally(() => { if (active) setAirlinesLoading(false) })
     return () => { active = false }
   }, [])
 
@@ -139,6 +255,7 @@ const handleSearch = () => {
     date,
     passengers: String(passengers),
   })
+  if (airline) searchParams.set('airline', airline)
 
   navigate(`/flights/results?${searchParams.toString()}`)
 }
@@ -234,6 +351,8 @@ const handleSearch = () => {
                     />
                   </div>
                 </div>
+
+                <AirlinePicker value={airline} onChange={setAirline} airlines={airlines} loading={airlinesLoading} error={airlinesError} />
               </div>
 
               <button

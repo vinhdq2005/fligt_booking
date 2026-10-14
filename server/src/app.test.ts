@@ -46,6 +46,12 @@ test("admin import requires authentication and explicit confirmation", async () 
     assert.equal(flights.status, 200);
     assert.deepEqual((await flights.json()).items, []);
 
+    const invalidAirline = await fetch(
+      `http://127.0.0.1:${port}/api/flights/search?from=HAN&to=SGN&date=2026-11-01&airline=invalid!`,
+    );
+    assert.equal(invalidAirline.status, 400);
+    assert.deepEqual(await invalidAirline.json(), { error: "Mã hãng bay không hợp lệ." });
+
     const pending = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: "Bearer test-admin-token" },
