@@ -14,7 +14,9 @@ import RegisterPage from '../pages/RegisterPage'
 import AccountPage from '../pages/AccountPage'
 import MyBookingsPage from '../pages/MyBookingsPage'
 import BookingDetailPage from '../pages/BookingDetailPage'
-import AdminFlightsPage from '../pages/admin/AdminFlightsPage'
+import AdminLayout from '../admin/AdminLayout'
+import AdminPreviewPage from '../admin/AdminPreviewPage'
+import AdminReferenceFlightsPage from '../pages/admin/AdminReferenceFlightsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const currentUser = localStorage.getItem('flight-booking-current-user')
@@ -29,7 +31,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/admin" element={<AdminFlightsPage />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminPreviewPage kind="dashboard" />} />
+        <Route path="airlines" element={<AdminPreviewPage kind="airlines" />} />
+        <Route path="users" element={<AdminPreviewPage kind="users" />} />
+        <Route path="flights" element={<AdminPreviewPage kind="flights" />} />
+        <Route path="bookings" element={<AdminPreviewPage kind="bookings" />} />
+        <Route path="payments" element={<AdminPreviewPage kind="payments" />} />
+        <Route path="audit-logs" element={<AdminPreviewPage kind="audit-logs" />} />
+        <Route path="reference-flights" element={<AdminReferenceFlightsPage />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
 
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />

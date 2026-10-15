@@ -139,8 +139,8 @@ Admin lọc giao dịch lỗi hoặc chờ xử lý → xem booking và các l�
 
 | Hiện trạng | Vị trí | Hướng xử lý |
 | --- | --- | --- |
-| Trang `/admin` có sidebar, danh sách, bộ lọc, phân trang, panel và modal import SerpApi | `client/src/pages/admin/AdminFlightsPage.tsx`, `client/src/styles.css` | Tách khung dùng chung thành `AdminLayout`; chuyển trang hiện tại sang **Dữ liệu tham khảo**; tạo trang **Chuyến bay nội bộ** mới |
-| Chỉ có một route admin, chưa có route guard theo vai trò | `client/src/routes/AppRoutes.tsx` | Tạo nhóm route `/admin/*`, `AdminGuard`, trang 403 và chuyển hướng sau đăng nhập |
+| Trang SerpApi có danh sách, bộ lọc, phân trang, panel và modal import | `client/src/pages/admin/AdminReferenceFlightsPage.tsx`, `client/src/styles.css` | Đã chuyển sang **Dữ liệu tham khảo** trong giai đoạn 2; trang **Chuyến bay nội bộ** hiện dùng dữ liệu mẫu để duyệt giao diện |
+| Đã có nhóm route `/admin/*` và khung dùng chung; chưa có route guard theo vai trò | `client/src/routes/AppRoutes.tsx`, `client/src/admin/AdminLayout.tsx` | Bổ sung `AdminGuard`, trang 403 và chuyển hướng sau đăng nhập khi làm xác thực thật |
 | API client hiện có cho SerpApi và booking khách | `client/src/api.ts` | Tách module API admin theo tài nguyên; khai báo kiểu dữ liệu, phân trang, lỗi và quyền thao tác |
 | Admin API dùng `ADMIN_API_TOKEN` cho phát triển cục bộ | `server/src/app.ts`, `client/vite.config.ts` | Thay bằng xác thực tài khoản và kiểm tra role ở backend trước khi dùng nhiều vai trò trên cùng hệ thống |
 | API tạo hãng và tạo chuyến hiện nằm dưới `/api/admin/*` | `server/src/app.ts` | Sau khi có tài khoản hãng, chuyển thao tác tạo chuyến về API hãng; admin giữ quyền quản trị hãng và xem chuyến toàn hệ thống |
