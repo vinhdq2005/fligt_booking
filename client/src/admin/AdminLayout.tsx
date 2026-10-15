@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { applyDemoIntervention, createInitialDemoState } from './demoInterventions'
+import type { InterventionRequest } from './models'
 import '../styles.css'
 import './admin.css'
 
@@ -16,8 +18,17 @@ const navigation = [
 
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [demoState, setDemoState] = useState(createInitialDemoState)
+  const demoStateRef = useRef(demoState)
   const location = useLocation()
   const current = navigation.find((item) => item.path === location.pathname)
+
+  function runIntervention(request: InterventionRequest) {
+    const result = applyDemoIntervention(demoStateRef.current, request)
+    demoStateRef.current = result.state
+    setDemoState(result.state)
+    return result
+  }
 
   return <div className="app-canvas">
     <div className="app-shell admin-shell">
@@ -40,7 +51,7 @@ export default function AdminLayout() {
               </NavLink>
             </div>)}
           </nav>
-          <div className="sidebar-tip"><div className="tip-icon">i</div><strong>Bản xem trước giao diện</strong><p>Các trang quản trị mới đang dùng dữ liệu mẫu. Chức năng ghi dữ liệu sẽ được nối với API ở giai đoạn sau.</p></div>
+          <div className="sidebar-tip"><div className="tip-icon">i</div><strong>Mô phỏng trong phiên</strong><p>Các thao tác admin chỉ đổi dữ liệu mẫu trong trình duyệt. Tải lại trang để khôi phục; chưa ghi vào database.</p></div>
         </div>
         <div className="sidebar-footer"><div className="avatar">QT</div><div><strong>Quản trị viên</strong><span>Giao diện mẫu</span></div></div>
       </aside>
@@ -50,9 +61,9 @@ export default function AdminLayout() {
             <button className="admin-menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Mở menu quản trị">☰</button>
             <div className="breadcrumbs">Quản trị <span aria-hidden="true">›</span> <strong>{current?.label ?? 'Trang quản trị'}</strong></div>
           </div>
-          <span className="admin-preview-pill">Giao diện mẫu</span>
+          <span className="admin-preview-pill">Mô phỏng · chưa lưu</span>
         </header>
-        <main className="admin-main"><Outlet /></main>
+        <main className="admin-main"><Outlet context={{ demoState, runIntervention }} /></main>
       </div>
     </div>
   </div>

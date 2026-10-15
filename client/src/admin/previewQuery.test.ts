@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { previewCatalog } from './previewCatalog'
+import { createInitialDemoState } from './demoInterventions'
+import { createPreviewCatalog } from './previewCatalog'
 import { initialPreviewQuery, queryPreviewRows } from './previewQuery'
+
+const previewCatalog = createPreviewCatalog(createInitialDemoState())
 
 test('tìm booking không phân biệt dấu tiếng Việt', () => {
   const result = queryPreviewRows(previewCatalog.bookings.rows, { ...initialPreviewQuery, search: 'Do Nam' })

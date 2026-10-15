@@ -4,7 +4,7 @@
 **Phạm vi:** Chỉ trang quản trị nền tảng. Giao diện khách hàng và hãng bay là các phân hệ riêng.  
 **Nguyên tắc:** Admin xem dữ liệu toàn hệ thống và xử lý ngoại lệ; hãng bay tạo chuyến, đặt giá, quản lý bán vé thường ngày.
 
-**Tiến độ giao diện:** Bước 1–3 đã có hợp đồng dữ liệu, khung điều hướng, danh sách với tìm kiếm/bộ lọc/sắp xếp/phân trang và panel chi tiết trên dữ liệu mẫu. Các thao tác can thiệp thuộc bước tiếp theo; xác thực và API thật chưa được nối.
+**Tiến độ giao diện:** Bước 1–4 đã có hợp đồng dữ liệu, khung điều hướng, danh sách với tìm kiếm/bộ lọc/sắp xếp/phân trang, panel chi tiết và hộp thoại can thiệp trên dữ liệu mẫu. Can thiệp chỉ thay đổi trạng thái trong phiên trình duyệt, có nhật ký mô phỏng; tải lại trang sẽ khôi phục dữ liệu ban đầu. Xác thực và API thật chưa được nối.
 
 ## 1. Mục tiêu và ranh giới
 
