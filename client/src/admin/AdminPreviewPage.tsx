@@ -1,89 +1,121 @@
-import { useState } from 'react'
-import {
-  demoAirlines,
-  demoAuditLogs,
-  demoBookings,
-  demoDashboard,
-  demoFlights,
-  demoPayments,
-  demoUsers,
-} from './fixtures'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { demoAirlines, demoBookings, demoDashboard, demoFlights, demoPayments, demoUsers } from './fixtures'
+import { formatMoney, previewCatalog, type CatalogRow, type ListKind } from './previewCatalog'
+import { initialPreviewQuery, queryPreviewRows, type PreviewQuery } from './previewQuery'
 
-type PreviewKind = 'dashboard' | 'airlines' | 'users' | 'flights' | 'bookings' | 'payments' | 'audit-logs'
-type PreviewRow = { id: number; cells: string[]; details: Array<[string, string]> }
-type PreviewConfig = { title: string; description: string; columns: string[]; rows: PreviewRow[] }
-
-const dateTime = (value: string | null) => value
-  ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value))
-  : '—'
-const money = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)} ₫`
-
-const configs: Record<Exclude<PreviewKind, 'dashboard'>, PreviewConfig> = {
-  airlines: {
-    title: 'Hãng bay', description: 'Danh sách các hãng trong hệ thống.',
-    columns: ['MÃ HÃNG', 'TÊN HÃNG', 'TRẠNG THÁI', 'NHÂN VIÊN', 'CHUYẾN ĐANG BÁN'],
-    rows: demoAirlines.map((item) => ({ id: item.id, cells: [item.code, item.name, item.status, String(item.staffCount), String(item.onSaleFlightCount)], details: [['Mã hãng', item.code], ['Tên hãng', item.name], ['Trạng thái', item.status], ['Ngày tạo', dateTime(item.createdAt)]] })),
-  },
-  users: {
-    title: 'Tài khoản', description: 'Tài khoản khách hàng và nhân viên các hãng bay.',
-    columns: ['HỌ TÊN', 'EMAIL', 'VAI TRÒ', 'HÃNG BAY', 'TRẠNG THÁI'],
-    rows: demoUsers.map((item) => ({ id: item.id, cells: [item.name, item.email, item.role, item.airlineName ?? '—', item.status], details: [['Họ tên', item.name], ['Email', item.email], ['Vai trò', item.role], ['Hãng bay', item.airlineName ?? '—'], ['Đăng nhập gần nhất', dateTime(item.lastLoginAt)]] })),
-  },
-  flights: {
-    title: 'Chuyến bay', description: 'Chuyến bay nội bộ do hãng tạo và có thể mở bán trong hệ thống demo.',
-    columns: ['MÃ CHUYẾN', 'HÃNG BAY', 'TUYẾN', 'GIỜ ĐI', 'GIÁ', 'MỞ BÁN'],
-    rows: demoFlights.map((item) => ({ id: item.id, cells: [item.flightNumber, item.airlineName, `${item.departureCode} → ${item.arrivalCode}`, dateTime(item.departureTime), money(item.basePrice), item.saleStatus], details: [['Mã chuyến', item.flightNumber], ['Hãng bay', item.airlineName], ['Giờ đi', dateTime(item.departureTime)], ['Giờ đến', dateTime(item.arrivalTime)], ['Chỗ còn', `${item.availableSeats}/${item.capacity}`], ['Booking', String(item.bookingCount)], ['Trạng thái bay', item.status], ['Trạng thái bán', item.saleStatus]] })),
-  },
-  bookings: {
-    title: 'Booking', description: 'Tra cứu booking của mọi hãng trong hệ thống demo.',
-    columns: ['MÃ BOOKING', 'HÃNG BAY', 'CHUYẾN', 'KHÁCH LIÊN HỆ', 'TỔNG TIỀN', 'TRẠNG THÁI'],
-    rows: demoBookings.map((item) => ({ id: item.id, cells: [item.bookingCode, item.airlineName, item.flightNumber, item.contactName, money(item.totalAmount), item.status], details: [['Mã booking', item.bookingCode], ['Hãng bay', item.airlineName], ['Chuyến bay', item.flightNumber], ['Khách liên hệ', item.contactName], ['Email', item.contactEmail ?? '—'], ['Điện thoại', item.contactPhoneMasked ?? '—'], ['Hành khách', item.passengers.map((p) => p.fullName).join(', ')], ['Thanh toán', item.paymentIds.map((id) => `#${id}`).join(', ')], ['Ngày tạo', dateTime(item.createdAt)]] })),
-  },
-  payments: {
-    title: 'Thanh toán', description: 'Giao dịch thanh toán mô phỏng; trang này chỉ hiển thị để đối soát.',
-    columns: ['GIAO DỊCH', 'BOOKING', 'HÃNG BAY', 'SỐ TIỀN', 'TRẠNG THÁI', 'KIỂM TRA'],
-    rows: demoPayments.map((item) => ({ id: item.id, cells: [item.providerTransactionId ?? `#${item.id}`, item.bookingCode, item.airlineName, money(item.amount), item.status, item.reviewStatus], details: [['Giao dịch', item.providerTransactionId ?? `#${item.id}`], ['Booking', item.bookingCode], ['Hãng bay', item.airlineName], ['Phương thức', item.method], ['Số tiền', money(item.amount)], ['Trạng thái', item.status], ['Cần kiểm tra', item.reviewStatus], ['Ngày tạo', dateTime(item.createdAt)]] })),
-  },
-  'audit-logs': {
-    title: 'Nhật ký', description: 'Lịch sử can thiệp quản trị, chỉ đọc.',
-    columns: ['THỜI GIAN', 'NGƯỜI THỰC HIỆN', 'HÀNH ĐỘNG', 'ĐỐI TƯỢNG', 'KẾT QUẢ'],
-    rows: demoAuditLogs.map((item) => ({ id: item.id, cells: [dateTime(item.createdAt), item.actorName, item.action, `${item.entityType} #${item.entityId}`, item.result], details: [['Thời gian', dateTime(item.createdAt)], ['Người thực hiện', item.actorName], ['Vai trò', item.actorRole], ['Hành động', item.action], ['Đối tượng', `${item.entityType} #${item.entityId}`], ['Kết quả', item.result], ['Lý do', item.reason], ['Trước', JSON.stringify(item.before)], ['Sau', JSON.stringify(item.after)]] })),
-  },
-}
+type PreviewKind = 'dashboard' | ListKind
+const demoCaption = 'Dữ liệu mẫu để duyệt giao diện; chưa kết nối API quản trị.'
 
 function DashboardPreview() {
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const invalidRange = Boolean(fromDate && toDate && fromDate > toDate)
+  const inRange = (value: string) => {
+    const date = value.slice(0, 10)
+    return (!fromDate || date >= fromDate) && (!toDate || date <= toDate)
+  }
+  const bookings = invalidRange ? [] : demoBookings.filter((item) => inRange(item.createdAt))
+  const payments = invalidRange ? [] : demoPayments.filter((item) => inRange(item.createdAt))
+  const querySuffix = (extra: Record<string, string> = {}) => {
+    const params = new URLSearchParams(extra)
+    if (fromDate) params.set('fromDate', fromDate)
+    if (toDate) params.set('toDate', toDate)
+    return params.size ? `?${params}` : ''
+  }
   const cards = [
-    ['Hãng đang hoạt động', String(demoDashboard.activeAirlines)],
-    ['Tài khoản đang hoạt động', String(demoDashboard.activeUsers)],
-    ['Chuyến đang bán', String(demoDashboard.onSaleFlights)],
-    ['Booking xác nhận', String(demoDashboard.bookingsByStatus.CONFIRMED)],
-    ['Thanh toán cần kiểm tra', String(demoDashboard.needsReviewPayments)],
-    ['Doanh thu mô phỏng', money(demoDashboard.simulatedPaidAmount)],
+    { label: 'Hãng đang hoạt động', value: String(demoDashboard.activeAirlines), to: '/admin/airlines?status=ACTIVE' },
+    { label: 'Tài khoản đang hoạt động', value: String(demoDashboard.activeUsers), to: '/admin/users?status=ACTIVE' },
+    { label: 'Chuyến đang bán', value: String(demoDashboard.onSaleFlights), to: '/admin/flights?saleStatus=ON_SALE' },
+    { label: 'Booking xác nhận', value: String(bookings.filter((item) => item.status === 'CONFIRMED').length), to: `/admin/bookings${querySuffix({ status: 'CONFIRMED' })}` },
+    { label: 'Thanh toán cần kiểm tra', value: String(payments.filter((item) => item.reviewStatus === 'NEEDS_REVIEW').length), to: `/admin/payments${querySuffix({ reviewStatus: 'NEEDS_REVIEW' })}` },
+    { label: 'Doanh thu mô phỏng', value: formatMoney(payments.filter((item) => item.status === 'PAID').reduce((sum, item) => sum + item.amount, 0)), to: `/admin/payments${querySuffix({ status: 'PAID' })}` },
   ]
   return <div className="content">
-    <div className="page-heading"><div><div className="eyebrow">ADMIN DASHBOARD</div><h1>Tổng quan hệ thống</h1><p>Các chỉ số dưới đây là dữ liệu mẫu để duyệt giao diện.</p></div></div>
-    <div className="admin-dashboard-grid">{cards.map(([label, value]) => <div className="summary-card" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
-    <section className="list-card admin-intro-card"><h2>Việc cần chú ý</h2><p>{demoDashboard.hiddenFlights} chuyến đang tạm ẩn · {demoDashboard.failedPayments} thanh toán lỗi · {demoDashboard.lockedUsers} tài khoản bị khóa.</p><p>Chọn một mục ở menu để xem danh sách và chi tiết mẫu.</p></section>
+    <div className="page-heading"><div><div className="eyebrow">ADMIN DASHBOARD</div><h1>Tổng quan hệ thống</h1><p>{demoCaption}</p></div></div>
+    <div className="admin-dashboard-range">
+      <strong>Khoảng ngày booking và thanh toán</strong>
+      <label>Từ ngày <input aria-label="Từ ngày tổng quan" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label>
+      <label>Đến ngày <input aria-label="Đến ngày tổng quan" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label>
+      {(fromDate || toDate) && <button type="button" onClick={() => { setFromDate(''); setToDate('') }}>Xóa lọc</button>}
+    </div>
+    {invalidRange && <p className="admin-filter-error" role="alert">Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.</p>}
+    <div className="admin-dashboard-grid">{cards.map((card) => <Link className="summary-card admin-summary-link" to={card.to} key={card.label}><span>{card.label}</span><strong>{card.value}</strong><small>Xem danh sách ›</small></Link>)}</div>
+    <section className="list-card admin-intro-card"><h2>Việc cần chú ý</h2><p>{demoDashboard.hiddenFlights} chuyến đang tạm ẩn · {payments.filter((item) => item.status === 'FAILED').length} thanh toán lỗi · {demoDashboard.lockedUsers} tài khoản bị khóa.</p><p>Chọn một thẻ hoặc mục trong menu để tra cứu dữ liệu.</p></section>
   </div>
 }
 
-export default function AdminPreviewPage({ kind }: { kind: PreviewKind }) {
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  if (kind === 'dashboard') return <DashboardPreview />
+function DetailDrawer({ title, row, onClose }: { title: string; row: CatalogRow; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    closeRef.current?.focus()
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
-  const config = configs[kind]
+  return <div className="overlay" onMouseDown={onClose}>
+    <aside className="details-panel" role="dialog" aria-modal="true" aria-label={`Chi tiết ${title}`} onMouseDown={(event) => event.stopPropagation()}>
+      <div className="panel-header"><div><span className="eyebrow">CHI TIẾT · DỮ LIỆU MẪU</span><h2>{title} #{row.id}</h2></div><button ref={closeRef} className="icon-button" aria-label="Đóng chi tiết" onClick={onClose}>×</button></div>
+      <div className="panel-body admin-preview-details">
+        {row.sections.map((section) => <section key={section.title} className="admin-detail-section"><h3>{section.title}</h3><dl>{section.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>)}
+        <p>Trang này đang chỉ đọc. Các thao tác can thiệp sẽ triển khai cùng API và phân quyền.</p>
+      </div>
+    </aside>
+  </div>
+}
+
+function ListPreview({ kind }: { kind: ListKind }) {
+  const config = previewCatalog[kind]
+  const [searchParams] = useSearchParams()
+  const [query, setQuery] = useState<PreviewQuery>(() => ({
+    ...initialPreviewQuery,
+    choices: Object.fromEntries(config.selects.map((control) => [control.key, searchParams.get(control.key) ?? ''])),
+    fromDate: searchParams.get('fromDate') ?? '',
+    toDate: searchParams.get('toDate') ?? '',
+  }))
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const invalidRange = Boolean(query.fromDate && query.toDate && query.fromDate > query.toDate)
+  const result = queryPreviewRows(config.rows, query)
   const selected = config.rows.find((row) => row.id === selectedId)
+  const activeFilters = Boolean(query.search || query.fromDate || query.toDate || Object.values(query.choices).some(Boolean) || Object.values(query.dates).some(Boolean))
+
+  function updateQuery(change: Partial<PreviewQuery>) {
+    setQuery((current) => ({ ...current, ...change, page: 1 }))
+    setSelectedId(null)
+  }
+  function resetFilters() {
+    setQuery({ ...initialPreviewQuery, pageSize: query.pageSize })
+    setSelectedId(null)
+  }
+  function changeSort(index: number) {
+    setQuery((current) => ({ ...current, sortIndex: index, sortDirection: current.sortIndex === index && current.sortDirection === 'asc' ? 'desc' : 'asc', page: 1 }))
+  }
+  function submitFilters(event: FormEvent) { event.preventDefault() }
+
   return <>
     <div className="content">
       <div className="page-heading"><div><div className="eyebrow">ADMIN CONTENT</div><h1>{config.title}</h1><p>{config.description}</p></div><span className="admin-data-label">Dữ liệu mẫu</span></div>
       <section className="list-card">
-        <div className="list-card-header"><div><h2>Danh sách {config.title.toLowerCase()}</h2><p>{config.rows.length} bản ghi mẫu · Chọn một dòng để xem chi tiết.</p></div></div>
-        <div className="table-scroll"><table className="admin-preview-table"><thead><tr>{config.columns.map((column) => <th key={column}>{column}</th>)}<th aria-label="Chi tiết" /></tr></thead><tbody>
-          {config.rows.map((row) => <tr key={row.id}>{row.cells.map((cell, index) => <td key={config.columns[index]}>{cell}</td>)}<td><button className="row-action" onClick={() => setSelectedId(row.id)}>Chi tiết ›</button></td></tr>)}
-        </tbody></table></div>
-        <div className="table-footer">Dữ liệu đang dùng để duyệt bố cục. Bộ lọc và phân trang sẽ được làm ở giai đoạn kế tiếp.</div>
+        <div className="list-card-header"><div><h2>Danh sách {config.title.toLowerCase()}</h2><p>{demoCaption}</p></div><span className="admin-result-count">{result.total} kết quả</span></div>
+        <form className="admin-list-filters" onSubmit={submitFilters}>
+          <label className="admin-search-field">Tìm kiếm<input type="search" value={query.search} placeholder={config.searchPlaceholder} onChange={(event) => updateQuery({ search: event.target.value })} /></label>
+          {config.selects.map((control) => <label key={control.key}>{control.label}<select value={query.choices[control.key] ?? ''} onChange={(event) => updateQuery({ choices: { ...query.choices, [control.key]: event.target.value } })}><option value="">Tất cả</option>{control.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>)}
+          {config.dates?.map((control) => <label key={control.key}>{control.label}<input type="date" value={query.dates[control.key] ?? ''} onChange={(event) => updateQuery({ dates: { ...query.dates, [control.key]: event.target.value } })} /></label>)}
+          {config.rangeLabel && <><label>{config.rangeLabel} từ<input aria-label={`${config.rangeLabel} từ`} type="date" value={query.fromDate} onChange={(event) => updateQuery({ fromDate: event.target.value })} /></label><label>Đến ngày<input aria-label={`${config.rangeLabel} đến`} type="date" value={query.toDate} onChange={(event) => updateQuery({ toDate: event.target.value })} /></label></>}
+          <button className="admin-clear-button" type="button" disabled={!activeFilters} onClick={resetFilters}>Xóa lọc</button>
+        </form>
+        {invalidRange && <p className="admin-filter-error" role="alert">Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.</p>}
+        {result.total > 0 ? <div className="table-scroll"><table className="admin-preview-table"><thead><tr>{config.columns.map((column, index) => <th key={column} aria-sort={query.sortIndex === index ? (query.sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}><button type="button" onClick={() => changeSort(index)}>{column}<span aria-hidden="true">{query.sortIndex === index ? (query.sortDirection === 'asc' ? ' ↑' : ' ↓') : ' ↕'}</span></button></th>)}<th aria-label="Chi tiết" /></tr></thead><tbody>
+          {result.items.map((row) => <tr key={row.id}>{row.cells.map((cell, index) => <td key={config.columns[index]}>{cell}</td>)}<td><button className="row-action" onClick={() => setSelectedId(row.id)}>Chi tiết ›</button></td></tr>)}
+        </tbody></table></div> : <div className="empty-state"><strong>{activeFilters ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>{activeFilters ? 'Thử đổi hoặc xóa bộ lọc.' : 'Danh sách này hiện chưa có bản ghi.'}</p>{activeFilters && <button className="outline-button" onClick={resetFilters}>Xóa bộ lọc</button>}</div>}
+        <div className="table-footer admin-list-footer"><span>Hiển thị {result.start}–{result.end} trong {result.total} bản ghi</span><div className="admin-page-controls"><label>Số dòng <select aria-label="Số dòng mỗi trang" value={query.pageSize} onChange={(event) => updateQuery({ pageSize: Number(event.target.value) })}><option value={2}>2 (demo)</option><option value={5}>5</option><option value={10}>10</option></select></label><button disabled={result.page <= 1} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))} aria-label="Trang trước">‹</button><span>Trang {result.page}/{result.pageCount}</span><button disabled={result.page >= result.pageCount} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))} aria-label="Trang sau">›</button></div></div>
       </section>
     </div>
-    {selected && <div className="overlay" onMouseDown={() => setSelectedId(null)}><aside className="details-panel" role="dialog" aria-modal="true" aria-label={`Chi tiết ${config.title}`} onMouseDown={(event) => event.stopPropagation()}><div className="panel-header"><div><span className="eyebrow">CHI TIẾT MẪU</span><h2>{config.title} #{selected.id}</h2></div><button className="icon-button" aria-label="Đóng chi tiết" onClick={() => setSelectedId(null)}>×</button></div><div className="panel-body admin-preview-details">{selected.details.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}<p>Trang này đang chỉ đọc. Thao tác quản trị sẽ được triển khai sau khi có API và kiểm tra quyền.</p></div></aside></div>}
+    {selected && <DetailDrawer title={config.title} row={selected} onClose={() => setSelectedId(null)} />}
   </>
+}
+
+export default function AdminPreviewPage({ kind }: { kind: PreviewKind }) {
+  return kind === 'dashboard' ? <DashboardPreview /> : <ListPreview key={kind} kind={kind} />
 }

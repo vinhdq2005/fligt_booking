@@ -1,6 +1,6 @@
 # Frontend Flight Booking
 
-Ứng dụng React/Vite có luồng khách hàng và khung trang admin. Các màn hình admin mới (`/admin`, `/admin/airlines`, `/admin/users`, `/admin/flights`, `/admin/bookings`, `/admin/payments`, `/admin/audit-logs`) hiện dùng dữ liệu mẫu để duyệt giao diện. Danh sách SerpApi hiện có được đặt tại `/admin/reference-flights`; trang này vẫn gọi API và cần backend để nhập hoặc xem dữ liệu thật.
+Ứng dụng React/Vite có luồng khách hàng và khung trang admin. Các màn hình admin mới (`/admin`, `/admin/airlines`, `/admin/users`, `/admin/flights`, `/admin/bookings`, `/admin/payments`, `/admin/audit-logs`) hiện dùng dữ liệu mẫu để duyệt giao diện. Tìm kiếm, bộ lọc, sắp xếp, phân trang và panel chi tiết hoạt động trên dữ liệu mẫu ở trình duyệt. Danh sách SerpApi hiện có được đặt tại `/admin/reference-flights`; trang này vẫn gọi API và cần backend để nhập hoặc xem dữ liệu thật.
 
 ## Chạy cục bộ
 
