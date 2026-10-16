@@ -297,7 +297,7 @@ function FlightResultsPage() {
                     <span>Giá vé / người</span>
 
                     <strong>
-                      {flight.basePrice.toLocaleString('vi-VN')} ₫
+                      {flight.currentPrice.toLocaleString('vi-VN')} ₫
                     </strong>
 
                     <span>

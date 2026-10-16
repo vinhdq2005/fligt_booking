@@ -1,5 +1,5 @@
-
 import { prisma } from "../../lib/prisma";
+import { calculateCurrentPrice } from "./pricing.service";
 
 export type FlightSearchInput = {
   from: string;
@@ -42,6 +42,7 @@ export async function searchFlights(input: FlightSearchInput) {
       departureTime: {
         gte: start,
         lt: end,
+        gt: now,
       },
       status: "SCHEDULED",
     },
@@ -58,6 +59,7 @@ export async function searchFlights(input: FlightSearchInput) {
           ],
         },
         select: {
+          status: true,
           passengers: {
             select: { id: true },
           },
@@ -70,15 +72,47 @@ export async function searchFlights(input: FlightSearchInput) {
   });
 
   return flights.map(({ bookings, ...flight }) => {
+    // Số ghế đã bán thực sự: chỉ tính booking CONFIRMED.
+    const confirmedPassengers = bookings.reduce(
+      (total, booking) =>
+        booking.status === "CONFIRMED"
+          ? total + booking.passengers.length
+          : total,
+      0,
+    );
+
+    // Ghế đang sử dụng: gồm CONFIRMED và PENDING còn hạn.
     const occupiedSeats = bookings.reduce(
       (total, booking) => total + booking.passengers.length,
       0,
     );
 
+    const availableSeats = Math.max(
+      0,
+      flight.capacity - occupiedSeats,
+    );
+
+    const pricing = calculateCurrentPrice({
+      basePrice: flight.basePrice,
+      departureTime: flight.departureTime,
+      capacity: flight.capacity,
+      confirmedPassengers,
+      now,
+    });
+
     return {
       ...flight,
       occupiedSeats,
-      availableSeats: Math.max(0, flight.capacity - occupiedSeats),
+      availableSeats,
+      confirmedPassengers,
+      currentPrice: pricing.currentPrice,
+      pricingDetails: {
+        occupancyPercent: pricing.occupancyPercent,
+        timeMultiplier: pricing.timeMultiplier,
+        occupancyMultiplier: pricing.occupancyMultiplier,
+        departureMultiplier: pricing.departureMultiplier,
+        pricedAt: pricing.pricedAt,
+      },
     };
   });
 }
@@ -88,10 +122,83 @@ export async function getFlightById(id: number) {
     throw new Error("Mã chuyến bay không hợp lệ.");
   }
 
-  return prisma.flight.findUnique({
+  const now = new Date();
+
+  const flight = await prisma.flight.findUnique({
     where: { id },
     include: {
       airline: true,
+      bookings: {
+        where: {
+          OR: [
+            { status: "CONFIRMED" },
+            {
+              status: "PENDING",
+              expiresAt: { gt: now },
+            },
+          ],
+        },
+        select: {
+          status: true,
+          passengers: {
+            select: { id: true },
+          },
+        },
+      },
     },
   });
+
+  if (!flight) {
+    return null;
+  }
+
+  if (
+    flight.status !== "SCHEDULED" ||
+    flight.departureTime <= now
+  ) {
+    throw new Error("Chuyến bay không còn khả dụng.");
+  }
+
+  const confirmedPassengers = flight.bookings.reduce(
+    (total, booking) =>
+      booking.status === "CONFIRMED"
+        ? total + booking.passengers.length
+        : total,
+    0,
+  );
+
+  const occupiedSeats = flight.bookings.reduce(
+    (total, booking) => total + booking.passengers.length,
+    0,
+  );
+
+  const availableSeats = Math.max(
+    0,
+    flight.capacity - occupiedSeats,
+  );
+
+  const pricing = calculateCurrentPrice({
+    basePrice: flight.basePrice,
+    departureTime: flight.departureTime,
+    capacity: flight.capacity,
+    confirmedPassengers,
+    now,
+  });
+
+  const { bookings, ...flightData } = flight;
+
+  return {
+    ...flightData,
+    occupiedSeats,
+    availableSeats,
+    confirmedPassengers,
+    currentPrice: pricing.currentPrice,
+    pricingDetails: {
+      occupancyPercent: pricing.occupancyPercent,
+      timeMultiplier: pricing.timeMultiplier,
+      occupancyMultiplier: pricing.occupancyMultiplier,
+      departureMultiplier: pricing.departureMultiplier,
+      pricedAt: pricing.pricedAt,
+    },
+  };
 }

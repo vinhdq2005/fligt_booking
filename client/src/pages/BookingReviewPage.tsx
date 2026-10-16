@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { mockAirports } from '../mocks/mockAirports'
@@ -227,7 +226,10 @@ function BookingReviewPage() {
     (airport) => airport.code === flight.arrivalCode,
   )
 
-  const ticketPrice = Number(flight.basePrice ?? 0)
+  // Ưu tiên giá động từ backend; chỉ dùng giá gốc nếu API không trả currentPrice.
+  const ticketPrice = Number(
+    flight.currentPrice ?? flight.basePrice ?? 0,
+  )
   const totalPrice = ticketPrice * passengers
 
   return (

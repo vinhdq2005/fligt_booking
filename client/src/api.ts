@@ -135,6 +135,14 @@ export type PublicFlight = {
   occupiedSeats: number;
   availableSeats: number;
   basePrice: number;
+  currentPrice: number;
+  pricingDetails: {
+    occupancyPercent: number;
+    timeMultiplier: number;
+    occupancyMultiplier: number;
+    departureMultiplier: number;
+    pricedAt: string;
+  };
   status: string;
   airline: {
     id: number;
