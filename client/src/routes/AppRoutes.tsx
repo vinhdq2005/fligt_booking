@@ -1,5 +1,6 @@
 
-import { Routes, Route, Navigate, Link } from 'react-router-dom'
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 
 import MainLayout from '../layouts/MainLayout'
 import HomePage from '../pages/HomePage'
@@ -18,20 +19,28 @@ import AdminLayout from '../admin/AdminLayout'
 import AdminPreviewPage from '../admin/AdminPreviewPage'
 import AdminReferenceFlightsPage from '../pages/admin/AdminReferenceFlightsPage'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const currentUser = localStorage.getItem('flight-booking-current-user')
+function ProtectedRoute({ children, customerOnly = false }: { children: React.ReactNode; customerOnly?: boolean }) {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  if (loading) return <main role="status">Đang xác thực…</main>
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  if (customerOnly && user.role !== 'CUSTOMER') return <Navigate to="/forbidden" replace />
+  return <>{children}</>
+}
 
-  if (!currentUser) {
-    return <Navigate to="/login" replace />
-  }
-
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  if (loading) return <main role="status">Đang xác thực…</main>
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  if (user.role !== 'ADMIN') return <Navigate to="/forbidden" replace />
   return <>{children}</>
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
         <Route index element={<AdminPreviewPage kind="dashboard" />} />
         <Route path="airlines" element={<AdminPreviewPage kind="airlines" />} />
         <Route path="users" element={<AdminPreviewPage kind="users" />} />
@@ -44,6 +53,7 @@ function AppRoutes() {
       </Route>
 
       <Route element={<MainLayout />}>
+        <Route path="/forbidden" element={<main style={{ padding: '48px 24px', textAlign: 'center' }}><h1>Không có quyền truy cập</h1><Link to="/">Về trang chủ</Link></main>} />
         <Route path="/" element={<HomePage />} />
 
         <Route
@@ -85,7 +95,7 @@ function AppRoutes() {
         <Route
           path="/my-bookings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute customerOnly>
               <MyBookingsPage />
             </ProtectedRoute>
           }
@@ -93,7 +103,7 @@ function AppRoutes() {
         <Route
           path="/my-bookings/:bookingId"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute customerOnly>
               <BookingDetailPage />
             </ProtectedRoute>
           }

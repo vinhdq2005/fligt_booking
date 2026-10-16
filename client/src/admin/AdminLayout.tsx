@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { applyDemoIntervention, createInitialDemoState } from './demoInterventions'
 import type { InterventionRequest } from './models'
 import '../styles.css'
@@ -18,9 +19,12 @@ const navigation = [
 
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
   const [demoState, setDemoState] = useState(createInitialDemoState)
   const demoStateRef = useRef(demoState)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const current = navigation.find((item) => item.path === location.pathname)
 
   function runIntervention(request: InterventionRequest) {
@@ -53,7 +57,7 @@ export default function AdminLayout() {
           </nav>
           <div className="sidebar-tip"><div className="tip-icon">i</div><strong>Mô phỏng trong phiên</strong><p>Các thao tác admin chỉ đổi dữ liệu mẫu trong trình duyệt. Tải lại trang để khôi phục; chưa ghi vào database.</p></div>
         </div>
-        <div className="sidebar-footer"><div className="avatar">QT</div><div><strong>Quản trị viên</strong><span>Giao diện mẫu</span></div></div>
+        <div className="sidebar-footer"><div className="avatar">QT</div><div><strong>{user?.name ?? 'Quản trị viên'}</strong><span>ADMIN</span>{logoutError && <span role="alert">{logoutError}</span>}</div><button type="button" onClick={async () => { try { await logout(); navigate('/login', { replace: true }) } catch { setLogoutError('Không thể đăng xuất. Thử lại.') } }}>Đăng xuất</button></div>
       </aside>
       <div className="workspace">
         <header className="topbar admin-topbar">

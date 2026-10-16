@@ -62,6 +62,21 @@ export type FlightSegment = Prisma.FlightSegmentModel
  */
 export type Airline = Prisma.AirlineModel
 /**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
+ * Model AuthSession
+ * 
+ */
+export type AuthSession = Prisma.AuthSessionModel
+/**
+ * Model AuditLog
+ * 
+ */
+export type AuditLog = Prisma.AuditLogModel
+/**
  * Model Flight
  * 
  */

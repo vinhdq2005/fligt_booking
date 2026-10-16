@@ -65,8 +65,9 @@ export async function createFlight(input: CreateFlightInput) {
   });
 }
 
-export async function listManagedFlights() {
+export async function listManagedFlights(airlineId?: number) {
   return prisma.flight.findMany({
+    where: airlineId === undefined ? undefined : { airlineId },
     orderBy: { departureTime: "asc" },
     include: {
       airline: true,

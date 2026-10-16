@@ -4,7 +4,7 @@
 **Phạm vi:** Chỉ trang quản trị nền tảng. Giao diện khách hàng và hãng bay là các phân hệ riêng.  
 **Nguyên tắc:** Admin xem dữ liệu toàn hệ thống và xử lý ngoại lệ; hãng bay tạo chuyến, đặt giá, quản lý bán vé thường ngày.
 
-**Tiến độ giao diện:** Bước 1–4 đã có hợp đồng dữ liệu, khung điều hướng, danh sách với tìm kiếm/bộ lọc/sắp xếp/phân trang, panel chi tiết và hộp thoại can thiệp trên dữ liệu mẫu. Can thiệp chỉ thay đổi trạng thái trong phiên trình duyệt, có nhật ký mô phỏng; tải lại trang sẽ khôi phục dữ liệu ban đầu. Xác thực và API thật chưa được nối.
+**Tiến độ:** Bước 1–4 đã có giao diện và can thiệp trên dữ liệu mẫu. Bước 5 đã thêm migration tài khoản, phiên đăng nhập, phân quyền API và guard admin. Danh sách/can thiệp trên giao diện admin vẫn là dữ liệu mẫu; bước 6–8 mới nối API nghiệp vụ thật.
 
 ## 1. Mục tiêu và ranh giới
 
@@ -142,13 +142,13 @@ Admin lọc giao dịch lỗi hoặc chờ xử lý → xem booking và các l�
 | Hiện trạng | Vị trí | Hướng xử lý |
 | --- | --- | --- |
 | Trang SerpApi có danh sách, bộ lọc, phân trang, panel và modal import | `client/src/pages/admin/AdminReferenceFlightsPage.tsx`, `client/src/styles.css` | Đã chuyển sang **Dữ liệu tham khảo** trong giai đoạn 2; trang **Chuyến bay nội bộ** hiện dùng dữ liệu mẫu để duyệt giao diện |
-| Đã có nhóm route `/admin/*` và khung dùng chung; chưa có route guard theo vai trò | `client/src/routes/AppRoutes.tsx`, `client/src/admin/AdminLayout.tsx` | Bổ sung `AdminGuard`, trang 403 và chuyển hướng sau đăng nhập khi làm xác thực thật |
+| Đã có nhóm route `/admin/*`, `AdminGuard` và trang 403 | `client/src/routes/AppRoutes.tsx`, `client/src/admin/AdminLayout.tsx` | Bước 6 nối giao diện với API đọc; guard hiện dùng `/api/auth/me` |
 | API client hiện có cho SerpApi và booking khách | `client/src/api.ts` | Tách module API admin theo tài nguyên; khai báo kiểu dữ liệu, phân trang, lỗi và quyền thao tác |
-| Admin API dùng `ADMIN_API_TOKEN` cho phát triển cục bộ | `server/src/app.ts`, `client/vite.config.ts` | Thay bằng xác thực tài khoản và kiểm tra role ở backend trước khi dùng nhiều vai trò trên cùng hệ thống |
+| Admin API đã dùng cookie phiên và vai trò từ database | `server/src/app.ts`, `client/vite.config.ts` | Bước 7 áp dụng kiểm tra điều kiện và nhật ký cho từng can thiệp |
 | API tạo hãng và tạo chuyến hiện nằm dưới `/api/admin/*` | `server/src/app.ts` | Sau khi có tài khoản hãng, chuyển thao tác tạo chuyến về API hãng; admin giữ quyền quản trị hãng và xem chuyến toàn hệ thống |
 | Prisma có `Airline`, `Flight`, `Booking`, `Payment`; chưa có `User`, `Role`, `AuditLog` | `server/prisma/schema.prisma` | Bổ sung migration cho tài khoản, vai trò/quyền và nhật ký; liên kết booking với khách nếu cần “booking của tôi” thực sự |
 | `FlightStatus` hiện là `SCHEDULED/BOARDING/DEPARTED/COMPLETED/CANCELLED` | `server/prisma/schema.prisma` | Bổ sung trạng thái hoặc cờ mở bán/tạm ẩn riêng; không dùng `CANCELLED` để biểu diễn tạm ẩn |
-| Login khách đang dùng `mockUsers` trong localStorage | `client/src/mocks/mockUsers.ts` | Thay bằng xác thực backend trước khi xem localStorage là nguồn quyền; không dùng dữ liệu localStorage để quyết định quyền admin |
+| Login/đăng ký khách dùng backend; không còn `mockUsers` | `client/src/auth/`, `client/src/pages/LoginPage.tsx` | Bước 6 bổ sung API truy vấn booking theo `userId`; booking khách chưa đăng nhập vẫn dùng mã đặt chỗ |
 
 **Cấu trúc frontend gợi ý:**
 

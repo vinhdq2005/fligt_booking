@@ -50,7 +50,8 @@ export async function searchFlights(input: FlightSearchInput) {
         lt: end,
       },
       status: "SCHEDULED",
-      ...(airline ? { airline: { code: airline } } : {}),
+      saleStatus: "ON_SALE",
+      airline: { status: "ACTIVE", ...(airline ? { code: airline } : {}) },
     },
     include: {
       airline: true,
@@ -95,8 +96,8 @@ export async function getFlightById(id: number) {
     throw new Error("Mã chuyến bay không hợp lệ.");
   }
 
-  return prisma.flight.findUnique({
-    where: { id },
+  return prisma.flight.findFirst({
+    where: { id, saleStatus: "ON_SALE", airline: { status: "ACTIVE" } },
     include: {
       airline: true,
     },

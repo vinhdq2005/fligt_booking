@@ -59,7 +59,9 @@ async function api<T>(
 ): Promise<T> {
   const response = await fetch(path, {
     ...options,
+    credentials: 'same-origin',
     headers: {
+      ...(options?.method && options.method !== 'GET' ? { 'x-csrf-intent': '1' } : {}),
       ...(options?.body
         ? { "content-type": "application/json" }
         : {}),

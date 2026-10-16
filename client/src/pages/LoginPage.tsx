@@ -1,18 +1,22 @@
 
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { getDemoUsers } from '../mocks/mockUsers'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { login } from '../auth/authApi'
+import { useAuth } from '../auth/AuthContext'
 import '../styles/auth.css'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { setUser } = useAuth()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
 
@@ -23,37 +27,21 @@ function LoginPage() {
       return
     }
 
-    const user = getDemoUsers().find(
-      (item) =>
-        item.email.toLowerCase() === normalizedEmail &&
-        item.password === password,
-    )
-
-    if (!user) {
-      setError('Email hoặc mật khẩu không chính xác.')
-      return
-    }
-
-    localStorage.setItem(
-      'flight-booking-current-user',
-      JSON.stringify({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      }),
-    )
-
-    navigate('/account')
+    setSubmitting(true)
+    try {
+      const { user } = await login(normalizedEmail, password)
+      setUser(user)
+      const requestedPath = (location.state as { from?: string } | null)?.from
+      navigate(requestedPath?.startsWith('/') && !requestedPath.startsWith('//') ? requestedPath : user.role === 'ADMIN' ? '/admin' : '/account', { replace: true })
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể đăng nhập.')
+    } finally { setSubmitting(false) }
   }
 
   return (
     <section className="auth-page">
       <div className="auth-card">
         <h1>Đăng nhập</h1>
-
-        <p className="demo-notice">
-          Tài khoản chỉ phục vụ trình diễn.
-        </p>
 
         <form onSubmit={handleLogin}>
           <div className="form-field">
@@ -88,8 +76,8 @@ function LoginPage() {
             </p>
           )}
 
-          <button type="submit">
-            Đăng nhập
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Đang đăng nhập…' : 'Đăng nhập'}
           </button>
         </form>
 

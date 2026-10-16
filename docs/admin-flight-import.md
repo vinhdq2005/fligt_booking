@@ -29,7 +29,7 @@ Form admin cần kiểm tra trạng thái dữ liệu trước, hiện hộp tho
 
 ## HTTP API hiện có
 
-Đặt `DATABASE_URL`, `SERPAPI_API_KEY` và `ADMIN_API_TOKEN` trong `server/.env`, rồi chạy `npm run dev:server` từ thư mục gốc. Server chỉ lắng nghe tại `127.0.0.1:3001` (hoặc `PORT` nếu đã cấu hình). Gửi `Authorization: Bearer <ADMIN_API_TOKEN>` trong cả hai request:
+Đặt `DATABASE_URL` và `SERPAPI_API_KEY` trong `server/.env`, chạy migration và `npm run dev:server` từ thư mục gốc. Server lắng nghe tại `127.0.0.1:3001` (hoặc `PORT` nếu đã cấu hình). Đăng nhập tài khoản `ADMIN` trước khi gọi các API dưới đây; trình duyệt gửi cookie phiên tự động. Lệnh POST cần thêm header `x-csrf-intent: 1`.
 
 | Phương thức | Đường dẫn | Dữ liệu | Kết quả |
 | --- | --- | --- | --- |
@@ -37,4 +37,4 @@ Form admin cần kiểm tra trạng thái dữ liệu trước, hiện hộp tho
 | POST | `/api/admin/flight-imports` | JSON gồm ba trường trên và `confirmed: true` | `imported` hoặc `already_fresh` |
 | GET | `/api/admin/flights` | Query tùy chọn `from`, `to`, `date`, `status`, `page` | Danh sách từng `FlightOffer` cùng các chặng, trạng thái và phân trang |
 
-Nếu POST không có `confirmed: true` mà cần gọi SerpApi, API trả HTTP 428 và `confirmation_required`. Form admin chỉ gửi POST xác nhận sau khi người dùng đồng ý. Token hiện tại dành cho kiểm thử backend; không nhúng token này vào mã frontend công khai. Khi hệ thống có đăng nhập/phân quyền, thay token tạm bằng middleware xác thực admin của dự án.
+Nếu POST không có `confirmed: true` mà cần gọi SerpApi, API trả HTTP 428 và `confirmation_required`. Form admin chỉ gửi POST xác nhận sau khi người dùng đồng ý. Quyền admin được kiểm tra ở backend từ phiên đăng nhập.
