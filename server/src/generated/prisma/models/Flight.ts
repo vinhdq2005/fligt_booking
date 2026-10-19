@@ -51,6 +51,7 @@ export type FlightMinAggregateOutputType = {
   capacity: number | null
   basePrice: number | null
   status: $Enums.FlightStatus | null
+  saleStatus: $Enums.FlightSaleStatus | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -66,6 +67,7 @@ export type FlightMaxAggregateOutputType = {
   capacity: number | null
   basePrice: number | null
   status: $Enums.FlightStatus | null
+  saleStatus: $Enums.FlightSaleStatus | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -81,6 +83,7 @@ export type FlightCountAggregateOutputType = {
   capacity: number
   basePrice: number
   status: number
+  saleStatus: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -112,6 +115,7 @@ export type FlightMinAggregateInputType = {
   capacity?: true
   basePrice?: true
   status?: true
+  saleStatus?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -127,6 +131,7 @@ export type FlightMaxAggregateInputType = {
   capacity?: true
   basePrice?: true
   status?: true
+  saleStatus?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -142,6 +147,7 @@ export type FlightCountAggregateInputType = {
   capacity?: true
   basePrice?: true
   status?: true
+  saleStatus?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -244,6 +250,7 @@ export type FlightGroupByOutputType = {
   capacity: number
   basePrice: number
   status: $Enums.FlightStatus
+  saleStatus: $Enums.FlightSaleStatus
   createdAt: Date
   updatedAt: Date
   _count: FlightCountAggregateOutputType | null
@@ -282,6 +289,7 @@ export type FlightWhereInput = {
   capacity?: Prisma.IntFilter<"Flight"> | number
   basePrice?: Prisma.IntFilter<"Flight"> | number
   status?: Prisma.EnumFlightStatusFilter<"Flight"> | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFilter<"Flight"> | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
   airline?: Prisma.XOR<Prisma.AirlineScalarRelationFilter, Prisma.AirlineWhereInput>
@@ -300,6 +308,7 @@ export type FlightOrderByWithRelationInput = {
   capacity?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  saleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   airline?: Prisma.AirlineOrderByWithRelationInput
@@ -322,6 +331,7 @@ export type FlightWhereUniqueInput = Prisma.AtLeast<{
   capacity?: Prisma.IntFilter<"Flight"> | number
   basePrice?: Prisma.IntFilter<"Flight"> | number
   status?: Prisma.EnumFlightStatusFilter<"Flight"> | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFilter<"Flight"> | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
   airline?: Prisma.XOR<Prisma.AirlineScalarRelationFilter, Prisma.AirlineWhereInput>
@@ -340,6 +350,7 @@ export type FlightOrderByWithAggregationInput = {
   capacity?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  saleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.FlightCountOrderByAggregateInput
@@ -363,6 +374,7 @@ export type FlightScalarWhereWithAggregatesInput = {
   capacity?: Prisma.IntWithAggregatesFilter<"Flight"> | number
   basePrice?: Prisma.IntWithAggregatesFilter<"Flight"> | number
   status?: Prisma.EnumFlightStatusWithAggregatesFilter<"Flight"> | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusWithAggregatesFilter<"Flight"> | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Flight"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Flight"> | Date | string
 }
@@ -376,6 +388,7 @@ export type FlightCreateInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   airline: Prisma.AirlineCreateNestedOneWithoutFlightsInput
@@ -394,6 +407,7 @@ export type FlightUncheckedCreateInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutFlightInput
@@ -409,6 +423,7 @@ export type FlightUpdateInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   airline?: Prisma.AirlineUpdateOneRequiredWithoutFlightsNestedInput
@@ -427,6 +442,7 @@ export type FlightUncheckedUpdateInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutFlightNestedInput
@@ -444,6 +460,7 @@ export type FlightCreateManyInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -457,6 +474,7 @@ export type FlightUpdateManyMutationInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -472,6 +490,7 @@ export type FlightUncheckedUpdateManyInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -503,6 +522,7 @@ export type FlightCountOrderByAggregateInput = {
   capacity?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  saleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -525,6 +545,7 @@ export type FlightMaxOrderByAggregateInput = {
   capacity?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  saleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -540,6 +561,7 @@ export type FlightMinOrderByAggregateInput = {
   capacity?: Prisma.SortOrder
   basePrice?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  saleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -602,6 +624,10 @@ export type EnumFlightStatusFieldUpdateOperationsInput = {
   set?: $Enums.FlightStatus
 }
 
+export type EnumFlightSaleStatusFieldUpdateOperationsInput = {
+  set?: $Enums.FlightSaleStatus
+}
+
 export type FlightCreateNestedOneWithoutBookingsInput = {
   create?: Prisma.XOR<Prisma.FlightCreateWithoutBookingsInput, Prisma.FlightUncheckedCreateWithoutBookingsInput>
   connectOrCreate?: Prisma.FlightCreateOrConnectWithoutBookingsInput
@@ -639,6 +665,7 @@ export type FlightCreateWithoutAirlineInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   bookings?: Prisma.BookingCreateNestedManyWithoutFlightInput
@@ -655,6 +682,7 @@ export type FlightUncheckedCreateWithoutAirlineInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutFlightInput
@@ -701,6 +729,7 @@ export type FlightScalarWhereInput = {
   capacity?: Prisma.IntFilter<"Flight"> | number
   basePrice?: Prisma.IntFilter<"Flight"> | number
   status?: Prisma.EnumFlightStatusFilter<"Flight"> | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFilter<"Flight"> | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Flight"> | Date | string
 }
@@ -714,6 +743,7 @@ export type FlightCreateWithoutBookingsInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   airline: Prisma.AirlineCreateNestedOneWithoutFlightsInput
@@ -731,6 +761,7 @@ export type FlightUncheckedCreateWithoutBookingsInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   pricingRules?: Prisma.PricingRuleUncheckedCreateNestedManyWithoutFlightInput
@@ -761,6 +792,7 @@ export type FlightUpdateWithoutBookingsInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   airline?: Prisma.AirlineUpdateOneRequiredWithoutFlightsNestedInput
@@ -778,6 +810,7 @@ export type FlightUncheckedUpdateWithoutBookingsInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pricingRules?: Prisma.PricingRuleUncheckedUpdateManyWithoutFlightNestedInput
@@ -792,6 +825,7 @@ export type FlightCreateWithoutPricingRulesInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   airline: Prisma.AirlineCreateNestedOneWithoutFlightsInput
@@ -809,6 +843,7 @@ export type FlightUncheckedCreateWithoutPricingRulesInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutFlightInput
@@ -839,6 +874,7 @@ export type FlightUpdateWithoutPricingRulesInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   airline?: Prisma.AirlineUpdateOneRequiredWithoutFlightsNestedInput
@@ -856,6 +892,7 @@ export type FlightUncheckedUpdateWithoutPricingRulesInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutFlightNestedInput
@@ -871,6 +908,7 @@ export type FlightCreateManyAirlineInput = {
   capacity: number
   basePrice: number
   status?: $Enums.FlightStatus
+  saleStatus?: $Enums.FlightSaleStatus
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -884,6 +922,7 @@ export type FlightUpdateWithoutAirlineInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookings?: Prisma.BookingUpdateManyWithoutFlightNestedInput
@@ -900,6 +939,7 @@ export type FlightUncheckedUpdateWithoutAirlineInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutFlightNestedInput
@@ -916,6 +956,7 @@ export type FlightUncheckedUpdateManyWithoutAirlineInput = {
   capacity?: Prisma.IntFieldUpdateOperationsInput | number
   basePrice?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumFlightStatusFieldUpdateOperationsInput | $Enums.FlightStatus
+  saleStatus?: Prisma.EnumFlightSaleStatusFieldUpdateOperationsInput | $Enums.FlightSaleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -971,6 +1012,7 @@ export type FlightSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   capacity?: boolean
   basePrice?: boolean
   status?: boolean
+  saleStatus?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   airline?: boolean | Prisma.AirlineDefaultArgs<ExtArgs>
@@ -992,11 +1034,12 @@ export type FlightSelectScalar = {
   capacity?: boolean
   basePrice?: boolean
   status?: boolean
+  saleStatus?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type FlightOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "flightNumber" | "airlineId" | "departureCode" | "arrivalCode" | "departureTime" | "arrivalTime" | "capacity" | "basePrice" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["flight"]>
+export type FlightOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "flightNumber" | "airlineId" | "departureCode" | "arrivalCode" | "departureTime" | "arrivalTime" | "capacity" | "basePrice" | "status" | "saleStatus" | "createdAt" | "updatedAt", ExtArgs["result"]["flight"]>
 export type FlightInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   airline?: boolean | Prisma.AirlineDefaultArgs<ExtArgs>
   bookings?: boolean | Prisma.Flight$bookingsArgs<ExtArgs>
@@ -1022,6 +1065,7 @@ export type $FlightPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     capacity: number
     basePrice: number
     status: $Enums.FlightStatus
+    saleStatus: $Enums.FlightSaleStatus
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["flight"]>
@@ -1406,6 +1450,7 @@ export interface FlightFieldRefs {
   readonly capacity: Prisma.FieldRef<"Flight", 'Int'>
   readonly basePrice: Prisma.FieldRef<"Flight", 'Int'>
   readonly status: Prisma.FieldRef<"Flight", 'FlightStatus'>
+  readonly saleStatus: Prisma.FieldRef<"Flight", 'FlightSaleStatus'>
   readonly createdAt: Prisma.FieldRef<"Flight", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Flight", 'DateTime'>
 }

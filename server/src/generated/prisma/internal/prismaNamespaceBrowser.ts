@@ -55,6 +55,9 @@ export const ModelName = {
   FlightOffer: 'FlightOffer',
   FlightSegment: 'FlightSegment',
   Airline: 'Airline',
+  User: 'User',
+  AuthSession: 'AuthSession',
+  AuditLog: 'AuditLog',
   Flight: 'Flight',
   Booking: 'Booking',
   Passenger: 'Passenger',
@@ -130,11 +133,56 @@ export const AirlineScalarFieldEnum = {
   id: 'id',
   code: 'code',
   name: 'name',
+  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type AirlineScalarFieldEnum = (typeof AirlineScalarFieldEnum)[keyof typeof AirlineScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  role: 'role',
+  status: 'status',
+  airlineId: 'airlineId',
+  phone: 'phone',
+  lastLoginAt: 'lastLoginAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const AuthSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AuthSessionScalarFieldEnum = (typeof AuthSessionScalarFieldEnum)[keyof typeof AuthSessionScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  requestId: 'requestId',
+  actorId: 'actorId',
+  action: 'action',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  reason: 'reason',
+  before: 'before',
+  after: 'after',
+  result: 'result',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
 export const FlightScalarFieldEnum = {
@@ -148,6 +196,7 @@ export const FlightScalarFieldEnum = {
   capacity: 'capacity',
   basePrice: 'basePrice',
   status: 'status',
+  saleStatus: 'saleStatus',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -159,6 +208,7 @@ export const BookingScalarFieldEnum = {
   id: 'id',
   bookingCode: 'bookingCode',
   flightId: 'flightId',
+  userId: 'userId',
   contactName: 'contactName',
   contactEmail: 'contactEmail',
   contactPhone: 'contactPhone',
@@ -220,6 +270,7 @@ export const PaymentScalarFieldEnum = {
   currency: 'currency',
   method: 'method',
   status: 'status',
+  reviewStatus: 'reviewStatus',
   providerTransactionId: 'providerTransactionId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -234,6 +285,14 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const NullsOrder = {
@@ -277,6 +336,52 @@ export const AirlineOrderByRelevanceFieldEnum = {
 } as const
 
 export type AirlineOrderByRelevanceFieldEnum = (typeof AirlineOrderByRelevanceFieldEnum)[keyof typeof AirlineOrderByRelevanceFieldEnum]
+
+
+export const UserOrderByRelevanceFieldEnum = {
+  name: 'name',
+  email: 'email',
+  passwordHash: 'passwordHash',
+  phone: 'phone'
+} as const
+
+export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
+
+
+export const AuthSessionOrderByRelevanceFieldEnum = {
+  id: 'id'
+} as const
+
+export type AuthSessionOrderByRelevanceFieldEnum = (typeof AuthSessionOrderByRelevanceFieldEnum)[keyof typeof AuthSessionOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const AuditLogOrderByRelevanceFieldEnum = {
+  requestId: 'requestId',
+  action: 'action',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  reason: 'reason',
+  result: 'result'
+} as const
+
+export type AuditLogOrderByRelevanceFieldEnum = (typeof AuditLogOrderByRelevanceFieldEnum)[keyof typeof AuditLogOrderByRelevanceFieldEnum]
 
 
 export const FlightOrderByRelevanceFieldEnum = {

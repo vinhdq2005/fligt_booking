@@ -10,12 +10,11 @@ import {
   type ImportStatus,
 } from "../../api";
 
-type IconName = "plane" | "grid" | "database" | "search" | "plus" | "close" | "chevron" | "calendar" | "refresh" | "arrow" | "clock" | "info";
+type IconName = "plane" | "database" | "search" | "plus" | "close" | "chevron" | "calendar" | "refresh" | "arrow" | "clock" | "info";
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
     plane: <><path d="m3 12 18-8-5 17-4-7-9-2Z" /><path d="m12 14 9-10" /></>,
-    grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
     database: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></>,
     search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
     plus: <path d="M12 5v14M5 12h14" />,
@@ -182,7 +181,7 @@ function ImportDialog({ initial, onClose, onImported }: {
   </div>;
 }
 
-export default function AdminFlightsPage() {
+export default function AdminReferenceFlightsPage() {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [applied, setApplied] = useState<Filters>(initialFilters);
   const [result, setResult] = useState<FlightList | null>(null);
@@ -220,25 +219,9 @@ export default function AdminFlightsPage() {
     setApplied((current) => ({ ...current, page }));
   }
 
-  return <div className="app-canvas">
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand"><div className="brand-symbol"><Icon name="plane" size={21} /></div><span>Flight<span>Booking</span></span></div>
-        <div className="sidebar-main">
-          <div className="nav-label">KHÔNG GIAN LÀM VIỆC</div>
-          <div className="nav-item nav-muted"><Icon name="grid" size={18} />Tổng quan</div>
-          <div className="nav-label nav-label-modules">QUẢN LÝ DỮ LIỆU</div>
-          <div className="nav-item nav-active"><Icon name="plane" size={18} />Chuyến bay<span className="nav-active-indicator" /></div>
-          <button className="nav-item nav-button" onClick={() => setShowImport(true)}><Icon name="database" size={18} />Nhập dữ liệu</button>
-          <div className="sidebar-tip"><div className="tip-icon"><Icon name="info" size={18} /></div><strong>Dữ liệu tham khảo</strong><p>Giá và lịch bay được lưu từ SerpApi. Chưa có tồn chỗ để đặt vé.</p></div>
-        </div>
-        <div className="sidebar-footer"><div className="avatar">QT</div><div><strong>Quản trị viên</strong><span>Không gian nội bộ</span></div></div>
-      </aside>
-
-      <div className="workspace">
-        <header className="topbar"><div className="breadcrumbs">Quản lý dữ liệu <Icon name="chevron" size={14} /> <strong>Chuyến bay</strong></div><div className="topbar-right"><span className="topbar-indicator" />Hệ thống quản trị</div></header>
-        <main className="content">
-          <div className="page-heading"><div><div className="eyebrow">FLIGHT MANAGEMENT</div><h1>Danh sách chuyến bay</h1><p>Quản lý các lựa chọn chuyến bay đã lưu từ nguồn dữ liệu tham khảo.</p></div><button className="primary-button add-button" onClick={() => setShowImport(true)}><Icon name="plus" size={18} />Nhập dữ liệu mới</button></div>
+  return <>
+    <div className="content">
+          <div className="page-heading"><div><div className="eyebrow">REFERENCE DATA</div><h1>Dữ liệu tham khảo</h1><p>Các lựa chọn chuyến bay đã lưu từ SerpApi, không có tồn chỗ nội bộ.</p></div><button className="primary-button add-button" onClick={() => setShowImport(true)}><Icon name="plus" size={18} />Nhập dữ liệu mới</button></div>
 
           <div className="summary-grid">
             <div className="summary-card"><span>Tổng lựa chọn</span><strong>{result?.summary.total ?? "—"}</strong><small>Trong dữ liệu đã lưu</small><div className="summary-card-icon blue"><Icon name="plane" size={20} /></div></div>
@@ -268,11 +251,9 @@ export default function AdminFlightsPage() {
             {!loading && !error && result?.items.length === 0 && <div className="empty-state"><div className="empty-icon"><Icon name="plane" size={26} /></div><strong>Chưa có chuyến bay phù hợp</strong><p>Thử đổi bộ lọc hoặc nhập dữ liệu mới cho tuyến bạn cần.</p><button className="outline-button" onClick={() => setShowImport(true)}><Icon name="plus" size={16} />Nhập dữ liệu</button></div>}
             {!loading && result && result.pagination.total > 0 && <div className="table-footer"><span>Hiển thị {(result.pagination.page - 1) * result.pagination.pageSize + 1}–{Math.min(result.pagination.page * result.pagination.pageSize, result.pagination.total)} trong {result.pagination.total} lựa chọn</span><div className="pagination"><button disabled={result.pagination.page <= 1} onClick={() => changePage(result.pagination.page - 1)} aria-label="Trang trước">‹</button><span>Trang {result.pagination.page} / {result.pagination.pageCount}</span><button disabled={result.pagination.page >= result.pagination.pageCount} onClick={() => changePage(result.pagination.page + 1)} aria-label="Trang sau">›</button></div></div>}
           </section>
-          <div className="page-footnote"><Icon name="info" size={16} />Dữ liệu này chỉ dùng để tham khảo. Chỗ ngồi và đặt vé chưa được quản lý trong bảng chuyến bay hiện tại.</div>
-        </main>
-      </div>
+          <div className="page-footnote"><Icon name="info" size={16} />Dữ liệu này chỉ dùng để tham khảo; không phải chuyến bay có thể đặt chỗ trong hệ thống.</div>
     </div>
     {selected && <FlightDetails flight={selected} onClose={() => setSelected(null)} />}
     {showImport && <ImportDialog initial={filters} onClose={() => setShowImport(false)} onImported={() => { setApplied({ ...initialFilters }); setFilters(initialFilters); setRefreshKey((key) => key + 1); }} />}
-  </div>;
+  </>;
 }

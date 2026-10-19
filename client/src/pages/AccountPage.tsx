@@ -1,249 +1,48 @@
-
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { updateProfile } from '../auth/authApi'
 import '../styles/account.css'
-
-type CurrentUser = {
-  id: string
-  name: string
-  email: string
-  phone?: string
-}
-
-function isCurrentUser(value: unknown): value is CurrentUser {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-
-  const user = value as Record<string, unknown>
-  return (
-    typeof user.id === 'string' &&
-    typeof user.name === 'string' &&
-    typeof user.email === 'string' &&
-    (!('phone' in user) || typeof user.phone === 'string')
-  )
-}
 
 function AccountPage() {
   const navigate = useNavigate()
-  const [user, setUser] = useState<CurrentUser | null>(null)
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+  const { user, setUser, logout } = useAuth()
+  const [name, setName] = useState(user?.name ?? '')
+  const [phone, setPhone] = useState(user?.phone ?? '')
   const [editing, setEditing] = useState(false)
-  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem(
-        'flight-booking-current-user',
-      )
-
-      if (!savedUser) {
-        navigate('/login', { replace: true })
-        return
-      }
-
-      const parsed: unknown = JSON.parse(savedUser)
-
-      if (!isCurrentUser(parsed)) {
-        localStorage.removeItem('flight-booking-current-user')
-        navigate('/login', { replace: true })
-        return
-      }
-
-      const currentUser = parsed
-
-      setUser(currentUser)
-      setFullName(currentUser.name)
-      setPhone(currentUser.phone || '')
-    } catch {
-      localStorage.removeItem('flight-booking-current-user')
-      navigate('/login', { replace: true })
-    }
-  }, [navigate])
-
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    setMessage('')
-
-    if (!user) return
-
-    const normalizedName = fullName.trim()
-    const normalizedPhone = phone.trim()
-
-    if (!normalizedName) {
-      setError('Vui lòng nhập họ và tên.')
-      return
-    }
-
-    if (normalizedPhone && !/^[0-9+\s()-]{9,15}$/.test(normalizedPhone)) {
-      setError('Số điện thoại không hợp lệ.')
-      return
-    }
-
-    const updatedUser: CurrentUser = {
-      ...user,
-      name: normalizedName,
-      phone: normalizedPhone,
-    }
-
-    try {
-      localStorage.setItem(
-        'flight-booking-current-user',
-        JSON.stringify(updatedUser),
-      )
-
-      setUser(updatedUser)
-      setEditing(false)
-      setMessage('Cập nhật thông tin thành công.')
-    } catch {
-      setError('Không thể lưu thông tin. Vui lòng thử lại.')
-    }
-  }
-
-  const handleCancel = () => {
-    setFullName(user?.name || '')
-    setPhone(user?.phone || '')
-    setEditing(false)
-    setError('')
-    setMessage('')
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('flight-booking-current-user')
-    navigate('/login', { replace: true })
-  }
+  const [message, setMessage] = useState('')
 
   if (!user) return null
 
-  return (
-    <section className="account-page">
-      <div className="account-content">
-        <div className="account-header">
-          <div className="account-avatar">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setMessage('')
+    try {
+      const result = await updateProfile(name.trim(), phone.trim())
+      setUser(result.user)
+      setEditing(false)
+      setMessage('Cập nhật thông tin thành công.')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không thể cập nhật tài khoản.') }
+  }
 
-          <div>
-            <h1>Tài khoản của tôi</h1>
-            <p>Xin chào, {user.name}!</p>
-          </div>
-        </div>
-
-        <div className="account-card">
-          <h2>Thông tin cá nhân</h2>
-
-          {editing ? (
-            <form onSubmit={handleSave}>
-              <div className="form-field">
-                <label htmlFor="accountName">Họ và tên</label>
-                <input
-                  id="accountName"
-                  type="text"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  autoComplete="name"
-                  required
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="accountEmail">Email</label>
-                <input
-                  id="accountEmail"
-                  type="email"
-                  value={user.email}
-                  readOnly
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="accountPhone">Số điện thoại</label>
-                <input
-                  id="accountPhone"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="Nhập số điện thoại"
-                  autoComplete="tel"
-                />
-              </div>
-
-              {error && <p className="auth-error" role="alert">{error}</p>}
-
-              <div className="account-actions">
-                <button type="submit">Lưu thay đổi</button>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleCancel}
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <div className="account-info">
-                <div>
-                  <span>Họ và tên</span>
-                  <strong>{user.name}</strong>
-                </div>
-
-                <div>
-                  <span>Email</span>
-                  <strong>{user.email}</strong>
-                </div>
-
-                <div>
-                  <span>Số điện thoại</span>
-                  <strong>{user.phone || 'Chưa cập nhật'}</strong>
-                </div>
-              </div>
-
-              <div className="account-actions">
-                <button type="button" onClick={() => {
-                  setMessage('')
-                  setEditing(true)
-                }}>
-                  Chỉnh sửa thông tin
-                </button>
-              </div>
-            </>
-          )}
-
-          {message && <p role="status">{message}</p>}
-        </div>
-
-        <div className="account-actions">
-          <button
-            type="button"
-            onClick={() => navigate('/my-bookings')}
-          >
-            Đặt chỗ của tôi
-          </button>
-
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => navigate('/')}
-          >
-            Về trang chủ
-          </button>
-
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={handleLogout}
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-    </section>
-  )
+  return <section className="account-page"><div className="account-content">
+    <div className="account-header"><div className="account-avatar">{user.name.charAt(0).toUpperCase()}</div><div><h1>Tài khoản của tôi</h1><p>Xin chào, {user.name}!</p></div></div>
+    <div className="account-card"><h2>Thông tin cá nhân</h2>
+      {editing ? <form onSubmit={save}>
+        <div className="form-field"><label htmlFor="accountName">Họ và tên</label><input id="accountName" value={name} onChange={event => setName(event.target.value)} required /></div>
+        <div className="form-field"><label htmlFor="accountEmail">Email</label><input id="accountEmail" value={user.email} readOnly /></div>
+        <div className="form-field"><label htmlFor="accountPhone">Số điện thoại</label><input id="accountPhone" value={phone} onChange={event => setPhone(event.target.value)} /></div>
+        {error && <p className="auth-error" role="alert">{error}</p>}
+        <div className="account-actions"><button type="submit">Lưu thay đổi</button><button type="button" className="secondary-button" onClick={() => { setEditing(false); setName(user.name); setPhone(user.phone ?? '') }}>Hủy</button></div>
+      </form> : <><div className="account-info"><div><span>Họ và tên</span><strong>{user.name}</strong></div><div><span>Email</span><strong>{user.email}</strong></div><div><span>Số điện thoại</span><strong>{user.phone || 'Chưa cập nhật'}</strong></div></div><div className="account-actions"><button type="button" onClick={() => setEditing(true)}>Chỉnh sửa thông tin</button></div></>}
+      {message && <p role="status">{message}</p>}
+    </div>
+    <div className="account-actions"><button type="button" onClick={() => navigate('/my-bookings')}>Đặt chỗ của tôi</button><button type="button" className="secondary-button" onClick={() => navigate('/')}>Về trang chủ</button><button type="button" className="secondary-button" onClick={async () => { try { await logout(); navigate('/login', { replace: true }) } catch { setError('Không thể đăng xuất. Thử lại.') } }}>Đăng xuất</button></div>
+    {error && <p className="auth-error" role="alert">{error}</p>}
+  </div></section>
 }
 
 export default AccountPage

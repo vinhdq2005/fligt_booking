@@ -48,8 +48,11 @@ export async function createFlight(input: CreateFlightInput) {
     throw new Error("Thời gian đến phải sau thời gian khởi hành và cả hai phải hợp lệ.");
   }
 
-  return prisma.flight.create({
-    data: {
+  return prisma.$transaction(async tx => {
+    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.airlineId} AND status = 'ACTIVE' FOR UPDATE`;
+    if (!rows.length) throw new Error("Hãng bay đang bị khóa hoặc không tồn tại.");
+    return tx.flight.create({
+      data: {
       flightNumber,
       airlineId: input.airlineId,
       departureCode,
@@ -59,14 +62,14 @@ export async function createFlight(input: CreateFlightInput) {
       capacity: input.capacity,
       basePrice: input.basePrice,
     },
-    include: {
-      airline: true,
-    },
+      include: { airline: true },
+    });
   });
 }
 
-export async function listManagedFlights() {
+export async function listManagedFlights(airlineId?: number) {
   return prisma.flight.findMany({
+    where: airlineId === undefined ? undefined : { airlineId },
     orderBy: { departureTime: "asc" },
     include: {
       airline: true,

@@ -88,14 +88,96 @@ enum PassengerGender {
   FEMALE
 }
 
+enum UserRole {
+  ADMIN
+  CUSTOMER
+  AIRLINE_FLIGHT_MANAGER
+  AIRLINE_SALES_MANAGER
+}
+
+enum AccountStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum AirlineStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum FlightSaleStatus {
+  ON_SALE
+  HIDDEN
+}
+
+enum PaymentReviewStatus {
+  NONE
+  NEEDS_REVIEW
+  RESOLVED
+}
+
 model Airline {
   id        Int      @id @default(autoincrement())
   code      String   @unique @db.VarChar(10)
   name      String   @db.VarChar(120)
+  status    AirlineStatus @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   flights Flight[]
+  users   User[]
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(120)
+  email        String        @unique @db.VarChar(255)
+  passwordHash String        @db.VarChar(255)
+  role         UserRole      @default(CUSTOMER)
+  status       AccountStatus @default(ACTIVE)
+  airlineId    Int?
+  phone        String?       @db.VarChar(20)
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  airline   Airline?      @relation(fields: [airlineId], references: [id], onDelete: Restrict)
+  sessions  AuthSession[]
+  bookings  Booking[]
+  auditLogs AuditLog[]
+
+  @@index([airlineId, role, status])
+}
+
+model AuthSession {
+  id        String   @id @db.Char(64)
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  requestId  String?  @unique @db.VarChar(64)
+  actorId    Int
+  action     String   @db.VarChar(80)
+  entityType String   @db.VarChar(80)
+  entityId   String   @db.VarChar(80)
+  reason     String?  @db.VarChar(1000)
+  before     Json?
+  after      Json?
+  result     String   @default("SUCCESS") @db.VarChar(20)
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model Flight {
@@ -109,6 +191,7 @@ model Flight {
   capacity      Int
   basePrice     Int
   status        FlightStatus @default(SCHEDULED)
+  saleStatus    FlightSaleStatus @default(ON_SALE)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -124,6 +207,7 @@ model Booking {
   id          Int           @id @default(autoincrement())
   bookingCode String        @unique @default(cuid()) @db.VarChar(30)
   flightId    Int
+  userId      Int?
   contactName String        @db.VarChar(120)
   contactEmail String?      @db.VarChar(255)
   contactPhone String?      @db.VarChar(20)
@@ -134,11 +218,13 @@ model Booking {
   updatedAt   DateTime      @updatedAt
 
   flight     Flight     @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   passengers Passenger[]
   payments   Payment[]
 
   @@index([flightId, status])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 model Passenger {
@@ -191,6 +277,7 @@ model Payment {
   currency              String        @default("VND") @db.Char(3)
   method                String        @db.VarChar(30)
   status                PaymentStatus @default(PENDING)
+  reviewStatus          PaymentReviewStatus @default(NONE)
   providerTransactionId String?       @unique @db.VarChar(120)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt

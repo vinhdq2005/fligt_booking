@@ -51,7 +51,8 @@ export async function searchFlights(input: FlightSearchInput) {
         gt: now,
       },
       status: "SCHEDULED",
-      ...(airline ? { airline: { code: airline } } : {}),
+      saleStatus: "ON_SALE",
+      airline: { status: "ACTIVE", ...(airline ? { code: airline } : {}) },
     },
     include: {
       airline: true,
@@ -131,8 +132,8 @@ export async function getFlightById(id: number) {
 
   const now = new Date();
 
-  const flight = await prisma.flight.findUnique({
-    where: { id },
+  const flight = await prisma.flight.findFirst({
+    where: { id, saleStatus: "ON_SALE", airline: { status: "ACTIVE" } },
     include: {
       airline: true,
       bookings: {

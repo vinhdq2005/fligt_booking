@@ -55,3 +55,46 @@ export const PassengerGender = {
 } as const
 
 export type PassengerGender = (typeof PassengerGender)[keyof typeof PassengerGender]
+
+
+export const UserRole = {
+  ADMIN: 'ADMIN',
+  CUSTOMER: 'CUSTOMER',
+  AIRLINE_FLIGHT_MANAGER: 'AIRLINE_FLIGHT_MANAGER',
+  AIRLINE_SALES_MANAGER: 'AIRLINE_SALES_MANAGER'
+} as const
+
+export type UserRole = (typeof UserRole)[keyof typeof UserRole]
+
+
+export const AccountStatus = {
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED'
+} as const
+
+export type AccountStatus = (typeof AccountStatus)[keyof typeof AccountStatus]
+
+
+export const AirlineStatus = {
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED'
+} as const
+
+export type AirlineStatus = (typeof AirlineStatus)[keyof typeof AirlineStatus]
+
+
+export const FlightSaleStatus = {
+  ON_SALE: 'ON_SALE',
+  HIDDEN: 'HIDDEN'
+} as const
+
+export type FlightSaleStatus = (typeof FlightSaleStatus)[keyof typeof FlightSaleStatus]
+
+
+export const PaymentReviewStatus = {
+  NONE: 'NONE',
+  NEEDS_REVIEW: 'NEEDS_REVIEW',
+  RESOLVED: 'RESOLVED'
+} as const
+
+export type PaymentReviewStatus = (typeof PaymentReviewStatus)[keyof typeof PaymentReviewStatus]

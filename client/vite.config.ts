@@ -5,7 +5,6 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const serverDir = fileURLToPath(new URL("../server/", import.meta.url));
   const serverEnv = loadEnv(mode, serverDir, "");
-  const adminToken = process.env.ADMIN_API_TOKEN || serverEnv.ADMIN_API_TOKEN || "";
 
   return {
     plugins: [react()],
@@ -15,9 +14,6 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: `http://127.0.0.1:${serverEnv.PORT || "3001"}`,
           changeOrigin: true,
-          headers: {
-            authorization: `Bearer ${adminToken}`,
-          },
         },
       },
     },

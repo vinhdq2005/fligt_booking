@@ -1,7 +1,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { saveDemoUser, getDemoUsers } from '../mocks/mockUsers'
+import { register } from '../auth/authApi'
 import '../styles/auth.css'
 
 function RegisterPage() {
@@ -13,8 +13,9 @@ function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleRegister = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
     setSuccess('')
@@ -27,8 +28,8 @@ function RegisterPage() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự.')
+    if (password.length < 10) {
+      setError('Mật khẩu phải có ít nhất 10 ký tự.')
       return
     }
 
@@ -37,41 +38,24 @@ function RegisterPage() {
       return
     }
 
-    const emailExists = getDemoUsers().some(
-      (user) => user.email.toLowerCase() === normalizedEmail,
-    )
-
-    if (emailExists) {
-      setError('Email này đã được đăng ký. Vui lòng sử dụng email khác.')
-      return
-    }
-
+    setSubmitting(true)
     try {
-      saveDemoUser({
-        id: `user-${Date.now()}`,
-        name: normalizedName,
-        email: normalizedEmail,
-        password,
-      })
+      await register(normalizedName, normalizedEmail, password)
 
       setSuccess('Đăng ký thành công! Đang chuyển đến trang đăng nhập.')
 
       window.setTimeout(() => {
         navigate('/login')
       }, 1000)
-    } catch {
-      setError('Không thể lưu tài khoản. Vui lòng thử lại.')
-    }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể đăng ký.')
+    } finally { setSubmitting(false) }
   }
 
   return (
     <section className="auth-page">
       <div className="auth-card">
         <h1>Đăng ký tài khoản</h1>
-
-        <p className="demo-notice">
-          Tài khoản chỉ phục vụ trình diễn.
-        </p>
 
         <form onSubmit={handleRegister}>
           <div className="form-field">
@@ -109,7 +93,7 @@ function RegisterPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="new-password"
-              minLength={6}
+              minLength={10}
               required
             />
           </div>
@@ -125,7 +109,7 @@ function RegisterPage() {
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               autoComplete="new-password"
-              minLength={6}
+              minLength={10}
               required
             />
           </div>
@@ -142,8 +126,8 @@ function RegisterPage() {
             </p>
           )}
 
-          <button type="submit">
-            Đăng ký
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Đang đăng ký…' : 'Đăng ký'}
           </button>
         </form>
 

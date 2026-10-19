@@ -19,6 +19,7 @@ export async function listAirlines() {
 
 export async function listPublicAirlines() {
   return prisma.airline.findMany({
+    where: { status: "ACTIVE" },
     select: { code: true, name: true },
     orderBy: { name: "asc" },
   });

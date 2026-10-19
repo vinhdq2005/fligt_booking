@@ -1,6 +1,10 @@
 
 import express from "express";
-import { timingSafeEqual } from "node:crypto";
+import { authStore, canUseAccount, hashPassword, hashSession, newSessionToken, publicUser, SESSION_AGE_MS, verifyPassword } from "./modules/auth/auth.service";
+import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
+import { getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, listKinds, parseReadQuery } from "./modules/admin/admin-read.service";
+import type { ListKind, ReadQuery } from "./modules/admin/admin-read.service";
+import { InterventionError, parseInterventionInput, runAdminIntervention } from "./modules/admin/admin-intervention.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -36,6 +40,14 @@ type FlightCatalog = Pick<
   typeof import("./modules/flights/flight-list.service"),
   "listFlights"
 >;
+
+type FlightManagement = { createFlight: typeof createFlight; listManagedFlights: typeof listManagedFlights };
+type AdminReader = {
+  list: (kind: ListKind, query: ReadQuery) => Promise<unknown>;
+  detail: (kind: ListKind, id: number) => Promise<unknown>;
+  options: typeof getAdminOptions;
+  overview: typeof getAdminOverview;
+};
 
 function parseFlightFilters(
   query: Record<string, unknown>,
@@ -106,45 +118,148 @@ function parseImportRequest(value: unknown): ImportRequest | null {
   };
 }
 
-function matchesToken(
-  header: string | undefined,
-  expected: string,
-): boolean {
-  if (!header?.startsWith("Bearer ")) {
-    return false;
-  }
-
-  const actual = Buffer.from(header.slice(7));
-  const secret = Buffer.from(expected);
-
-  return (
-    actual.length === secret.length &&
-    timingSafeEqual(actual, secret)
-  );
-}
-
 export function createApp(
-  adminToken: string,
   importer: FlightImporter,
   catalog: FlightCatalog,
+  store: AuthStore = authStore,
+  management: FlightManagement = { createFlight, listManagedFlights },
+  reader: AdminReader = { list: listAdminData, detail: getAdminDetail, options: getAdminOptions, overview: getAdminOverview },
+  intervention: typeof runAdminIntervention = runAdminIntervention,
 ) {
-  if (!adminToken) {
-    throw new Error("Thiếu ADMIN_API_TOKEN");
-  }
-
   const app = express();
 
   app.use(express.json({ limit: "16kb" }));
-
-  app.use("/api/admin", (req, res, next) => {
-    if (!matchesToken(req.header("authorization"), adminToken)) {
-      res.status(401).json({
-        error: "Cần token quản trị hợp lệ.",
-      });
+  const cookieName = "flight_session";
+  const isMutation = (method: string) => !["GET", "HEAD", "OPTIONS"].includes(method);
+  const csrf = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (isMutation(req.method) && req.header("x-csrf-intent") !== "1") {
+      res.status(403).json({ error: "Yêu cầu thiếu xác nhận CSRF." });
       return;
     }
-
     next();
+  };
+  const tokenFromCookie = (req: express.Request) => {
+    const value = req.headers.cookie?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
+    return value && /^[a-f0-9]{64}$/.test(value) ? value : null;
+  };
+  const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/", maxAge: SESSION_AGE_MS };
+  const currentUser = async (req: express.Request): Promise<AuthUser | null> => {
+    const token = tokenFromCookie(req);
+    if (!token) return null;
+    const session = await store.findBySession(hashSession(token));
+    if (!session || session.expiresAt <= new Date() || !canUseAccount(session.user)) return null;
+    return session.user;
+  };
+  const requireRole = (...roles: AuthUser["role"][]) => async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+      const user = await currentUser(req);
+      if (!user) { res.status(401).json({ error: "Vui lòng đăng nhập." }); return; }
+      if (!roles.includes(user.role)) { res.status(403).json({ error: "Không có quyền truy cập." }); return; }
+      res.locals.authUser = user;
+      next();
+    } catch (error) { next(error); }
+  };
+
+  app.post("/api/auth/register", csrf, async (req, res, next) => {
+    try {
+      const { name, email, password } = req.body ?? {};
+      if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 120 ||
+          typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 255 ||
+          typeof password !== "string" || password.length < 10 || password.length > 128) {
+        res.status(400).json({ error: "Tên, email hoặc mật khẩu không hợp lệ (mật khẩu tối thiểu 10 ký tự)." }); return;
+      }
+      const normalizedEmail = email.trim().toLowerCase();
+      if (await store.findByEmail(normalizedEmail)) { res.status(409).json({ error: "Email đã được sử dụng." }); return; }
+      const user = await store.createCustomer({ name: name.trim(), email: normalizedEmail, passwordHash: await hashPassword(password) });
+      res.status(201).json({ user: publicUser(user) });
+    } catch (error) {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+        res.status(409).json({ error: "Email đã được sử dụng." }); return;
+      }
+      next(error);
+    }
+  });
+  app.post("/api/auth/login", csrf, async (req, res, next) => {
+    try {
+      const { email, password } = req.body ?? {};
+      if (typeof email !== "string" || typeof password !== "string") { res.status(400).json({ error: "Cần email và mật khẩu." }); return; }
+      const user = await store.findByEmail(email.trim().toLowerCase());
+      if (!user || !await verifyPassword(password, user.passwordHash)) { res.status(401).json({ error: "Email hoặc mật khẩu không đúng." }); return; }
+      if (!canUseAccount(user)) { res.status(403).json({ error: "Tài khoản hoặc hãng bay đang bị khóa." }); return; }
+      const token = newSessionToken();
+      await store.createSession({ id: hashSession(token), userId: user.id, expiresAt: new Date(Date.now() + SESSION_AGE_MS) });
+      await store.recordLogin(user.id);
+      res.cookie(cookieName, token, cookieOptions).json({ user: publicUser(user) });
+    } catch (error) { next(error); }
+  });
+  app.get("/api/auth/me", async (req, res, next) => {
+    try { const user = await currentUser(req); if (!user) { res.status(401).json({ error: "Vui lòng đăng nhập." }); return; } res.json({ user: publicUser(user) }); }
+    catch (error) { next(error); }
+  });
+  app.patch("/api/auth/me", csrf, requireRole("CUSTOMER", "ADMIN", "AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const { name, phone } = req.body ?? {};
+      if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 120 ||
+          (phone !== null && phone !== undefined && (typeof phone !== "string" || phone.trim().length > 20))) {
+        res.status(400).json({ error: "Thông tin cá nhân không hợp lệ." }); return;
+      }
+      const user = await store.updateProfile(res.locals.authUser.id, { name: name.trim(), phone: typeof phone === "string" && phone.trim() ? phone.trim() : null });
+      res.json({ user: publicUser(user) });
+    } catch (error) { next(error); }
+  });
+  app.post("/api/auth/logout", csrf, async (req, res, next) => {
+    try { const token = tokenFromCookie(req); if (token) await store.deleteSession(hashSession(token)); res.clearCookie(cookieName, { path: "/" }).status(204).end(); }
+    catch (error) { next(error); }
+  });
+
+  app.use("/api/admin", requireRole("ADMIN"), csrf);
+  app.use("/api/airline", requireRole("AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), csrf);
+
+  app.post("/api/admin/interventions", async (req, res, next) => {
+    try {
+      const input = parseInterventionInput(req.body, req.header("idempotency-key"), res.locals.authUser.id);
+      if (!input) { res.status(400).json({ error: "Hành động, ID, lý do (10–1000 ký tự) hoặc Idempotency-Key không hợp lệ." }); return; }
+      const result = await intervention(input);
+      res.status(result.status === "applied" ? 201 : 200).json(result);
+    } catch (error) {
+      if (error instanceof InterventionError) { res.status(error.status).json({ error: error.message }); return; }
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/overview", async (req, res, next) => {
+    try {
+      const { fromDate, toDate } = req.query;
+      if ((fromDate !== undefined && typeof fromDate !== "string") || (toDate !== undefined && typeof toDate !== "string")) {
+        res.status(400).json({ error: "Khoảng ngày không hợp lệ." }); return;
+      }
+      const item = await reader.overview(fromDate as string | undefined, toDate as string | undefined);
+      if (!item) { res.status(400).json({ error: "Khoảng ngày không hợp lệ." }); return; }
+      res.json({ item });
+    } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/options", async (_req, res, next) => {
+    try { res.json(await reader.options()); } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/:kind", async (req, res, next) => {
+    try {
+      const kind = req.params.kind;
+      if (typeof kind !== "string" || !listKinds.includes(kind as ListKind)) { res.status(404).json({ error: "Không tìm thấy danh sách." }); return; }
+      const query = parseReadQuery(kind as ListKind, req.query);
+      if (!query) { res.status(400).json({ error: "Bộ lọc không hợp lệ." }); return; }
+      res.json(await reader.list(kind as ListKind, query));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/:kind/:id", async (req, res, next) => {
+    try {
+      const kind = req.params.kind;
+      const id = Number(req.params.id);
+      if (typeof kind !== "string" || !listKinds.includes(kind as ListKind)) { res.status(404).json({ error: "Không tìm thấy danh sách." }); return; }
+      if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "ID không hợp lệ." }); return; }
+      const item = await reader.detail(kind as ListKind, id);
+      if (!item) { res.status(404).json({ error: "Không tìm thấy bản ghi." }); return; }
+      res.json({ item });
+    } catch (error) { next(error); }
   });
 
   // =========================
@@ -219,22 +334,27 @@ export function createApp(
     "/api/admin/managed-flights",
     async (_req, res, next) => {
       try {
-        res.json(await listManagedFlights());
+        res.json(await management.listManagedFlights());
       } catch (error) {
         next(error);
       }
     },
   );
 
+  app.get("/api/airline/managed-flights", async (_req, res, next) => {
+    try { res.json(await management.listManagedFlights(res.locals.authUser.airlineId)); }
+    catch (error) { next(error); }
+  });
+
   app.post(
-    "/api/admin/managed-flights",
+    "/api/airline/managed-flights",
+    requireRole("AIRLINE_FLIGHT_MANAGER"),
     async (req, res, next) => {
       try {
         const body = req.body ?? {};
 
         const {
           flightNumber,
-          airlineId,
           departureCode,
           arrivalCode,
           departureTime,
@@ -245,7 +365,6 @@ export function createApp(
 
         if (
           typeof flightNumber !== "string" ||
-          typeof airlineId !== "number" ||
           typeof departureCode !== "string" ||
           typeof arrivalCode !== "string" ||
           typeof departureTime !== "string" ||
@@ -260,9 +379,9 @@ export function createApp(
           return;
         }
 
-        const flight = await createFlight({
+        const flight = await management.createFlight({
           flightNumber,
-          airlineId,
+          airlineId: res.locals.authUser.airlineId,
           departureCode,
           arrivalCode,
           departureTime,
@@ -273,6 +392,10 @@ export function createApp(
 
         res.status(201).json(flight);
       } catch (error) {
+        if (error instanceof Error && error.message === "Hãng bay đang bị khóa hoặc không tồn tại.") {
+          res.status(409).json({ error: error.message });
+          return;
+        }
         if (
           error instanceof Error &&
           [
@@ -430,8 +553,10 @@ export function createApp(
         return;
       }
 
+      const bookingUser = await currentUser(req);
       const booking = await createBooking({
         flightId,
+        userId: bookingUser?.role === "CUSTOMER" ? bookingUser.id : undefined,
         contactName,
         contactEmail,
         contactPhone,
