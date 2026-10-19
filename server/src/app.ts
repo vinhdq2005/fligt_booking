@@ -1,4 +1,8 @@
-
+import {
+  verifyTicketQR,
+  checkInTicketQR,
+  TicketServiceError,
+} from "./modules/tickets/ticket.service";
 import express from "express";
 import { authStore, canUseAccount, hashPassword, hashSession, newSessionToken, publicUser, SESSION_AGE_MS, verifyPassword } from "./modules/auth/auth.service";
 import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
@@ -758,6 +762,85 @@ export function createApp(
       }
     },
   );
+// =========================
+// AIRLINE: XÁC MINH QR VÉ
+// =========================
+
+app.get(
+  "/api/tickets/verify/:token",
+  requireRole(
+    "AIRLINE_FLIGHT_MANAGER",
+    "AIRLINE_SALES_MANAGER",
+  ),
+  async (req, res, next) => {
+    try {
+      const token = req.params.token;
+
+      if (typeof token !== "string" || !token.trim()) {
+        res.status(400).json({
+          error: "Mã QR không hợp lệ.",
+        });
+        return;
+      }
+
+      const result = await verifyTicketQR(token);
+
+      res.json({
+        item: result,
+      });
+    } catch (error) {
+      if (error instanceof TicketServiceError) {
+        res.status(error.statusCode).json({
+          error: error.message,
+        });
+        return;
+      }
+
+      next(error);
+    }
+  },
+);
+
+// =========================
+// AIRLINE: CHECK-IN QR VÉ
+// =========================
+
+app.post(
+  "/api/tickets/check-in/:token",
+  requireRole("AIRLINE_FLIGHT_MANAGER"),
+  csrf,
+  async (req, res, next) => {
+    try {
+      const token = req.params.token;
+
+      if (typeof token !== "string" || !token.trim()) {
+        res.status(400).json({
+          error: "Mã QR không hợp lệ.",
+        });
+        return;
+      }
+
+      const staff = res.locals.authUser;
+
+      const result = await checkInTicketQR(token, {
+        id: staff.id,
+        role: staff.role,
+        airlineId: staff.airlineId,
+      });
+
+      res.json(result);
+    } catch (error) {
+      if (error instanceof TicketServiceError) {
+        res.status(error.statusCode).json({
+          error: error.message,
+        });
+        return;
+      }
+
+      next(error);
+    }
+  },
+);
 
   // =========================
   // ERROR HANDLER
