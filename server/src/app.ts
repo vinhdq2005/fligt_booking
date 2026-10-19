@@ -2,6 +2,9 @@
 import express from "express";
 import { authStore, canUseAccount, hashPassword, hashSession, newSessionToken, publicUser, SESSION_AGE_MS, verifyPassword } from "./modules/auth/auth.service";
 import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
+import { getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, listKinds, parseReadQuery } from "./modules/admin/admin-read.service";
+import type { ListKind, ReadQuery } from "./modules/admin/admin-read.service";
+import { InterventionError, parseInterventionInput, runAdminIntervention } from "./modules/admin/admin-intervention.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -39,6 +42,12 @@ type FlightCatalog = Pick<
 >;
 
 type FlightManagement = { createFlight: typeof createFlight; listManagedFlights: typeof listManagedFlights };
+type AdminReader = {
+  list: (kind: ListKind, query: ReadQuery) => Promise<unknown>;
+  detail: (kind: ListKind, id: number) => Promise<unknown>;
+  options: typeof getAdminOptions;
+  overview: typeof getAdminOverview;
+};
 
 function parseFlightFilters(
   query: Record<string, unknown>,
@@ -114,6 +123,8 @@ export function createApp(
   catalog: FlightCatalog,
   store: AuthStore = authStore,
   management: FlightManagement = { createFlight, listManagedFlights },
+  reader: AdminReader = { list: listAdminData, detail: getAdminDetail, options: getAdminOptions, overview: getAdminOverview },
+  intervention: typeof runAdminIntervention = runAdminIntervention,
 ) {
   const app = express();
 
@@ -203,6 +214,53 @@ export function createApp(
 
   app.use("/api/admin", requireRole("ADMIN"), csrf);
   app.use("/api/airline", requireRole("AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), csrf);
+
+  app.post("/api/admin/interventions", async (req, res, next) => {
+    try {
+      const input = parseInterventionInput(req.body, req.header("idempotency-key"), res.locals.authUser.id);
+      if (!input) { res.status(400).json({ error: "Hành động, ID, lý do (10–1000 ký tự) hoặc Idempotency-Key không hợp lệ." }); return; }
+      const result = await intervention(input);
+      res.status(result.status === "applied" ? 201 : 200).json(result);
+    } catch (error) {
+      if (error instanceof InterventionError) { res.status(error.status).json({ error: error.message }); return; }
+      next(error);
+    }
+  });
+
+  app.get("/api/admin/overview", async (req, res, next) => {
+    try {
+      const { fromDate, toDate } = req.query;
+      if ((fromDate !== undefined && typeof fromDate !== "string") || (toDate !== undefined && typeof toDate !== "string")) {
+        res.status(400).json({ error: "Khoảng ngày không hợp lệ." }); return;
+      }
+      const item = await reader.overview(fromDate as string | undefined, toDate as string | undefined);
+      if (!item) { res.status(400).json({ error: "Khoảng ngày không hợp lệ." }); return; }
+      res.json({ item });
+    } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/options", async (_req, res, next) => {
+    try { res.json(await reader.options()); } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/:kind", async (req, res, next) => {
+    try {
+      const kind = req.params.kind;
+      if (typeof kind !== "string" || !listKinds.includes(kind as ListKind)) { res.status(404).json({ error: "Không tìm thấy danh sách." }); return; }
+      const query = parseReadQuery(kind as ListKind, req.query);
+      if (!query) { res.status(400).json({ error: "Bộ lọc không hợp lệ." }); return; }
+      res.json(await reader.list(kind as ListKind, query));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/admin/read/:kind/:id", async (req, res, next) => {
+    try {
+      const kind = req.params.kind;
+      const id = Number(req.params.id);
+      if (typeof kind !== "string" || !listKinds.includes(kind as ListKind)) { res.status(404).json({ error: "Không tìm thấy danh sách." }); return; }
+      if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "ID không hợp lệ." }); return; }
+      const item = await reader.detail(kind as ListKind, id);
+      if (!item) { res.status(404).json({ error: "Không tìm thấy bản ghi." }); return; }
+      res.json({ item });
+    } catch (error) { next(error); }
+  });
 
   // =========================
   // ADMIN: DANH SÁCH CHUYẾN BAY
@@ -334,6 +392,10 @@ export function createApp(
 
         res.status(201).json(flight);
       } catch (error) {
+        if (error instanceof Error && error.message === "Hãng bay đang bị khóa hoặc không tồn tại.") {
+          res.status(409).json({ error: error.message });
+          return;
+        }
         if (
           error instanceof Error &&
           [

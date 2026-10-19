@@ -4,7 +4,7 @@
 **Phạm vi:** Chỉ trang quản trị nền tảng. Giao diện khách hàng và hãng bay là các phân hệ riêng.  
 **Nguyên tắc:** Admin xem dữ liệu toàn hệ thống và xử lý ngoại lệ; hãng bay tạo chuyến, đặt giá, quản lý bán vé thường ngày.
 
-**Tiến độ:** Bước 1–4 đã có giao diện và can thiệp trên dữ liệu mẫu. Bước 5 đã thêm migration tài khoản, phiên đăng nhập, phân quyền API và guard admin. Danh sách/can thiệp trên giao diện admin vẫn là dữ liệu mẫu; bước 6–8 mới nối API nghiệp vụ thật.
+**Tiến độ:** Bước 1–4 đã có giao diện và luồng can thiệp mẫu. Bước 5 đã thêm tài khoản, phiên đăng nhập và phân quyền. Bước 6 đã nối tổng quan, danh sách và panel chi tiết với API đọc dữ liệu thật. Bước 7 đã có API can thiệp, kiểm tra nghiệp vụ, transaction, nhật ký và chống gửi lặp. Bước 8 đã nối các nút/hộp thoại của trang dữ liệu thật với API, tải lại trạng thái và nhật ký sau thao tác; kiểm thử mã và build đã đạt.
 
 ## 1. Mục tiêu và ranh giới
 
@@ -188,3 +188,9 @@ client/src/admin/
 5. Tạm ẩn chuyến không làm mất booking cũ; hủy booking cập nhật số chỗ nhất quán.
 6. Dữ liệu SerpApi được gắn nhãn tham khảo, tách khỏi chuyến có thể đặt trong hệ thống.
 7. Bảng, bộ lọc, panel và thông báo lỗi dùng được trên màn hình máy tính và điện thoại.
+
+### Kiểm chứng bước 8 trên giao diện
+
+Đăng nhập bằng admin, mở `/admin/flights`, chọn một chuyến `SCHEDULED` còn giờ bay và đang `ON_SALE`. Trong panel bấm **Tạm ẩn chuyến**, kiểm tra hộp thoại hiển thị số booking còn hiệu lực, nhập lý do ít nhất 10 ký tự rồi xác nhận. Danh sách và panel phải hiển thị `HIDDEN`; nhật ký liên quan phải có hành động `HIDE_FLIGHT` và lý do. Mở `/admin/audit-logs` để tra cứu cùng bản ghi. Có thể mở bán lại bằng thao tác ngược khi hãng còn hoạt động.
+
+Thử khóa chính tài khoản admin đang đăng nhập: nút phải bị vô hiệu hóa. Với booking đã thanh toán và còn hiệu lực, hộp thoại hủy phải báo số chỗ được giải phóng và thanh toán cần đối soát; sau khi xác nhận, booking thành `CANCELLED`, thanh toán giữ `PAID` và có `NEEDS_REVIEW`. Không thử hủy booking thật nếu chưa có dữ liệu kiểm thử riêng.

@@ -163,6 +163,7 @@ model AuthSession {
 
 model AuditLog {
   id         Int      @id @default(autoincrement())
+  requestId  String?  @unique @db.VarChar(64)
   actorId    Int
   action     String   @db.VarChar(80)
   entityType String   @db.VarChar(80)

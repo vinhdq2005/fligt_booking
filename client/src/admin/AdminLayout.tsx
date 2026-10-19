@@ -1,8 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { applyDemoIntervention, createInitialDemoState } from './demoInterventions'
-import type { InterventionRequest } from './models'
 import '../styles.css'
 import './admin.css'
 
@@ -20,19 +18,10 @@ const navigation = [
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutError, setLogoutError] = useState('')
-  const [demoState, setDemoState] = useState(createInitialDemoState)
-  const demoStateRef = useRef(demoState)
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const current = navigation.find((item) => item.path === location.pathname)
-
-  function runIntervention(request: InterventionRequest) {
-    const result = applyDemoIntervention(demoStateRef.current, request)
-    demoStateRef.current = result.state
-    setDemoState(result.state)
-    return result
-  }
 
   return <div className="app-canvas">
     <div className="app-shell admin-shell">
@@ -55,7 +44,7 @@ export default function AdminLayout() {
               </NavLink>
             </div>)}
           </nav>
-          <div className="sidebar-tip"><div className="tip-icon">i</div><strong>Mô phỏng trong phiên</strong><p>Các thao tác admin chỉ đổi dữ liệu mẫu trong trình duyệt. Tải lại trang để khôi phục; chưa ghi vào database.</p></div>
+          <div className="sidebar-tip"><div className="tip-icon">i</div><strong>Can thiệp quản trị</strong><p>Thao tác tại trang chi tiết cần lý do và được ghi nhật ký để tra cứu.</p></div>
         </div>
         <div className="sidebar-footer"><div className="avatar">QT</div><div><strong>{user?.name ?? 'Quản trị viên'}</strong><span>ADMIN</span>{logoutError && <span role="alert">{logoutError}</span>}</div><button type="button" onClick={async () => { try { await logout(); navigate('/login', { replace: true }) } catch { setLogoutError('Không thể đăng xuất. Thử lại.') } }}>Đăng xuất</button></div>
       </aside>
@@ -65,9 +54,9 @@ export default function AdminLayout() {
             <button className="admin-menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Mở menu quản trị">☰</button>
             <div className="breadcrumbs">Quản trị <span aria-hidden="true">›</span> <strong>{current?.label ?? 'Trang quản trị'}</strong></div>
           </div>
-          <span className="admin-preview-pill">Mô phỏng · chưa lưu</span>
+          <span className="admin-preview-pill">Dữ liệu thật · có nhật ký</span>
         </header>
-        <main className="admin-main"><Outlet context={{ demoState, runIntervention }} /></main>
+        <main className="admin-main"><Outlet /></main>
       </div>
     </div>
   </div>

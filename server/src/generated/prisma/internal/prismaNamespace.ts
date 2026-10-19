@@ -1414,6 +1414,7 @@ export type AuthSessionScalarFieldEnum = (typeof AuthSessionScalarFieldEnum)[key
 
 export const AuditLogScalarFieldEnum = {
   id: 'id',
+  requestId: 'requestId',
   actorId: 'actorId',
   action: 'action',
   entityType: 'entityType',
@@ -1616,6 +1617,7 @@ export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
 export const AuditLogOrderByRelevanceFieldEnum = {
+  requestId: 'requestId',
   action: 'action',
   entityType: 'entityType',
   entityId: 'entityId',

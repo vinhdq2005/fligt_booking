@@ -107,6 +107,11 @@ export async function createBooking(input: CreateBookingInput) {
       throw new Error("Không tìm thấy chuyến bay.");
     }
 
+    const activeAirline = await tx.$queryRaw<{ id: number }[]>`
+      SELECT id FROM Airline WHERE id = (SELECT airlineId FROM Flight WHERE id = ${input.flightId}) AND status = 'ACTIVE' FOR UPDATE
+    `;
+    if (!activeAirline.length) throw new Error("Chuyến bay không còn nhận đặt chỗ.");
+
     const flight = await tx.flight.findUnique({
       where: { id: input.flightId },
       include: { airline: { select: { status: true } } },
@@ -125,7 +130,6 @@ export async function createBooking(input: CreateBookingInput) {
     const activeBookings = await tx.booking.findMany({
       where: {
         flightId: flight.id,
-        userId: input.userId,
         OR: [
           { status: "CONFIRMED" },
           {
@@ -159,6 +163,7 @@ export async function createBooking(input: CreateBookingInput) {
     return tx.booking.create({
       data: {
         flightId: flight.id,
+        userId: input.userId,
         contactName,
         contactEmail: input.contactEmail.trim(),
         contactPhone: input.contactPhone.trim(),

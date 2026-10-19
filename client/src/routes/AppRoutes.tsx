@@ -16,7 +16,7 @@ import AccountPage from '../pages/AccountPage'
 import MyBookingsPage from '../pages/MyBookingsPage'
 import BookingDetailPage from '../pages/BookingDetailPage'
 import AdminLayout from '../admin/AdminLayout'
-import AdminPreviewPage from '../admin/AdminPreviewPage'
+import AdminReadPage from '../admin/AdminReadPage'
 import AdminReferenceFlightsPage from '../pages/admin/AdminReferenceFlightsPage'
 
 function ProtectedRoute({ children, customerOnly = false }: { children: React.ReactNode; customerOnly?: boolean }) {
@@ -41,13 +41,13 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
-        <Route index element={<AdminPreviewPage kind="dashboard" />} />
-        <Route path="airlines" element={<AdminPreviewPage kind="airlines" />} />
-        <Route path="users" element={<AdminPreviewPage kind="users" />} />
-        <Route path="flights" element={<AdminPreviewPage kind="flights" />} />
-        <Route path="bookings" element={<AdminPreviewPage kind="bookings" />} />
-        <Route path="payments" element={<AdminPreviewPage kind="payments" />} />
-        <Route path="audit-logs" element={<AdminPreviewPage kind="audit-logs" />} />
+        <Route index element={<AdminReadPage kind="dashboard" />} />
+        <Route path="airlines" element={<AdminReadPage kind="airlines" />} />
+        <Route path="users" element={<AdminReadPage kind="users" />} />
+        <Route path="flights" element={<AdminReadPage kind="flights" />} />
+        <Route path="bookings" element={<AdminReadPage kind="bookings" />} />
+        <Route path="payments" element={<AdminReadPage kind="payments" />} />
+        <Route path="audit-logs" element={<AdminReadPage kind="audit-logs" />} />
         <Route path="reference-flights" element={<AdminReferenceFlightsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
