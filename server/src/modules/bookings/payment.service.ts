@@ -1,4 +1,3 @@
-
 import { prisma } from "../../lib/prisma";
 
 type PayBookingResult = {
@@ -33,8 +32,7 @@ export async function payBooking(
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    // Khóa bản ghi để hạn chế hai yêu cầu thanh toán
-    // cùng xử lý một đặt chỗ tại cùng thời điểm.
+    // Khóa booking để hạn chế thanh toán đồng thời.
     const locked = await tx.$queryRaw<{ id: number }[]>`
       SELECT id
       FROM Booking
@@ -67,7 +65,10 @@ export async function payBooking(
       );
     }
 
-    if (booking.expiresAt && booking.expiresAt <= new Date()) {
+    if (
+      booking.expiresAt &&
+      booking.expiresAt <= new Date()
+    ) {
       await tx.booking.update({
         where: { id: booking.id },
         data: { status: "EXPIRED" },
@@ -90,12 +91,28 @@ export async function payBooking(
       );
     }
 
-    // Đây là thanh toán giả lập cho bài tập lớn,
-    // không kết nối ngân hàng hay cổng thanh toán thật.
+    // Giá đã được chốt khi tạo booking.
+    // Không tính lại giá động tại thời điểm thanh toán.
+    const passengerCount = booking.passengers.length;
+    const totalAmount = booking.totalAmount;
+
+    if (
+      !Number.isSafeInteger(totalAmount) ||
+      totalAmount < 0 ||
+      totalAmount % passengerCount !== 0
+    ) {
+      throw new Error(
+        "Tổng tiền đặt chỗ không hợp lệ để phát hành vé.",
+      );
+    }
+
+    const pricePerPassenger = totalAmount / passengerCount;
+
+    // Thanh toán mô phỏng, không kết nối cổng thanh toán thật.
     const payment = await tx.payment.create({
       data: {
         bookingId: booking.id,
-        amount: booking.totalAmount,
+        amount: totalAmount,
         currency: "VND",
         method: "MOCK",
         status: "PAID",
@@ -113,7 +130,7 @@ export async function payBooking(
       const ticket = await tx.ticket.create({
         data: {
           passengerId: passenger.id,
-          price: booking.flight.basePrice,
+          price: pricePerPassenger,
           status: "ISSUED",
         },
       });
@@ -125,7 +142,7 @@ export async function payBooking(
       expired: false as const,
       bookingCode: booking.bookingCode,
       status: "CONFIRMED",
-      totalAmount: booking.totalAmount,
+      totalAmount,
       payment,
       tickets,
     };

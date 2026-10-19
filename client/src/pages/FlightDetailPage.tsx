@@ -139,7 +139,10 @@ function FlightDetailPage() {
     (airport) => airport.code === flight.arrivalCode,
   )
 
-  const totalPrice = flight.basePrice * passengers
+  const ticketPrice = Number(
+    flight.currentPrice ?? flight.basePrice ?? 0,
+  )
+  const totalPrice = ticketPrice * passengers
   const isBookable = flight.status === 'SCHEDULED'
 
   function handleContinue() {
@@ -171,7 +174,7 @@ function FlightDetailPage() {
             </div>
 
             <div className="flight-detail-price">
-              {flight.basePrice.toLocaleString('vi-VN')} ₫
+              {ticketPrice.toLocaleString('vi-VN')} ₫
               <small> / người</small>
             </div>
           </div>

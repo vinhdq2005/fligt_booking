@@ -1,5 +1,6 @@
 
 import { prisma } from "../../lib/prisma";
+import { calculateCurrentPrice } from "../flights/pricing.service";
 
 type PassengerInput = {
   fullName: string;
@@ -93,8 +94,7 @@ export async function createBooking(input: CreateBookingInput) {
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
   return prisma.$transaction(async (tx) => {
-    // Khóa dòng chuyến bay để các yêu cầu đặt chỗ đồng thời
-    // không cùng kiểm tra một số ghế còn trống.
+    // Khóa chuyến bay để tuần tự hóa các yêu cầu đặt chỗ.
     const lockedFlights = await tx.$queryRaw<{ id: number }[]>`
       SELECT id
       FROM Flight
@@ -118,6 +118,7 @@ export async function createBooking(input: CreateBookingInput) {
       throw new Error("Chuyến bay không còn nhận đặt chỗ.");
     }
 
+    // Các booking đang chiếm ghế.
     const activeBookings = await tx.booking.findMany({
       where: {
         flightId: flight.id,
@@ -130,12 +131,23 @@ export async function createBooking(input: CreateBookingInput) {
         ],
       },
       select: {
+        status: true,
         passengers: {
           select: { id: true },
         },
       },
     });
 
+    // Ghế đã bán: chỉ tính booking đã xác nhận.
+    const confirmedPassengers = activeBookings.reduce(
+      (total, booking) =>
+        booking.status === "CONFIRMED"
+          ? total + booking.passengers.length
+          : total,
+      0,
+    );
+
+    // Ghế bị chiếm: tính cả booking PENDING còn hạn.
     const occupiedSeats = activeBookings.reduce(
       (total, booking) => total + booking.passengers.length,
       0,
@@ -145,9 +157,22 @@ export async function createBooking(input: CreateBookingInput) {
       throw new Error("Không đủ ghế cho số hành khách yêu cầu.");
     }
 
-    const totalAmount = flight.basePrice * passengers.length;
+    // Tính lại giá tại thời điểm đặt, không tin giá từ client.
+    const pricing = calculateCurrentPrice({
+      basePrice: flight.basePrice,
+      departureTime: flight.departureTime,
+      capacity: flight.capacity,
+      confirmedPassengers,
+      now,
+    });
 
-    if (!Number.isSafeInteger(totalAmount)) {
+    const pricePerPassenger = pricing.currentPrice;
+    const totalAmount = pricePerPassenger * passengers.length;
+
+    if (
+      !Number.isSafeInteger(pricePerPassenger) ||
+      !Number.isSafeInteger(totalAmount)
+    ) {
       throw new Error("Tổng tiền vượt giới hạn cho phép.");
     }
 

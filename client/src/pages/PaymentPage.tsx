@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -31,6 +30,7 @@ type PendingBooking = {
   passengers: number
   bookingCode: string
   detailsSignature: string
+  totalAmount?: number
 }
 
 const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
@@ -58,6 +58,10 @@ function PaymentPage() {
   const [loadError, setLoadError] = useState('')
   const [paymentError, setPaymentError] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [bookingTotalAmount, setBookingTotalAmount] = useState<number | null>(
+    null,
+  )
+
   const paymentLock = useRef(false)
 
   useEffect(() => {
@@ -229,6 +233,14 @@ function PaymentPage() {
             parsed.bookingCode.length > 0
           ) {
             pendingBooking = parsed
+
+            if (
+              typeof parsed.totalAmount === 'number' &&
+              Number.isFinite(parsed.totalAmount) &&
+              parsed.totalAmount >= 0
+            ) {
+              setBookingTotalAmount(parsed.totalAmount)
+            }
           }
         } catch {
           sessionStorage.removeItem(PENDING_BOOKING_KEY)
@@ -260,12 +272,20 @@ function PaymentPage() {
 
         bookingCode = result.item.bookingCode
 
+        const amount = Number(result.item.totalAmount)
+        const validAmount = Number.isFinite(amount) && amount >= 0
+
         const pending: PendingBooking = {
           flightId: flight.id,
           date,
           passengers,
           bookingCode,
           detailsSignature,
+          ...(validAmount ? { totalAmount: amount } : {}),
+        }
+
+        if (validAmount) {
+          setBookingTotalAmount(amount)
         }
 
         sessionStorage.setItem(
@@ -323,8 +343,16 @@ function PaymentPage() {
     )
   }
 
-  const ticketPrice = Number(flight.basePrice ?? 0)
-  const totalPrice = ticketPrice * passengers
+  // Giá hiển thị ban đầu lấy từ API chi tiết chuyến bay.
+  const ticketPrice = Number(
+    flight.currentPrice ?? flight.basePrice ?? 0,
+  )
+
+  // Khi backend đã trả tổng tiền của booking, ưu tiên dùng số tiền đó.
+  const totalPrice =
+    bookingTotalAmount !== null
+      ? bookingTotalAmount
+      : ticketPrice * passengers
 
   return (
     <section className="payment-page">
