@@ -3,7 +3,7 @@ import type { ListKind } from './previewCatalog'
 import type { InterventionAction } from './models'
 
 export type AdminOptions = {
-  airlines: Array<{ id: number; name: string }>
+  airlines: Array<{ id: number; name: string; status: 'ACTIVE' | 'LOCKED' }>
   airports: string[]
   admins: Array<{ id: number; name: string }>
   actions: string[]
@@ -20,6 +20,14 @@ export const getAdminOptions = () => get<AdminOptions>('/api/admin/read/options'
 export const getAdminOverview = (params: URLSearchParams) => get<{ item: AdminDashboard }>(`/api/admin/overview?${params}`)
 export const listAdminData = (kind: ListKind, params: URLSearchParams) => get<PageResult<Record<string, unknown>>>(`/api/admin/read/${kind}?${params}`)
 export const getAdminDetail = (kind: ListKind, id: number) => get<{ item: Record<string, unknown> }>(`/api/admin/read/${kind}/${id}`)
+
+export async function createAdminStaff(input: { name: string; email: string; password: string; role: 'AIRLINE_FLIGHT_MANAGER' | 'AIRLINE_SALES_MANAGER'; airlineId: number }) {
+  const response = await fetch('/api/admin/users', { method: 'POST', credentials: 'same-origin',
+    headers: { 'content-type': 'application/json', 'x-csrf-intent': '1' }, body: JSON.stringify(input) })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new AdminRequestError(data.error || `Yêu cầu thất bại (HTTP ${response.status}).`, response.status)
+  return data as { user: { id: number; name: string; email: string } }
+}
 
 export class AdminRequestError extends Error {
   constructor(message: string, public status: number) { super(message) }

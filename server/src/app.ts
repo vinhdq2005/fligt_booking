@@ -9,6 +9,7 @@ import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
 import { getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, listKinds, parseReadQuery } from "./modules/admin/admin-read.service";
 import type { ListKind, ReadQuery } from "./modules/admin/admin-read.service";
 import { InterventionError, parseInterventionInput, runAdminIntervention } from "./modules/admin/admin-intervention.service";
+import { CreateStaffError, createAirlineStaff, parseCreateStaffInput } from "./modules/admin/admin-user.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -129,6 +130,7 @@ export function createApp(
   management: FlightManagement = { createFlight, listManagedFlights },
   reader: AdminReader = { list: listAdminData, detail: getAdminDetail, options: getAdminOptions, overview: getAdminOverview },
   intervention: typeof runAdminIntervention = runAdminIntervention,
+  staffCreator: typeof createAirlineStaff = createAirlineStaff,
 ) {
   const app = express();
 
@@ -218,6 +220,18 @@ export function createApp(
 
   app.use("/api/admin", requireRole("ADMIN"), csrf);
   app.use("/api/airline", requireRole("AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), csrf);
+
+  app.post("/api/admin/users", async (req, res, next) => {
+    try {
+      const input = parseCreateStaffInput(req.body, res.locals.authUser.id);
+      if (!input) { res.status(400).json({ error: "Tên, email, mật khẩu (10–128 ký tự), vai trò hoặc hãng bay không hợp lệ." }); return; }
+      const user = await staffCreator(input);
+      res.status(201).json({ user });
+    } catch (error) {
+      if (error instanceof CreateStaffError) { res.status(error.status).json({ error: error.message }); return; }
+      next(error);
+    }
+  });
 
   app.post("/api/admin/interventions", async (req, res, next) => {
     try {

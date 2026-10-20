@@ -16,7 +16,9 @@ $env:BOOTSTRAP_USER_ROLE = 'ADMIN'
 npm.cmd run create-user
 ```
 
-Nhân viên hãng dùng role `AIRLINE_FLIGHT_MANAGER` hoặc `AIRLINE_SALES_MANAGER` và thêm `BOOTSTRAP_AIRLINE_ID` là ID hãng đã tạo. Một email đã tồn tại sẽ bị từ chối; CLI không ghi đè quyền hay mật khẩu. Xóa các biến môi trường tạm sau khi tạo tài khoản.
+Admin tạo nhân viên hãng tại `/admin/users` hoặc gọi `POST /api/admin/users` với cookie admin, `x-csrf-intent: 1` và JSON `{ "name": "...", "email": "...", "password": "...", "role": "AIRLINE_FLIGHT_MANAGER", "airlineId": 1 }`. Role có thể là `AIRLINE_FLIGHT_MANAGER` hoặc `AIRLINE_SALES_MANAGER`; hãng phải đang hoạt động, email chưa được dùng và mật khẩu dài 10–128 ký tự. API chỉ trả hồ sơ công khai, lưu mật khẩu băm và ghi `CREATE_AIRLINE_STAFF` vào nhật ký trong cùng transaction. Admin tự chuyển mật khẩu khởi tạo cho nhân viên qua kênh riêng; hệ thống chưa có email mời hoặc luồng đặt lại mật khẩu. Kiểm thử tích hợp bằng `npm.cmd run test:admin-users`.
+
+CLI vẫn dùng để tạo admin ban đầu; khi dùng để tạo nhân viên hãng, đặt thêm `BOOTSTRAP_AIRLINE_ID`. Một email đã tồn tại sẽ bị từ chối; CLI không ghi đè quyền hay mật khẩu. Xóa các biến môi trường tạm sau khi tạo tài khoản.
 
 `/api/admin/*` chỉ chấp nhận `ADMIN`. `GET /api/airline/managed-flights` dành cho nhân viên hãng và chỉ trả chuyến của hãng trong phiên. `POST /api/airline/managed-flights` chỉ dành cho `AIRLINE_FLIGHT_MANAGER`; `airlineId` trong request bị bỏ qua. `ADMIN_API_TOKEN` và token gắn tự động trong Vite proxy đã bỏ.
 
