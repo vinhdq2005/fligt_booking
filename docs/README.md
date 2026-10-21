@@ -4,3 +4,4 @@ Lưu tài liệu được cả nhóm thống nhất tại đây, ví dụ: yêu 
 
 - [Hướng dẫn làm việc Frontend](FRONTEND_GUIDE.md): vị trí đặt code, quy tắc đặt tên và cách dựng giao diện bằng dữ liệu mẫu.
 - [Đặc tả trang Admin](admin-spec.md): giao diện, chức năng, quyền hạn, nghiệp vụ và thứ tự triển khai.
+- [Phân hệ hãng bay](airline-spec.md): quyền và giao diện của nhóm quản lý chuyến, nhóm bán vé; quy trình đặt giá, mở bán và BI mô phỏng.

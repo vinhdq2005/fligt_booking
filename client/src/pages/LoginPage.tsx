@@ -32,7 +32,7 @@ function LoginPage() {
       const { user } = await login(normalizedEmail, password)
       setUser(user)
       const requestedPath = (location.state as { from?: string } | null)?.from
-      navigate(requestedPath?.startsWith('/') && !requestedPath.startsWith('//') ? requestedPath : user.role === 'ADMIN' ? '/admin' : '/account', { replace: true })
+      navigate(requestedPath?.startsWith('/') && !requestedPath.startsWith('//') ? requestedPath : user.role === 'ADMIN' ? '/admin' : user.role === 'CUSTOMER' ? '/account' : '/airline', { replace: true })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể đăng nhập.')
     } finally { setSubmitting(false) }

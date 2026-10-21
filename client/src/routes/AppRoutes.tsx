@@ -18,6 +18,9 @@ import BookingDetailPage from '../pages/BookingDetailPage'
 import AdminLayout from '../admin/AdminLayout'
 import AdminReadPage from '../admin/AdminReadPage'
 import AdminReferenceFlightsPage from '../pages/admin/AdminReferenceFlightsPage'
+import AirlineLayout from '../airline/AirlineLayout'
+import { FlightManagerPage, SalesManagerPage } from '../airline/AirlineWorkspacePage'
+import AirlineDashboardPage from '../airline/AirlineDashboardPage'
 
 function ProtectedRoute({ children, customerOnly = false }: { children: React.ReactNode; customerOnly?: boolean }) {
   const { user, loading } = useAuth()
@@ -37,6 +40,15 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AirlineGuard({ children, role }: { children: React.ReactNode; role?: 'AIRLINE_FLIGHT_MANAGER' | 'AIRLINE_SALES_MANAGER' }) {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  if (loading) return <main role="status">Đang xác thực…</main>
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
+  if (!['AIRLINE_FLIGHT_MANAGER', 'AIRLINE_SALES_MANAGER'].includes(user.role) || (role && user.role !== role)) return <Navigate to="/forbidden" replace />
+  return <>{children}</>
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -50,6 +62,14 @@ function AppRoutes() {
         <Route path="audit-logs" element={<AdminReadPage kind="audit-logs" />} />
         <Route path="reference-flights" element={<AdminReferenceFlightsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
+
+      <Route path="/airline" element={<AirlineGuard><AirlineLayout /></AirlineGuard>}>
+        <Route index element={<AirlineGuard><AirlineHome /></AirlineGuard>} />
+        <Route path="flights" element={<AirlineGuard role="AIRLINE_FLIGHT_MANAGER"><FlightManagerPage /></AirlineGuard>} />
+        <Route path="dashboard" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><AirlineDashboardPage /></AirlineGuard>} />
+        <Route path="awaiting-sale" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><SalesManagerPage awaitingOnly /></AirlineGuard>} />
+        <Route path="sales" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><SalesManagerPage /></AirlineGuard>} />
       </Route>
 
       <Route element={<MainLayout />}>
@@ -122,6 +142,11 @@ function AppRoutes() {
       </Route>
     </Routes>
   )
+}
+
+function AirlineHome() {
+  const { user } = useAuth()
+  return <Navigate to={user?.role === 'AIRLINE_FLIGHT_MANAGER' ? '/airline/flights' : '/airline/dashboard'} replace />
 }
 
 export default AppRoutes

@@ -10,6 +10,8 @@ import { getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, listK
 import type { ListKind, ReadQuery } from "./modules/admin/admin-read.service";
 import { InterventionError, parseInterventionInput, runAdminIntervention } from "./modules/admin/admin-intervention.service";
 import { CreateStaffError, createAirlineStaff, parseCreateStaffInput } from "./modules/admin/admin-user.service";
+import { AirlineWorkspaceError, getAirlineWorkspace, parseAirlineWorkspaceQuery, setAirlineSalesSettings, setAirlineSaleStatus } from "./modules/airlines/airline-workspace.service";
+import { getAirlineDashboard, parseAirlineDashboardQuery } from "./modules/airlines/airline-dashboard.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -221,6 +223,38 @@ export function createApp(
   app.use("/api/admin", requireRole("ADMIN"), csrf);
   app.use("/api/airline", requireRole("AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), csrf);
 
+  app.get("/api/airline/workspace", async (req, res, next) => {
+    try {
+      const query = parseAirlineWorkspaceQuery(req.query);
+      if (!query) { res.status(400).json({ error: "Bộ lọc hãng bay không hợp lệ." }); return; }
+      res.json(await getAirlineWorkspace(res.locals.authUser.airlineId, query));
+    }
+    catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
+  });
+  app.get("/api/airline/dashboard", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const query = parseAirlineDashboardQuery(req.query);
+      if (!query) { res.status(400).json({ error: "Bộ lọc Dashboard không hợp lệ." }); return; }
+      res.json(await getAirlineDashboard(res.locals.authUser.airlineId, query));
+    } catch (error) { next(error); }
+  });
+  app.put("/api/airline/flights/:id/sales-settings", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const flightId = Number(req.params.id);
+      const { capacity, basePrice } = req.body ?? {};
+      if (!Number.isSafeInteger(flightId) || flightId < 1 || typeof capacity !== "number" || typeof basePrice !== "number") { res.status(400).json({ error: "Chuyến bay, số ghế hoặc giá gốc không hợp lệ." }); return; }
+      res.json(await setAirlineSalesSettings({ airlineId: res.locals.authUser.airlineId, actorId: res.locals.authUser.id, flightId, capacity, basePrice }));
+    } catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
+  });
+  app.put("/api/airline/flights/:id/sale-status", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const flightId = Number(req.params.id);
+      const saleStatus = req.body?.saleStatus;
+      if (!Number.isSafeInteger(flightId) || flightId < 1 || (saleStatus !== "ON_SALE" && saleStatus !== "HIDDEN")) { res.status(400).json({ error: "Chuyến bay hoặc trạng thái mở bán không hợp lệ." }); return; }
+      res.json(await setAirlineSaleStatus({ airlineId: res.locals.authUser.airlineId, actorId: res.locals.authUser.id, flightId, saleStatus }));
+    } catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
+  });
+
   app.post("/api/admin/users", async (req, res, next) => {
     try {
       const input = parseCreateStaffInput(req.body, res.locals.authUser.id);
@@ -377,8 +411,6 @@ export function createApp(
           arrivalCode,
           departureTime,
           arrivalTime,
-          capacity,
-          basePrice,
         } = body;
 
         if (
@@ -387,8 +419,8 @@ export function createApp(
           typeof arrivalCode !== "string" ||
           typeof departureTime !== "string" ||
           typeof arrivalTime !== "string" ||
-          typeof capacity !== "number" ||
-          typeof basePrice !== "number"
+          body.capacity !== undefined ||
+          body.basePrice !== undefined
         ) {
           res.status(400).json({
             error:
@@ -404,8 +436,6 @@ export function createApp(
           arrivalCode,
           departureTime,
           arrivalTime,
-          capacity,
-          basePrice,
         });
 
         res.status(201).json(flight);

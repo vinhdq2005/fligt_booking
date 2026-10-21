@@ -9,6 +9,8 @@
     "test": "node --import tsx --test src/app.test.ts src/modules/admin/admin-read.test.ts",
     "test:admin-interventions": "node --import tsx --test src/modules/admin/admin-intervention.integration.test.ts",
     "test:admin-users": "node --import tsx --test src/modules/admin/admin-user.integration.test.ts",
+    "test:airline-workspace": "node --import tsx --test src/modules/airlines/airline-workspace.integration.test.ts",
+    "test:airline-dashboard": "node --import tsx --test src/modules/airlines/airline-dashboard.integration.test.ts",
     "create-user": "tsx src/create-user.ts"
   },
   "keywords": [],
