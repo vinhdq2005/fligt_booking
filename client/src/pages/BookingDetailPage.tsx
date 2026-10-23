@@ -1,20 +1,8 @@
 
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
 import { getBookingByCode, type BookingDetails } from '../api'
 import '../styles/booking-detail.css'
-
-type TicketInfo = {
-  id?: number | string
-  ticketCode?: string | null
-  qrToken?: string | null
-  status?: string | null
-}
-
-type PassengerWithTicket = BookingDetails['passengers'][number] & {
-  ticket?: TicketInfo | null
-}
 
 function BookingDetailPage() {
   const navigate = useNavigate()
@@ -97,31 +85,15 @@ function BookingDetailPage() {
         return 'Đã hủy'
       case 'EXPIRED':
         return 'Đã hết hạn'
-      case 'ISSUED':
-        return 'Đã phát hành'
-      case 'USED':
-        return 'Đã check-in'
-      case 'REFUNDED':
-        return 'Đã hoàn tiền'
       default:
-        return status || 'Chưa xác định'
+        return status
     }
   }
 
   function getStatusClass(status: string) {
-    switch (status.toUpperCase()) {
-      case 'CONFIRMED':
-      case 'ISSUED':
-        return 'booking-status-paid'
-      case 'USED':
-        return 'booking-status-used'
-      case 'CANCELLED':
-      case 'EXPIRED':
-      case 'REFUNDED':
-        return 'booking-status-cancelled'
-      default:
-        return 'booking-status-pending'
-    }
+    return status.toUpperCase() === 'CONFIRMED'
+      ? 'booking-status-paid'
+      : 'booking-status-pending'
   }
 
   if (loading) {
@@ -153,8 +125,6 @@ function BookingDetailPage() {
       </section>
     )
   }
-
-  const passengers = booking.passengers as PassengerWithTicket[]
 
   return (
     <section className="booking-detail-page">
@@ -223,7 +193,7 @@ function BookingDetailPage() {
 
             <p>
               <strong>Số lượng hành khách:</strong>{' '}
-              {passengers.length}
+              {booking.passengers.length}
             </p>
 
             <p>
@@ -243,93 +213,15 @@ function BookingDetailPage() {
           </div>
 
           <div className="booking-detail-section">
-            <h3>Vé điện tử và mã QR</h3>
-
-            {booking.status.toUpperCase() !== 'CONFIRMED' ? (
-              <p>
-                Vé điện tử và QR sẽ hiển thị khi đặt chỗ được xác nhận
-                và vé đã được phát hành.
-              </p>
-            ) : passengers.some(
-                (passenger) =>
-                  passenger.ticket?.qrToken &&
-                  passenger.ticket?.ticketCode,
-              ) ? (
-              <div className="customer-tickets">
-                {passengers.map((passenger, index) => {
-                  const ticket = passenger.ticket
-                  const qrToken = ticket?.qrToken
-                  const ticketCode = ticket?.ticketCode
-
-                  return (
-                    <article
-                      className="customer-ticket"
-                      key={ticket?.id ?? ticketCode ?? passenger.id ?? index}
-                    >
-                      <h4>Hành khách {index + 1}</h4>
-
-                      <p>
-                        <strong>Họ và tên:</strong>{' '}
-                        {passenger.fullName}
-                      </p>
-
-                      {ticketCode && (
-                        <p>
-                          <strong>Mã vé:</strong> {ticketCode}
-                        </p>
-                      )}
-
-                      {ticket?.status && (
-                        <p>
-                          <strong>Trạng thái vé:</strong>{' '}
-                          {getStatusLabel(ticket.status)}
-                        </p>
-                      )}
-
-                      {qrToken && ticketCode ? (
-                        <div className="customer-ticket-qr">
-                          <QRCodeSVG
-                            value={qrToken}
-                            size={200}
-                            level="M"
-                            includeMargin
-                            title={`QR vé ${ticketCode}`}
-                          />
-                          <p>QR vé điện tử</p>
-                          <small>
-                            Xuất trình mã QR này cho nhân viên hãng bay
-                            khi làm thủ tục.
-                          </small>
-                        </div>
-                      ) : (
-                        <p>
-                          Vé này chưa có QR. Vui lòng tải lại sau khi vé
-                          được phát hành.
-                        </p>
-                      )}
-                    </article>
-                  )
-                })}
-              </div>
-            ) : (
-              <p>
-                Đặt chỗ đã xác nhận nhưng dữ liệu QR chưa có trong thông
-                tin vé trả về từ máy chủ. Cần kiểm tra API chi tiết đặt
-                chỗ để bổ sung qrToken.
-              </p>
-            )}
-          </div>
-
-          <div className="booking-detail-section">
             <h3>Danh sách hành khách</h3>
 
-            {passengers.length > 0 ? (
+            {booking.passengers.length > 0 ? (
               <ul>
-                {passengers.map((passenger, index) => (
-                  <li key={passenger.id ?? index}>
+                {booking.passengers.map((passenger) => (
+                  <li key={passenger.id}>
                     <strong>{passenger.fullName}</strong>
 
-                    {passenger.ticket?.ticketCode && (
+                    {passenger.ticket && (
                       <span>
                         {' '}— Mã vé: {passenger.ticket.ticketCode}
                       </span>
@@ -352,15 +244,12 @@ function BookingDetailPage() {
                     <strong>Số tiền:</strong>{' '}
                     {formatPrice(payment.amount)}
                   </p>
-
                   <p>
                     <strong>Phương thức:</strong> {payment.method}
                   </p>
-
                   <p>
                     <strong>Trạng thái:</strong> {payment.status}
                   </p>
-
                   <p>
                     <strong>Thời gian:</strong>{' '}
                     {formatDateTime(payment.createdAt)}
@@ -377,15 +266,10 @@ function BookingDetailPage() {
               type="button"
               onClick={() =>
                 navigate(
-                  `/payment?flightId=${encodeURIComponent(
-                    String(
-                      (
-                        booking as BookingDetails & {
-                          flightId?: number
-                        }
-                      ).flightId ?? '',
-                    ),
-                  )}&passengers=${passengers.length}&date=${encodeURIComponent(
+                  `/payment?flightId=${encodeURIComponent(String(
+                    // Cần dùng ID chuyến bay của booking nếu API trả về trường này.
+                    (booking as BookingDetails & { flightId?: number }).flightId ?? '',
+                  ))}&passengers=${booking.passengers.length}&date=${encodeURIComponent(
                     booking.flight.departureTime.slice(0, 10),
                   )}`,
                 )
@@ -396,7 +280,7 @@ function BookingDetailPage() {
           )}
 
           <p className="booking-detail-note">
-            Thông tin đặt chỗ và vé được tải từ hệ thống backend.
+            Thông tin đặt chỗ được tải từ hệ thống backend.
           </p>
         </div>
       </div>

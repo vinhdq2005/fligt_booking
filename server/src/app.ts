@@ -1,18 +1,10 @@
-import {
-  verifyTicketQR,
-  checkInTicketQR,
-  TicketServiceError,
-} from "./modules/tickets/ticket.service";
+
 import express from "express";
 import { authStore, canUseAccount, hashPassword, hashSession, newSessionToken, publicUser, SESSION_AGE_MS, verifyPassword } from "./modules/auth/auth.service";
 import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
 import { getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, listKinds, parseReadQuery } from "./modules/admin/admin-read.service";
 import type { ListKind, ReadQuery } from "./modules/admin/admin-read.service";
 import { InterventionError, parseInterventionInput, runAdminIntervention } from "./modules/admin/admin-intervention.service";
-import { CreateStaffError, createAirlineStaff, parseCreateStaffInput } from "./modules/admin/admin-user.service";
-import { AirlineWorkspaceError, getAirlineWorkspace, parseAirlineWorkspaceQuery, setAirlineSalesSettings, setAirlineSaleStatus } from "./modules/airlines/airline-workspace.service";
-import { getAirlineDashboard, parseAirlineDashboardQuery } from "./modules/airlines/airline-dashboard.service";
-import { getAirlineBooking, listAirlineBookings, parseAirlineBookingQuery } from "./modules/airlines/airline-bookings.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -133,7 +125,6 @@ export function createApp(
   management: FlightManagement = { createFlight, listManagedFlights },
   reader: AdminReader = { list: listAdminData, detail: getAdminDetail, options: getAdminOptions, overview: getAdminOverview },
   intervention: typeof runAdminIntervention = runAdminIntervention,
-  staffCreator: typeof createAirlineStaff = createAirlineStaff,
 ) {
   const app = express();
 
@@ -223,66 +214,6 @@ export function createApp(
 
   app.use("/api/admin", requireRole("ADMIN"), csrf);
   app.use("/api/airline", requireRole("AIRLINE_FLIGHT_MANAGER", "AIRLINE_SALES_MANAGER"), csrf);
-
-  app.get("/api/airline/workspace", async (req, res, next) => {
-    try {
-      const query = parseAirlineWorkspaceQuery(req.query);
-      if (!query) { res.status(400).json({ error: "Bộ lọc hãng bay không hợp lệ." }); return; }
-      res.json(await getAirlineWorkspace(res.locals.authUser.airlineId, query));
-    }
-    catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
-  });
-  app.get("/api/airline/dashboard", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
-    try {
-      const query = parseAirlineDashboardQuery(req.query);
-      if (!query) { res.status(400).json({ error: "Bộ lọc Dashboard không hợp lệ." }); return; }
-      res.json(await getAirlineDashboard(res.locals.authUser.airlineId, query));
-    } catch (error) { next(error); }
-  });
-  app.get("/api/airline/bookings", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
-    try {
-      const query = parseAirlineBookingQuery(req.query);
-      if (!query) { res.status(400).json({ error: "Bộ lọc đặt chỗ không hợp lệ." }); return; }
-      res.json(await listAirlineBookings(res.locals.authUser.airlineId, query));
-    } catch (error) { next(error); }
-  });
-  app.get("/api/airline/bookings/:id", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
-    try {
-      const id = Number(req.params.id);
-      if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Mã đặt chỗ không hợp lệ." }); return; }
-      const item = await getAirlineBooking(res.locals.authUser.airlineId, id);
-      if (!item) { res.status(404).json({ error: "Không tìm thấy đặt chỗ của hãng." }); return; }
-      res.json({ item });
-    } catch (error) { next(error); }
-  });
-  app.put("/api/airline/flights/:id/sales-settings", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
-    try {
-      const flightId = Number(req.params.id);
-      const { capacity, basePrice } = req.body ?? {};
-      if (!Number.isSafeInteger(flightId) || flightId < 1 || typeof capacity !== "number" || typeof basePrice !== "number") { res.status(400).json({ error: "Chuyến bay, số ghế hoặc giá gốc không hợp lệ." }); return; }
-      res.json(await setAirlineSalesSettings({ airlineId: res.locals.authUser.airlineId, actorId: res.locals.authUser.id, flightId, capacity, basePrice }));
-    } catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
-  });
-  app.put("/api/airline/flights/:id/sale-status", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
-    try {
-      const flightId = Number(req.params.id);
-      const saleStatus = req.body?.saleStatus;
-      if (!Number.isSafeInteger(flightId) || flightId < 1 || (saleStatus !== "ON_SALE" && saleStatus !== "HIDDEN")) { res.status(400).json({ error: "Chuyến bay hoặc trạng thái mở bán không hợp lệ." }); return; }
-      res.json(await setAirlineSaleStatus({ airlineId: res.locals.authUser.airlineId, actorId: res.locals.authUser.id, flightId, saleStatus }));
-    } catch (error) { if (error instanceof AirlineWorkspaceError) { res.status(error.status).json({ error: error.message }); return; } next(error); }
-  });
-
-  app.post("/api/admin/users", async (req, res, next) => {
-    try {
-      const input = parseCreateStaffInput(req.body, res.locals.authUser.id);
-      if (!input) { res.status(400).json({ error: "Tên, email, mật khẩu (10–128 ký tự), vai trò hoặc hãng bay không hợp lệ." }); return; }
-      const user = await staffCreator(input);
-      res.status(201).json({ user });
-    } catch (error) {
-      if (error instanceof CreateStaffError) { res.status(error.status).json({ error: error.message }); return; }
-      next(error);
-    }
-  });
 
   app.post("/api/admin/interventions", async (req, res, next) => {
     try {
@@ -428,6 +359,8 @@ export function createApp(
           arrivalCode,
           departureTime,
           arrivalTime,
+          capacity,
+          basePrice,
         } = body;
 
         if (
@@ -436,8 +369,8 @@ export function createApp(
           typeof arrivalCode !== "string" ||
           typeof departureTime !== "string" ||
           typeof arrivalTime !== "string" ||
-          body.capacity !== undefined ||
-          body.basePrice !== undefined
+          typeof capacity !== "number" ||
+          typeof basePrice !== "number"
         ) {
           res.status(400).json({
             error:
@@ -453,6 +386,8 @@ export function createApp(
           arrivalCode,
           departureTime,
           arrivalTime,
+          capacity,
+          basePrice,
         });
 
         res.status(201).json(flight);
@@ -823,85 +758,6 @@ export function createApp(
       }
     },
   );
-// =========================
-// AIRLINE: XÁC MINH QR VÉ
-// =========================
-
-app.get(
-  "/api/tickets/verify/:token",
-  requireRole(
-    "AIRLINE_FLIGHT_MANAGER",
-    "AIRLINE_SALES_MANAGER",
-  ),
-  async (req, res, next) => {
-    try {
-      const token = req.params.token;
-
-      if (typeof token !== "string" || !token.trim()) {
-        res.status(400).json({
-          error: "Mã QR không hợp lệ.",
-        });
-        return;
-      }
-
-      const result = await verifyTicketQR(token);
-
-      res.json({
-        item: result,
-      });
-    } catch (error) {
-      if (error instanceof TicketServiceError) {
-        res.status(error.statusCode).json({
-          error: error.message,
-        });
-        return;
-      }
-
-      next(error);
-    }
-  },
-);
-
-// =========================
-// AIRLINE: CHECK-IN QR VÉ
-// =========================
-
-app.post(
-  "/api/tickets/check-in/:token",
-  requireRole("AIRLINE_FLIGHT_MANAGER"),
-  csrf,
-  async (req, res, next) => {
-    try {
-      const token = req.params.token;
-
-      if (typeof token !== "string" || !token.trim()) {
-        res.status(400).json({
-          error: "Mã QR không hợp lệ.",
-        });
-        return;
-      }
-
-      const staff = res.locals.authUser;
-
-      const result = await checkInTicketQR(token, {
-        id: staff.id,
-        role: staff.role,
-        airlineId: staff.airlineId,
-      });
-
-      res.json(result);
-    } catch (error) {
-      if (error instanceof TicketServiceError) {
-        res.status(error.statusCode).json({
-          error: error.message,
-        });
-        return;
-      }
-
-      next(error);
-    }
-  },
-);
 
   // =========================
   // ERROR HANDLER

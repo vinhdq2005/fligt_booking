@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { AdminRequestError, getAdminDetail, getAdminOptions, getAdminOverview, listAdminData, submitAdminIntervention, type AdminOptions } from './adminReadApi'
 import { getRealInterventionPlan, type RealInterventionPlan } from './adminInterventionPlan'
 import AdminInterventionDialog from './AdminInterventionDialog'
-import AdminCreateStaffDialog from './AdminCreateStaffDialog'
 import { useAuth } from '../auth/AuthContext'
 import type { AdminDashboard, PageResult } from './models'
 import { displayStatus, formatDateTime, formatMoney, type ListKind } from './previewCatalog'
@@ -131,7 +130,6 @@ function ListPage({ kind }: { kind: ListKind }) {
   const [detailError, setDetailError] = useState('')
   const [detailRetry, setDetailRetry] = useState(0)
   const [dialogPlan, setDialogPlan] = useState<RealInterventionPlan | null>(null)
-  const [showCreateStaff, setShowCreateStaff] = useState(false)
   const [actionBusy, setActionBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [noticeError, setNoticeError] = useState(false)
@@ -221,16 +219,6 @@ function ListPage({ kind }: { kind: ListKind }) {
   }
   function changeFilter(key: string, value: string) { setFilters(current => ({ ...current, [key]: value })); setPage(1); setSelectedId(null) }
   function clearFilters() { setSearch(''); setFilters({}); setPage(1); setSelectedId(null) }
-  function staffCreated(created: { id: number; name: string; email: string }) {
-    setShowCreateStaff(false)
-    setSearch('')
-    setFilters({})
-    setPage(1)
-    setSelectedId(created.id)
-    setNotice(`Đã tạo tài khoản ${created.email}. Hãy chuyển mật khẩu khởi tạo cho nhân viên qua kênh riêng.`)
-    setNoticeError(false)
-    setRetry(value => value + 1)
-  }
   function changeSort(field: string) { if (!field) return; setDirection(current => sort === field && current === 'asc' ? 'desc' : 'asc'); setSort(field); setPage(1) }
   const total = result?.pagination.total ?? 0
   const pageCount = result?.pagination.pageCount ?? 1
@@ -238,7 +226,7 @@ function ListPage({ kind }: { kind: ListKind }) {
   const end = Math.min(page * pageSize, total)
   return <><div className="content"><div className="page-heading"><div><div className="eyebrow">ADMIN CONTENT</div><h1>{config.title}</h1><p>Dữ liệu hiện tại từ hệ thống.</p></div><span className="admin-data-label">Dữ liệu thật · {kind === 'audit-logs' ? 'chỉ đọc' : 'can thiệp có nhật ký'}</span></div>
     {notice && <div className={`admin-demo-notice${noticeError ? ' admin-error-notice' : ''}`} role={noticeError ? 'alert' : 'status'}><strong>{notice}</strong><button aria-label="Đóng thông báo" onClick={() => setNotice('')}>×</button></div>}
-    <section className="list-card"><div className="list-card-header"><div><h2>Danh sách {config.title.toLowerCase()}</h2><p>Lọc và phân trang tại server.</p></div><div className="admin-list-heading-actions"><span className="admin-result-count">{total} kết quả</span>{kind === 'users' && <button type="button" className="primary-button" disabled={!options?.airlines.some(airline => airline.status === 'ACTIVE')} onClick={() => setShowCreateStaff(true)}>+ Tạo nhân viên hãng</button>}</div></div>
+    <section className="list-card"><div className="list-card-header"><div><h2>Danh sách {config.title.toLowerCase()}</h2><p>Lọc và phân trang tại server.</p></div><span className="admin-result-count">{total} kết quả</span></div>
       <form className="admin-list-filters" onSubmit={(event: FormEvent) => event.preventDefault()}><label className="admin-search-field">Tìm kiếm<input type="search" value={search} placeholder={config.search} onChange={event => { setSearch(event.target.value); setPage(1) }} /></label>
         {config.filters.map(filter => <label key={filter.key}>{filter.label}{filter.date ? <input type="date" value={filters[filter.key] ?? ''} onChange={event => changeFilter(filter.key, event.target.value)} /> : <select value={filters[filter.key] ?? ''} onChange={event => changeFilter(filter.key, event.target.value)}><option value="">Tất cả</option>{choices(filter).map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>}</label>)}
         <button className="admin-clear-button" type="button" disabled={!activeFilters} onClick={clearFilters}>Xóa lọc</button></form>
@@ -260,7 +248,6 @@ function ListPage({ kind }: { kind: ListKind }) {
       </aside>
     </div>}
     {dialogPlan && <AdminInterventionDialog plan={dialogPlan} onCancel={() => setDialogPlan(null)} onConfirm={confirmAction} />}
-    {showCreateStaff && options && <AdminCreateStaffDialog airlines={options.airlines} onCancel={() => setShowCreateStaff(false)} onCreated={staffCreated} />}
   </>
 }
 

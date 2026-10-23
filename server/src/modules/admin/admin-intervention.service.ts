@@ -83,7 +83,6 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         if (flight.saleStatus === saleStatus) return { status: "already_applied" };
         if (flight.status !== "SCHEDULED" || flight.departureTime <= now) throw new InterventionError(409, "Chuyến bay không còn hợp lệ để can thiệp bán vé.");
         if (saleStatus === "ON_SALE" && flight.airline.status !== "ACTIVE") throw new InterventionError(409, "Hãng bay đang bị khóa.");
-        if (saleStatus === "ON_SALE" && (flight.basePrice < 1 || flight.capacity < 1)) throw new InterventionError(409, "Chuyến bay chưa có số ghế bán ra hoặc giá gốc.");
         const activeBookings = await tx.booking.count({ where: { flightId: input.entityId, OR: [{ status: "CONFIRMED" }, { status: "PENDING", expiresAt: { gt: now } }] } });
         before = { saleStatus: flight.saleStatus, activeBookings }; after = { saleStatus, activeBookings };
         await tx.flight.update({ where: { id: input.entityId }, data: { saleStatus } });

@@ -33,6 +33,7 @@ function LoginPage() {
     try {
       const { user } = await login(normalizedEmail, password)
       setUser(user)
+
       const requestedPath = (
         location.state as { from?: string } | null
       )?.from
@@ -42,9 +43,7 @@ function LoginPage() {
           ? requestedPath
           : user.role === 'ADMIN'
             ? '/admin'
-            : user.role === 'CUSTOMER'
-              ? '/account'
-              : '/airline',
+            : '/account',
         { replace: true },
       )
     } catch (cause) {

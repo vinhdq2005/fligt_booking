@@ -49,7 +49,7 @@ test("admin interventions update business state and audit atomically", async t =
     assert.equal((await invoke("LOCK_AIRLINE", airlineId)).status, "applied");
     assert.equal((await prisma.airline.findUniqueOrThrow({ where: { id: airlineId } })).status, "LOCKED");
     await assert.rejects(createFlight({ flightNumber: `X${suffix}`, airlineId, departureCode: "HAN", arrivalCode: "SGN",
-      departureTime: new Date(Date.now() + 172800000).toISOString(), arrivalTime: new Date(Date.now() + 180000000).toISOString() }), /Hãng bay đang bị khóa/);
+      departureTime: new Date(Date.now() + 172800000).toISOString(), arrivalTime: new Date(Date.now() + 180000000).toISOString(), capacity: 10, basePrice: 100000 }), /Hãng bay đang bị khóa/);
     await assert.rejects(invoke("REOPEN_FLIGHT", flightId), (error: unknown) => error instanceof InterventionError && error.status === 409);
     assert.equal((await invoke("UNLOCK_AIRLINE", airlineId)).status, "applied");
     assert.equal((await invoke("REOPEN_FLIGHT", flightId)).status, "applied");

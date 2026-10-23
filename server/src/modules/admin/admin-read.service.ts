@@ -193,7 +193,7 @@ export async function getAdminDetail(kind: ListKind, id: number) {
 
 export async function getAdminOptions() {
   const [airlines, airports, admins, actions] = await Promise.all([
-    prisma.airline.findMany({ select: { id: true, name: true, status: true }, orderBy: { name: "asc" } }),
+    prisma.airline.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.flight.findMany({ select: { departureCode: true, arrivalCode: true }, distinct: ["departureCode", "arrivalCode"] }),
     prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     prisma.auditLog.findMany({ select: { action: true }, distinct: ["action"] }),
