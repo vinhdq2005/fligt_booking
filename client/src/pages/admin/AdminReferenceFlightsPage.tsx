@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import "../../styles.css";
+import "../../styles/management.css";
 import {
   getFlights,
   getImportStatus,

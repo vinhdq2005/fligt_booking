@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import '../styles.css'
+import '../styles/management.css'
 import './airline.css'
 
 export default function AirlineLayout() {
