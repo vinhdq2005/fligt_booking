@@ -862,6 +862,41 @@ app.get(
   },
 );
 
+/**
+ * PUBLIC: XÁC MINH QR VÉ
+ * Chỉ đọc thông tin vé, không thực hiện check-in.
+ */
+app.get(
+  "/api/public/tickets/verify/:token",
+  async (req, res, next) => {
+    try {
+      const token = req.params.token;
+
+      if (typeof token !== "string" || !token.trim()) {
+        res.status(400).json({
+          error: "Mã QR không hợp lệ.",
+        });
+        return;
+      }
+
+      const result = await verifyTicketQR(token);
+
+      res.json({
+        item: result,
+      });
+    } catch (error) {
+      if (error instanceof TicketServiceError) {
+        res.status(error.statusCode).json({
+          error: error.message,
+        });
+        return;
+      }
+
+      next(error);
+    }
+  },
+);
+
 // =========================
 // AIRLINE: CHECK-IN QR VÉ
 // =========================

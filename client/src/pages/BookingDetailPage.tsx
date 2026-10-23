@@ -10,6 +10,8 @@ type TicketInfo = {
   ticketCode?: string | null
   qrToken?: string | null
   status?: string | null
+  price?: number
+  issuedAt?: string
 }
 
 type PassengerWithTicket = BookingDetails['passengers'][number] & {
@@ -36,6 +38,7 @@ function BookingDetailPage() {
 
       setLoading(true)
       setError('')
+      setBooking(null)
 
       try {
         const result = await getBookingByCode(bookingId)
@@ -74,10 +77,12 @@ function BookingDetailPage() {
   }
 
   function formatDateTime(value: string) {
+    if (!value) return 'Chưa có thông tin'
+
     const date = new Date(value)
 
     if (Number.isNaN(date.getTime())) {
-      return value || 'Chưa có thông tin'
+      return value
     }
 
     return date.toLocaleString('vi-VN', {
@@ -103,6 +108,10 @@ function BookingDetailPage() {
         return 'Đã check-in'
       case 'REFUNDED':
         return 'Đã hoàn tiền'
+      case 'PAID':
+        return 'Đã thanh toán'
+      case 'FAILED':
+        return 'Thanh toán thất bại'
       default:
         return status || 'Chưa xác định'
     }
@@ -112,16 +121,24 @@ function BookingDetailPage() {
     switch (status.toUpperCase()) {
       case 'CONFIRMED':
       case 'ISSUED':
+      case 'PAID':
         return 'booking-status-paid'
       case 'USED':
         return 'booking-status-used'
       case 'CANCELLED':
       case 'EXPIRED':
       case 'REFUNDED':
+      case 'FAILED':
         return 'booking-status-cancelled'
       default:
         return 'booking-status-pending'
     }
+  }
+
+  // IP LAN của máy tính chạy Vite.
+  // Điện thoại cần kết nối cùng mạng Wi-Fi với máy tính.
+  function getTicketVerificationUrl(qrToken: string) {
+    return `http://192.168.1.159:5173/tickets/verify/${encodeURIComponent(qrToken)}`
   }
 
   if (loading) {
@@ -139,6 +156,7 @@ function BookingDetailPage() {
       <section className="booking-detail-page">
         <div className="booking-detail-card">
           <h1>Không tải được đặt chỗ</h1>
+
           <p role="alert">
             {error || 'Không tìm thấy đặt chỗ trong cơ sở dữ liệu.'}
           </p>
@@ -155,6 +173,7 @@ function BookingDetailPage() {
   }
 
   const passengers = booking.passengers as PassengerWithTicket[]
+  const isConfirmed = booking.status.toUpperCase() === 'CONFIRMED'
 
   return (
     <section className="booking-detail-page">
@@ -198,8 +217,7 @@ function BookingDetailPage() {
 
             <p>
               <strong>Hành trình:</strong>{' '}
-              {booking.flight.departureCode} →{' '}
-              {booking.flight.arrivalCode}
+              {booking.flight.departureCode} → {booking.flight.arrivalCode}
             </p>
 
             <p>
@@ -245,7 +263,7 @@ function BookingDetailPage() {
           <div className="booking-detail-section">
             <h3>Vé điện tử và mã QR</h3>
 
-            {booking.status.toUpperCase() !== 'CONFIRMED' ? (
+            {!isConfirmed ? (
               <p>
                 Vé điện tử và QR sẽ hiển thị khi đặt chỗ được xác nhận
                 và vé đã được phát hành.
@@ -264,7 +282,12 @@ function BookingDetailPage() {
                   return (
                     <article
                       className="customer-ticket"
-                      key={ticket?.id ?? ticketCode ?? passenger.id ?? index}
+                      key={
+                        ticket?.id ??
+                        ticketCode ??
+                        passenger.id ??
+                        index
+                      }
                     >
                       <h4>Hành khách {index + 1}</h4>
 
@@ -289,22 +312,25 @@ function BookingDetailPage() {
                       {qrToken && ticketCode ? (
                         <div className="customer-ticket-qr">
                           <QRCodeSVG
-                            value={qrToken}
+                            value={getTicketVerificationUrl(qrToken)}
                             size={200}
                             level="M"
                             includeMargin
-                            title={`QR vé ${ticketCode}`}
+                            title={`QR xác minh vé ${ticketCode}`}
                           />
-                          <p>QR vé điện tử</p>
+
+                          <p>QR xác minh vé điện tử</p>
+
                           <small>
-                            Xuất trình mã QR này cho nhân viên hãng bay
-                            khi làm thủ tục.
+                            Dùng camera điện thoại quét mã để mở trang
+                            xác minh vé. Điện thoại cần kết nối cùng
+                            Wi-Fi với máy tính đang chạy website.
                           </small>
                         </div>
                       ) : (
                         <p>
-                          Vé này chưa có QR. Vui lòng tải lại sau khi vé
-                          được phát hành.
+                          Vé này chưa có QR. Vui lòng tải lại sau khi
+                          vé được phát hành.
                         </p>
                       )}
                     </article>
@@ -313,9 +339,9 @@ function BookingDetailPage() {
               </div>
             ) : (
               <p>
-                Đặt chỗ đã xác nhận nhưng dữ liệu QR chưa có trong thông
-                tin vé trả về từ máy chủ. Cần kiểm tra API chi tiết đặt
-                chỗ để bổ sung qrToken.
+                Đặt chỗ đã xác nhận nhưng dữ liệu QR chưa có trong
+                thông tin vé trả về từ máy chủ. Cần kiểm tra API chi
+                tiết đặt chỗ để bổ sung qrToken và ticketCode.
               </p>
             )}
           </div>
@@ -358,7 +384,8 @@ function BookingDetailPage() {
                   </p>
 
                   <p>
-                    <strong>Trạng thái:</strong> {payment.status}
+                    <strong>Trạng thái:</strong>{' '}
+                    {getStatusLabel(payment.status)}
                   </p>
 
                   <p>

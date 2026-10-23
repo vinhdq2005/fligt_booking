@@ -9,6 +9,6 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 
 const app = createApp({ getImportStatus, importFlights }, { listFlights });
-app.listen(port, "127.0.0.1", () => {
-  console.log(`Backend API đang chạy tại http://127.0.0.1:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Backend API đang chạy tại cổng ${port}`);
 });

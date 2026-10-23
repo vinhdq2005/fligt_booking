@@ -59,9 +59,11 @@ async function api<T>(
 ): Promise<T> {
   const response = await fetch(path, {
     ...options,
-    credentials: 'same-origin',
+    credentials: "same-origin",
     headers: {
-      ...(options?.method && options.method !== 'GET' ? { 'x-csrf-intent': '1' } : {}),
+      ...(options?.method && options.method !== "GET"
+        ? { "x-csrf-intent": "1" }
+        : {}),
       ...(options?.body
         ? { "content-type": "application/json" }
         : {}),
@@ -79,6 +81,8 @@ async function api<T>(
 
   return data as T;
 }
+
+// ===== ADMIN FLIGHTS =====
 
 export function getFlights(filters: {
   from: string;
@@ -114,17 +118,16 @@ export function importFlights(form: ImportForm) {
     status: "imported" | "already_fresh";
     searchId: number;
     offerCount?: number;
-  }>(
-    "/api/admin/flight-imports",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        ...form,
-        confirmed: true,
-      }),
-    },
-  );
+  }>("/api/admin/flight-imports", {
+    method: "POST",
+    body: JSON.stringify({
+      ...form,
+      confirmed: true,
+    }),
+  });
 }
+
+// ===== PUBLIC FLIGHTS =====
 
 export type PublicFlight = {
   id: number;
@@ -158,7 +161,10 @@ export async function getAirportCodes(): Promise<string[]> {
   return result.codes;
 }
 
-export type PublicAirline = { code: string; name: string };
+export type PublicAirline = {
+  code: string;
+  name: string;
+};
 
 export async function getPublicAirlines(): Promise<PublicAirline[]> {
   const result = await api<{ items: PublicAirline[] }>("/api/airlines");
@@ -181,7 +187,10 @@ export async function searchPublicFlights(filters: {
     to: filters.to,
     date: filters.date,
   });
-  if (filters.airline) query.set("airline", filters.airline);
+
+  if (filters.airline) {
+    query.set("airline", filters.airline);
+  }
 
   return api<PublicFlightSearchResult>(
     `/api/flights/search?${query.toString()}`,
@@ -191,45 +200,44 @@ export async function searchPublicFlights(filters: {
 export async function getPublicFlight(
   id: number,
 ): Promise<{ item: PublicFlight }> {
-  return api<{ item: PublicFlight }>(
-    `/api/flights/${id}`,
-  );
+  return api<{ item: PublicFlight }>(`/api/flights/${id}`);
 }
+
 // ===== BOOKING =====
 
 export type BookingPassengerInput = {
-  fullName: string
-  documentNumber: string
-  gender: 'MALE' | 'FEMALE'
-  dateOfBirth: string
-  nationality: string
-}
+  fullName: string;
+  documentNumber: string;
+  gender: "MALE" | "FEMALE";
+  dateOfBirth: string;
+  nationality: string;
+};
 
 export type CreateBookingInput = {
-  flightId: number
-  contactName: string
-  contactEmail: string
-  contactPhone: string
-  passengers: BookingPassengerInput[]
-}
+  flightId: number;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  passengers: BookingPassengerInput[];
+};
 
 export type CreatedBooking = {
-  bookingCode: string
-  totalAmount: number
-  status: string
-  expiresAt: string
-}
+  bookingCode: string;
+  totalAmount: number;
+  status: string;
+  expiresAt: string;
+};
 
 export async function createBooking(
   input: CreateBookingInput,
 ): Promise<{ message: string; item: CreatedBooking }> {
   return api<{ message: string; item: CreatedBooking }>(
-    '/api/bookings',
+    "/api/bookings",
     {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(input),
     },
-  )
+  );
 }
 
 export async function payBooking(
@@ -238,55 +246,99 @@ export async function payBooking(
   return api<Record<string, unknown>>(
     `/api/bookings/${encodeURIComponent(bookingCode)}/pay`,
     {
-      method: 'POST',
+      method: "POST",
     },
-  )
+  );
 }
 
+// ===== BOOKING DETAILS =====
+
+export type BookingTicket = {
+  ticketCode: string;
+  qrToken: string;
+  price: number;
+  status: string;
+  issuedAt: string;
+};
+
 export type BookingDetails = {
-  bookingCode: string
-  contactName: string
-  contactEmail: string | null
-  contactPhone: string | null
-  totalAmount: number
-  status: string
-  expiresAt: string
-  createdAt: string
+  bookingCode: string;
+  contactName: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  totalAmount: number;
+  status: string;
+  expiresAt: string;
+  createdAt: string;
+
   flight: {
-    flightNumber: string
-    departureCode: string
-    arrivalCode: string
-    departureTime: string
-    arrivalTime: string
-    basePrice: number
+    flightNumber: string;
+    departureCode: string;
+    arrivalCode: string;
+    departureTime: string;
+    arrivalTime: string;
+    basePrice: number;
     airline: {
-      code: string
-      name: string
-    }
-  }
+      code: string;
+      name: string;
+    };
+  };
+
   passengers: Array<{
-    id: number
-    fullName: string
-    ticket: {
-      ticketCode: string
-      price: number
-      status: string
-      issuedAt: string
-    } | null
-  }>
+    id: number;
+    fullName: string;
+    ticket: BookingTicket | null;
+  }>;
+
   payments: Array<{
-    amount: number
-    currency: string
-    method: string
-    status: string
-    createdAt: string
-  }>
-}
+    amount: number;
+    currency: string;
+    method: string;
+    status: string;
+    createdAt: string;
+  }>;
+};
 
 export async function getBookingByCode(
   bookingCode: string,
 ): Promise<{ item: BookingDetails }> {
   return api<{ item: BookingDetails }>(
     `/api/bookings/${encodeURIComponent(bookingCode)}`,
-  )
+  );
+}
+
+// ===== PUBLIC TICKET QR VERIFICATION =====
+
+export type TicketVerification = {
+  valid: boolean;
+  ticket: {
+    ticketCode: string;
+    status: string;
+    issuedAt: string;
+    usedAt: string | null;
+  };
+  passenger: {
+    fullName: string;
+  };
+  booking: {
+    status: string;
+  };
+  flight: {
+    flightNumber: string;
+    departureCode: string;
+    arrivalCode: string;
+    departureTime: string;
+    status: string;
+    airlineCode: string;
+    airlineName: string;
+  };
+  message: string;
+};
+
+export async function verifyPublicTicket(
+  token: string,
+): Promise<{ item: TicketVerification }> {
+  return api<{ item: TicketVerification }>(
+    `/api/public/tickets/verify/${encodeURIComponent(token)}`,
+  );
 }

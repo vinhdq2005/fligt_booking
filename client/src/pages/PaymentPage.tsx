@@ -187,30 +187,61 @@ function PaymentPage() {
     return parsed
   }
 
+  /**
+   * Lưu mã đặt chỗ vào trình duyệt để khách có thể xem lại
+   * trong mục "Đặt chỗ của tôi" mà không cần đăng nhập.
+   *
+   * Không lưu thông tin giấy tờ hoặc thông tin hành khách tại đây.
+   */
   function saveBookingCode(code: string) {
-    const saved = localStorage.getItem(BOOKING_CODES_KEY)
-    const codes: unknown = saved ? JSON.parse(saved) : []
+    const normalizedCode = code.trim()
 
-    if (
-      !Array.isArray(codes) ||
-      !codes.every((item) => typeof item === 'string')
-    ) {
-      throw new Error('Danh sách mã đặt chỗ đã lưu không hợp lệ.')
+    if (!normalizedCode) {
+      throw new Error('Mã đặt chỗ không hợp lệ.')
     }
 
-    if (!codes.includes(code)) {
-      localStorage.setItem(
-        BOOKING_CODES_KEY,
-        JSON.stringify([...codes, code]),
+    let codes: string[] = []
+
+    try {
+      const saved = localStorage.getItem(BOOKING_CODES_KEY)
+      const parsed: unknown = saved ? JSON.parse(saved) : []
+
+      if (
+        !Array.isArray(parsed) ||
+        !parsed.every(
+          (item): item is string => typeof item === 'string',
+        )
+      ) {
+        throw new Error('Danh sách mã đặt chỗ không hợp lệ.')
+      }
+
+      codes = parsed
+    } catch {
+      throw new Error(
+        'Không thể lưu mã đặt chỗ trên trình duyệt. Vui lòng kiểm tra cài đặt lưu trữ của trình duyệt.',
       )
+    }
+
+    if (!codes.includes(normalizedCode)) {
+      try {
+        localStorage.setItem(
+          BOOKING_CODES_KEY,
+          JSON.stringify([...codes, normalizedCode]),
+        )
+      } catch {
+        throw new Error(
+          'Trình duyệt không cho phép lưu mã đặt chỗ. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ.',
+        )
+      }
     }
   }
 
   /**
-   * Tạo booking ở trạng thái chờ thanh toán hoặc dùng lại booking
-   * đang chờ thanh toán nếu thông tin hành khách không thay đổi.
+   * Tạo booking chờ thanh toán hoặc sử dụng lại booking đang chờ
+   * nếu thông tin hành khách không thay đổi.
    *
-   * Hàm này KHÔNG gọi API payBooking và KHÔNG phát hành vé.
+   * Sau khi backend tạo booking thành công, lưu mã đặt chỗ ngay,
+   * không cần chờ thanh toán thành công.
    */
   async function createOrGetPendingBooking(): Promise<string> {
     if (!flight) {
@@ -237,9 +268,12 @@ function PaymentPage() {
           parsed.passengers === passengers &&
           parsed.detailsSignature === detailsSignature &&
           typeof parsed.bookingCode === 'string' &&
-          parsed.bookingCode.length > 0
+          parsed.bookingCode.trim().length > 0
 
         if (matches) {
+          // Lưu lại mã phòng trường hợp localStorage trước đó chưa có mã.
+          saveBookingCode(parsed.bookingCode)
+
           if (
             typeof parsed.totalAmount === 'number' &&
             Number.isFinite(parsed.totalAmount) &&
@@ -252,7 +286,7 @@ function PaymentPage() {
           return parsed.bookingCode
         }
       } catch {
-        // Dữ liệu chờ thanh toán bị lỗi: tạo lại booking.
+        // Nếu dữ liệu lưu không hợp lệ, xóa và tạo lại booking.
       }
 
       sessionStorage.removeItem(PENDING_BOOKING_KEY)
@@ -293,6 +327,9 @@ function PaymentPage() {
       PENDING_BOOKING_KEY,
       JSON.stringify(pending),
     )
+
+    // Lưu mã ngay sau khi tạo booking, không cần chờ thanh toán.
+    saveBookingCode(code)
 
     if (validAmount) {
       setBookingTotalAmount(amount)
@@ -354,6 +391,7 @@ function PaymentPage() {
       // Backend xác nhận thanh toán và phát hành vé.
       await payBooking(bookingCode)
 
+      // Đảm bảo mã vẫn được lưu sau khi thanh toán thành công.
       saveBookingCode(bookingCode)
 
       sessionStorage.removeItem(PENDING_BOOKING_KEY)
@@ -408,7 +446,7 @@ function PaymentPage() {
       ? bookingTotalAmount
       : ticketPrice * passengers
 
-  // Đây là chuỗi dữ liệu QR giả lập, không phải mã QR chuyển khoản ngân hàng.
+  // QR thanh toán mô phỏng được giữ nguyên, không phải QR vé điện tử.
   const qrValue = bookingCode
     ? JSON.stringify({
         type: 'FLIGHT_BOOKING_MOCK_PAYMENT',
@@ -521,6 +559,19 @@ function PaymentPage() {
                 Đây không phải QR chuyển khoản ngân hàng. Để hoàn tất
                 bài mô phỏng, hãy bấm nút xác nhận bên dưới.
               </p>
+
+              <p>
+                Mã đặt chỗ đã được lưu trên trình duyệt. Bạn có thể
+                mở mục "Đặt chỗ của tôi" để tra cứu.
+              </p>
+
+              <button
+                type="button"
+                className="back-button"
+                onClick={() => navigate('/my-bookings')}
+              >
+                Xem đặt chỗ của tôi
+              </button>
             </section>
           )}
 
