@@ -5,7 +5,7 @@
 | Vai trò | Được làm | Không được làm |
 | --- | --- | --- |
 | `AIRLINE_FLIGHT_MANAGER` | Xem chuyến của hãng, tạo chuyến với số hiệu, tuyến và giờ đi/đến | Quy định số ghế bán ra, đặt giá, mở/ngừng bán, xem dữ liệu hãng khác |
-| `AIRLINE_SALES_MANAGER` | Xem chuyến của hãng, quy định số ghế bán ra và giá gốc, mở/ngừng bán, xem hiệu quả chuyến | Tạo hoặc sửa lịch trình, sửa thanh toán, xem dữ liệu hãng khác |
+| `AIRLINE_SALES_MANAGER` | Xem chuyến và booking của hãng, quy định số ghế bán ra và giá gốc, mở/ngừng bán, xem hiệu quả chuyến | Tạo hoặc sửa lịch trình, sửa booking/thanh toán/vé, xem dữ liệu hãng khác |
 
 Backend lấy `airlineId` từ phiên đăng nhập cho mọi API. Hãng bị khóa không thể tạo chuyến, đặt giá hoặc mở/ngừng bán. Chuyến bị admin tạm ẩn cần admin mở lại trước khi nhóm bán vé có thể công bố.
 
@@ -21,7 +21,8 @@ Backend lấy `airlineId` từ phiên đăng nhập cho mọi API. Hãng bị kh
 
 - `/airline/flights`: thẻ số chuyến, số chuyến đang bán/chưa bán; bảng số hiệu, tuyến, giờ đi, ghế bán ra, trạng thái; panel chi tiết; form tạo lịch chuyến cơ bản có thời gian bay tự tính.
 - `/airline/awaiting-sale`: mục riêng trong menu trái **Chờ mở bán**, gom các chuyến `SCHEDULED`, `HIDDEN` và chưa khởi hành; có lọc và phân trang. Bấm **Thiết lập bán vé** để nhập ghế và giá gốc, sau đó xác nhận mở bán. Chuyến tạm ngừng bán cũng xuất hiện tại đây để có thể mở lại.
-- `/airline/sales`: mục riêng **Quản lý bán vé** với danh sách chuyến, số ghế bán ra, giá gốc, trạng thái bán; panel sửa ghế/giá và xác nhận mở/ngừng bán. Trang này chỉ phục vụ thao tác quản lý.
+- `/airline/sales`: mục riêng **Quản lý bán vé** với danh sách chuyến, số ghế bán ra, giá gốc, **giá hiện tại do hệ thống tự tính** và trạng thái bán; panel sửa ghế/giá và xác nhận mở/ngừng bán. Giá hiện tại chỉ để xem, không nhập thủ công.
+- `/airline/bookings`: mục **Đặt chỗ & vé** cho nhóm bán vé, chỉ đọc booking thuộc hãng trong phiên. Danh sách có mã booking, chuyến, người liên hệ, số hành khách, tổng tiền, trạng thái booking/thanh toán và ngày đặt; tìm theo mã/chuyến/người liên hệ/hành khách, lọc ngày đặt và ngày bay riêng, sân bay và trạng thái; phân trang phía server. Chi tiết hiển thị đầy đủ số điện thoại/email liên hệ, bảng hành khách và từng vé (mã, giá, trạng thái, thời điểm phát hành/sử dụng), cùng các giao dịch. Booking chờ thanh toán có thể chưa có vé. API không trả QR token hoặc số giấy tờ hành khách. Không có thao tác hủy, hoàn tiền hoặc sửa vé trên trang này.
 - `/airline/dashboard`: mục riêng **Dashboard** có hai chế độ **Toàn hãng** và **Theo chuyến**. Bộ lọc riêng gồm khoảng ngày khởi hành (múi giờ Việt Nam), sân bay đi/đến, số hiệu chuyến và trạng thái. KPI tính trên toàn bộ chuyến phù hợp bộ lọc, không phụ thuộc phân trang. Người xem đổi chỉ số và nhóm ngày/tuần/tháng trong phiên xem, không lưu cấu hình. Toàn hãng có biểu đồ xu hướng theo ngày bay và so sánh tuyến. Theo chuyến có danh sách so sánh, chọn chuyến để xem KPI và diễn biến bán vé theo ngày thanh toán/phát hành vé. Dashboard chỉ đọc.
 - Chỉ số Dashboard: **vé đã bán** là vé trạng thái `ISSUED` hoặc `USED`; **lượt đã thanh toán** là số booking riêng biệt có thanh toán `PAID`; **doanh thu mô phỏng** là tổng `Payment.amount` có trạng thái `PAID`; **tỷ lệ lấp đầy** là vé đã bán chia số ghế mở bán. Một booking có thể có nhiều vé.
 - Cả hai danh sách có tìm kiếm, lọc sân bay đi/đến, ngày bay hoặc khoảng ngày, trạng thái chuyến và trạng thái bán; sắp xếp các cột chính và phân trang phía server. Số liệu BI phản ánh các chuyến phù hợp bộ lọc.

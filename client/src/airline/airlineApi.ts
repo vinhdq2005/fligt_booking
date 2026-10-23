@@ -23,6 +23,23 @@ export type AirlineDashboard = {
   salesSeriesByFlight: Record<string, DashboardPoint[]>
 }
 
+export type AirlineBooking = {
+  id: number; bookingCode: string; contactName: string; contactPhone: string | null; contactEmail: string | null;
+  totalAmount: number; status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+  paymentStatus: 'PAID' | 'REFUNDED' | 'PENDING' | 'FAILED' | 'NO_PAYMENT';
+  expiresAt: string | null; createdAt: string; passengerCount: number;
+  flight: { flightNumber: string; departureCode: string; arrivalCode: string; departureTime: string }
+}
+export type AirlineBookingDetail = Omit<AirlineBooking, 'passengerCount'> & {
+  flight: AirlineBooking['flight'] & { arrivalTime: string }
+  passengers: Array<{ id: number; fullName: string; gender: 'MALE' | 'FEMALE' | null; dateOfBirth: string | null;
+    nationality: string | null; ticket: { ticketCode: string; price: number; status: 'ISSUED' | 'USED' | 'CANCELLED';
+      issuedAt: string; usedAt: string | null } | null }>
+  payments: Array<{ id: number; amount: number; currency: string; method: string; status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+    reviewStatus: string; createdAt: string }>
+}
+export type AirlineBookingsResponse = { items: AirlineBooking[]; pagination: { page: number; pageSize: number; total: number; pageCount: number } }
+
 async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(path, { method, credentials: 'same-origin',
     headers: { ...(method === 'GET' ? {} : { 'x-csrf-intent': '1' }), ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
@@ -34,6 +51,8 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
 
 export const getAirlineWorkspace = (params: URLSearchParams) => request<AirlineWorkspace>(`/api/airline/workspace?${params}`)
 export const getAirlineDashboard = (params: URLSearchParams) => request<AirlineDashboard>(`/api/airline/dashboard?${params}`)
+export const getAirlineBookings = (params: URLSearchParams) => request<AirlineBookingsResponse>(`/api/airline/bookings?${params}`)
+export const getAirlineBooking = (id: number) => request<{ item: AirlineBookingDetail }>(`/api/airline/bookings/${id}`)
 export const createAirlineFlight = (input: { flightNumber: string; departureCode: string; arrivalCode: string; departureTime: string; arrivalTime: string }) =>
   request<{ id: number }>('/api/airline/managed-flights', 'POST', input)
 export const saveAirlineSalesSettings = (flightId: number, capacity: number, basePrice: number) =>

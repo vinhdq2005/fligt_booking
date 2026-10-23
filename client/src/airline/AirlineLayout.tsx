@@ -15,7 +15,8 @@ export default function AirlineLayout() {
     ? [{ path: '/airline/flights', label: 'Quản lý chuyến bay', number: '01' }]
     : [{ path: '/airline/dashboard', label: 'Dashboard', number: '01' },
        { path: '/airline/awaiting-sale', label: 'Chờ mở bán', number: '02' },
-       { path: '/airline/sales', label: 'Quản lý bán vé', number: '03' }]
+       { path: '/airline/sales', label: 'Quản lý bán vé', number: '03' },
+       { path: '/airline/bookings', label: 'Đặt chỗ & vé', number: '04' }]
   return <div className="app-canvas airline-canvas"><div className="app-shell airline-shell">
     {menuOpen && <button className="airline-menu-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} />}
     <aside className={`sidebar airline-sidebar${menuOpen ? ' is-open' : ''}`} aria-label="Điều hướng hãng bay">

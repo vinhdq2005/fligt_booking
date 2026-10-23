@@ -21,6 +21,7 @@ import AdminReferenceFlightsPage from '../pages/admin/AdminReferenceFlightsPage'
 import AirlineLayout from '../airline/AirlineLayout'
 import { FlightManagerPage, SalesManagerPage } from '../airline/AirlineWorkspacePage'
 import AirlineDashboardPage from '../airline/AirlineDashboardPage'
+import AirlineBookingsPage from '../airline/AirlineBookingsPage'
 
 function ProtectedRoute({ children, customerOnly = false }: { children: React.ReactNode; customerOnly?: boolean }) {
   const { user, loading } = useAuth()
@@ -70,6 +71,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><AirlineDashboardPage /></AirlineGuard>} />
         <Route path="awaiting-sale" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><SalesManagerPage awaitingOnly /></AirlineGuard>} />
         <Route path="sales" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><SalesManagerPage /></AirlineGuard>} />
+        <Route path="bookings" element={<AirlineGuard role="AIRLINE_SALES_MANAGER"><AirlineBookingsPage /></AirlineGuard>} />
       </Route>
 
       <Route element={<MainLayout />}>

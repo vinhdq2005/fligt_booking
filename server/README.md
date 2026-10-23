@@ -26,6 +26,8 @@ Phân hệ hãng bay tại `/airline/flights` và `/airline/sales` dùng `GET /a
 
 Dashboard của nhóm bán vé dùng `GET /api/airline/dashboard`, nhận `fromDate`, `toDate`, `departureCode`, `arrivalCode`, `flightNumber`, `status`, `saleStatus` (và `flightId` khi cần truy vấn một chuyến). Khoảng ngày lọc theo giờ khởi hành tại Việt Nam. API chỉ trả dữ liệu của hãng trong phiên và tổng hợp tất cả chuyến phù hợp bộ lọc, không phân trang; vé bán là vé `ISSUED`/`USED`, lượt thanh toán là số booking có payment `PAID`, doanh thu là tổng payment `PAID` mô phỏng. Kiểm thử tích hợp tại `src/modules/airlines/airline-dashboard.integration.test.ts`.
 
+Nhóm quản lý bán vé xem đặt chỗ tại `GET /api/airline/bookings` và `GET /api/airline/bookings/:id`. Danh sách hỗ trợ tìm mã booking, chuyến, liên hệ hoặc hành khách; lọc ngày đặt, ngày bay, tuyến, trạng thái booking/thanh toán và phân trang. Chi tiết gồm liên hệ, hành khách, vé và giao dịch, không trả QR token hoặc số giấy tờ. Cả hai API chỉ đọc booking thuộc hãng trong phiên; vai trò tạo chuyến không được truy cập. Kiểm thử bằng `npm.cmd run test:airline-bookings`.
+
 Trang admin đọc dữ liệu thật qua `GET /api/admin/overview`, `GET /api/admin/read/options`, `GET /api/admin/read/:kind` và `GET /api/admin/read/:kind/:id`. `kind` gồm `airlines`, `users`, `flights`, `bookings`, `payments`, `audit-logs`. Danh sách hỗ trợ `page`, `pageSize`, `search`, `sort`, `direction` và các bộ lọc theo từng trang; server giới hạn tối đa 100 dòng/trang. API tài khoản không trả `passwordHash`, booking che số điện thoại và giấy tờ hành khách. Booking khách không đăng nhập vẫn được phép; booking mới của khách đã đăng nhập có `userId`.
 
 ## Can thiệp admin (bước 7)

@@ -12,6 +12,7 @@ import { InterventionError, parseInterventionInput, runAdminIntervention } from 
 import { CreateStaffError, createAirlineStaff, parseCreateStaffInput } from "./modules/admin/admin-user.service";
 import { AirlineWorkspaceError, getAirlineWorkspace, parseAirlineWorkspaceQuery, setAirlineSalesSettings, setAirlineSaleStatus } from "./modules/airlines/airline-workspace.service";
 import { getAirlineDashboard, parseAirlineDashboardQuery } from "./modules/airlines/airline-dashboard.service";
+import { getAirlineBooking, listAirlineBookings, parseAirlineBookingQuery } from "./modules/airlines/airline-bookings.service";
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
@@ -236,6 +237,22 @@ export function createApp(
       const query = parseAirlineDashboardQuery(req.query);
       if (!query) { res.status(400).json({ error: "Bộ lọc Dashboard không hợp lệ." }); return; }
       res.json(await getAirlineDashboard(res.locals.authUser.airlineId, query));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/airline/bookings", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const query = parseAirlineBookingQuery(req.query);
+      if (!query) { res.status(400).json({ error: "Bộ lọc đặt chỗ không hợp lệ." }); return; }
+      res.json(await listAirlineBookings(res.locals.authUser.airlineId, query));
+    } catch (error) { next(error); }
+  });
+  app.get("/api/airline/bookings/:id", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isSafeInteger(id) || id < 1) { res.status(400).json({ error: "Mã đặt chỗ không hợp lệ." }); return; }
+      const item = await getAirlineBooking(res.locals.authUser.airlineId, id);
+      if (!item) { res.status(404).json({ error: "Không tìm thấy đặt chỗ của hãng." }); return; }
+      res.json({ item });
     } catch (error) { next(error); }
   });
   app.put("/api/airline/flights/:id/sales-settings", requireRole("AIRLINE_SALES_MANAGER"), async (req, res, next) => {

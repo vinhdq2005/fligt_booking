@@ -78,6 +78,7 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
   try {
     assert.equal((await request("/api/admin/flights")).status, 401);
     assert.equal((await request("/api/airline/dashboard")).status, 401);
+    assert.equal((await request("/api/airline/bookings")).status, 401);
     const registration = await request("/api/auth/register", { method: "POST", headers: { "x-csrf-intent": "1", "content-type": "application/json" }, body: JSON.stringify({ name: "New Customer", email: "NEW@example.com", password: "strong-password-123", role: "ADMIN", airlineId: 7 }) });
     assert.equal(registration.status, 201);
     assert.equal((await registration.json()).user.role, "CUSTOMER");
@@ -86,6 +87,7 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
     const customer = await login(2);
     assert.equal((await request("/api/admin/flights", { headers: auth(customer) })).status, 403);
     assert.equal((await request("/api/airline/dashboard", { headers: auth(customer) })).status, 403);
+    assert.equal((await request("/api/airline/bookings", { headers: auth(customer) })).status, 403);
     assert.equal((await request("/api/admin/read/users", { headers: auth(customer) })).status, 403);
     const staffBody = JSON.stringify({ name: " New Staff ", email: " NEW.STAFF@example.com ", password: "strong-password-123", role: "AIRLINE_SALES_MANAGER", airlineId: 7 });
     assert.equal((await request("/api/admin/users", { method: "POST", headers: write(customer), body: staffBody })).status, 403);
@@ -119,6 +121,7 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
     assert.equal((await request("/api/admin/flights", { headers: auth(airline) })).status, 403);
     assert.equal((await request("/api/airline/managed-flights", { headers: auth(airline) })).status, 200);
     assert.equal((await request("/api/airline/dashboard", { headers: auth(airline) })).status, 403);
+    assert.equal((await request("/api/airline/bookings", { headers: auth(airline) })).status, 403);
     assert.deepEqual(scopedAirlineIds, [7]);
     const flightBody = JSON.stringify({ flightNumber: "FB123", airlineId: 999, departureCode: "HAN", arrivalCode: "SGN", departureTime: "2026-11-01T10:00:00Z", arrivalTime: "2026-11-01T12:00:00Z" });
     assert.equal((await request("/api/airline/managed-flights", { method: "POST", headers: write(airline), body: flightBody.replace('"airlineId":999', '"airlineId":999,"capacity":100,"basePrice":100000') })).status, 400);
@@ -126,6 +129,8 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
     assert.deepEqual(createdAirlineIds, [7]);
     const sales = await login(4);
     assert.equal((await request("/api/airline/dashboard?fromDate=invalid", { headers: auth(sales) })).status, 400);
+    assert.equal((await request("/api/airline/bookings?bookingFromDate=invalid", { headers: auth(sales) })).status, 400);
+    assert.equal((await request("/api/airline/bookings/invalid", { headers: auth(sales) })).status, 400);
     assert.equal((await request("/api/airline/managed-flights", { method: "POST", headers: write(sales), body: flightBody })).status, 403);
     assert.equal((await request("/api/airline/flights/9/sales-settings", { method: "PUT", headers: write(airline), body: JSON.stringify({ capacity: 100, basePrice: 100000 }) })).status, 403);
     assert.equal((await request("/api/airline/flights/9/sale-status", { method: "PUT", headers: write(airline), body: JSON.stringify({ saleStatus: "ON_SALE" }) })).status, 403);
