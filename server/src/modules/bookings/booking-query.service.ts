@@ -44,6 +44,7 @@ export async function getBookingByCode(bookingCode: string) {
           ticket: {
             select: {
               ticketCode: true,
+              qrToken: true,
               price: true,
               status: true,
               issuedAt: true,

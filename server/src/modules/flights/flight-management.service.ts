@@ -8,8 +8,6 @@ export type CreateFlightInput = {
   arrivalCode: string;
   departureTime: string;
   arrivalTime: string;
-  capacity: number;
-  basePrice: number;
 };
 
 export async function createFlight(input: CreateFlightInput) {
@@ -29,14 +27,6 @@ export async function createFlight(input: CreateFlightInput) {
 
   if (!Number.isInteger(input.airlineId) || input.airlineId < 1) {
     throw new Error("Mã hãng bay không hợp lệ.");
-  }
-
-  if (!Number.isInteger(input.capacity) || input.capacity < 1) {
-    throw new Error("Số ghế phải là số nguyên dương.");
-  }
-
-  if (!Number.isInteger(input.basePrice) || input.basePrice < 1) {
-    throw new Error("Giá vé phải là số nguyên dương.");
   }
 
   const departureTime = new Date(input.departureTime);
@@ -59,8 +49,9 @@ export async function createFlight(input: CreateFlightInput) {
       arrivalCode,
       departureTime,
       arrivalTime,
-      capacity: input.capacity,
-      basePrice: input.basePrice,
+      capacity: 0,
+      basePrice: 0,
+      saleStatus: "HIDDEN",
     },
       include: { airline: true },
     });
