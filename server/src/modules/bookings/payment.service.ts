@@ -18,6 +18,7 @@ type PayBookingResult = {
       passengerId: number;
       price: number;
       status: string;
+      qrToken: string;
     }>;
   };
 };
@@ -32,7 +33,7 @@ export async function payBooking(
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    // Khóa booking để hạn chế thanh toán đồng thời.
+    // Khóa booking để hạn chế hai yêu cầu thanh toán đồng thời.
     const locked = await tx.$queryRaw<{ id: number }[]>`
       SELECT id
       FROM Booking
@@ -49,7 +50,9 @@ export async function payBooking(
       include: {
         flight: true,
         passengers: {
-          include: { ticket: true },
+          include: {
+            ticket: true,
+          },
         },
         payments: true,
       },
@@ -65,6 +68,7 @@ export async function payBooking(
       );
     }
 
+    // Booking đã hết thời gian thanh toán.
     if (
       booking.expiresAt &&
       booking.expiresAt <= new Date()
@@ -85,14 +89,14 @@ export async function payBooking(
       throw new Error("Đặt chỗ chưa có hành khách.");
     }
 
+    // Không phát hành vé trùng cho cùng hành khách.
     if (booking.passengers.some((p) => p.ticket !== null)) {
       throw new Error(
         "Đặt chỗ đã có vé; không thể thanh toán lại.",
       );
     }
 
-    // Giá đã được chốt khi tạo booking.
-    // Không tính lại giá động tại thời điểm thanh toán.
+    // Sử dụng giá đã chốt khi tạo booking.
     const passengerCount = booking.passengers.length;
     const totalAmount = booking.totalAmount;
 
@@ -106,9 +110,10 @@ export async function payBooking(
       );
     }
 
-    const pricePerPassenger = totalAmount / passengerCount;
+    const pricePerPassenger =
+      totalAmount / passengerCount;
 
-    // Thanh toán mô phỏng, không kết nối cổng thanh toán thật.
+    // Thanh toán mô phỏng, chưa kết nối cổng thanh toán thật.
     const payment = await tx.payment.create({
       data: {
         bookingId: booking.id,
@@ -124,9 +129,16 @@ export async function payBooking(
       data: { status: "CONFIRMED" },
     });
 
-    const tickets = [];
+    const tickets: Array<{
+      ticketCode: string;
+      passengerId: number;
+      price: number;
+      status: string;
+      qrToken: string;
+    }> = [];
 
     for (const passenger of booking.passengers) {
+      // Prisma tự tạo ticketCode và qrToken theo schema hiện tại.
       const ticket = await tx.ticket.create({
         data: {
           passengerId: passenger.id,
@@ -135,7 +147,13 @@ export async function payBooking(
         },
       });
 
-      tickets.push(ticket);
+      tickets.push({
+        ticketCode: ticket.ticketCode,
+        passengerId: ticket.passengerId,
+        price: ticket.price,
+        status: ticket.status,
+        qrToken: ticket.qrToken,
+      });
     }
 
     return {
@@ -153,7 +171,8 @@ export async function payBooking(
   }
 
   return {
-    message: "Thanh toán mô phỏng thành công. Vé đã được phát hành.",
+    message:
+      "Thanh toán mô phỏng thành công. Vé đã được phát hành.",
     item: {
       bookingCode: result.bookingCode,
       status: result.status,
@@ -165,12 +184,7 @@ export async function payBooking(
         method: result.payment.method,
         status: result.payment.status,
       },
-      tickets: result.tickets.map((ticket) => ({
-        ticketCode: ticket.ticketCode,
-        passengerId: ticket.passengerId,
-        price: ticket.price,
-        status: ticket.status,
-      })),
+      tickets: result.tickets,
     },
   };
 }

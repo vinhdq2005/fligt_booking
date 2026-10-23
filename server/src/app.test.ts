@@ -5,6 +5,15 @@ import type { AddressInfo } from "node:net";
 import { createApp } from "./app";
 import { hashPassword, hashSession, verifyPassword } from "./modules/auth/auth.service";
 import type { AuthStore, AuthUser } from "./modules/auth/auth.service";
+import { CreateStaffError, parseCreateStaffInput } from "./modules/admin/admin-user.service";
+
+test("staff creation accepts only valid airline staff fields", () => {
+  const valid = { name: "  Nhân viên A  ", email: "  STAFF@Example.com ", password: "strong-password-123", role: "AIRLINE_FLIGHT_MANAGER", airlineId: 7 };
+  assert.deepEqual(parseCreateStaffInput(valid, 1), { ...valid, name: "Nhân viên A", email: "staff@example.com", actorId: 1 });
+  assert.equal(parseCreateStaffInput({ ...valid, role: "ADMIN" }, 1), null);
+  assert.equal(parseCreateStaffInput({ ...valid, airlineId: 0 }, 1), null);
+  assert.equal(parseCreateStaffInput({ ...valid, password: "short" }, 1), null);
+});
 
 test("password hash is salted and verifies without storing plaintext", async () => {
   const a = await hashPassword("strong-password-123");
@@ -36,6 +45,7 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
   const scopedAirlineIds: Array<number | undefined> = [];
   const createdAirlineIds: number[] = [];
   const interventionInputs: Array<{ action: string; entityId: number; reason: string; actorId: number }> = [];
+  const staffInputs: Array<{ name: string; email: string; role: string; airlineId: number; actorId: number }> = [];
   const app = createApp({
     getImportStatus: async () => ({ status: "missing" as const }),
     importFlights: async (_request, confirmed) => {
@@ -48,7 +58,11 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
   }, store, {
     listManagedFlights: (async (airlineId?: number) => { scopedAirlineIds.push(airlineId); return []; }) as never,
     createFlight: (async (input: { airlineId: number }) => { createdAirlineIds.push(input.airlineId); return { id: 1 }; }) as never,
-  }, undefined, async input => { interventionInputs.push(input); return { status: "applied", auditLogId: 17 }; });
+  }, undefined, async input => { interventionInputs.push(input); return { status: "applied", auditLogId: 17 }; }, async input => {
+    staffInputs.push({ name: input.name, email: input.email, role: input.role, airlineId: input.airlineId, actorId: input.actorId });
+    if (input.email === "duplicate@example.com") throw new CreateStaffError(409, "Email đã được sử dụng.");
+    return { id: 42, name: input.name, email: input.email, role: input.role, airlineId: input.airlineId, status: "ACTIVE" };
+  });
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -63,6 +77,8 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
 
   try {
     assert.equal((await request("/api/admin/flights")).status, 401);
+    assert.equal((await request("/api/airline/dashboard")).status, 401);
+    assert.equal((await request("/api/airline/bookings")).status, 401);
     const registration = await request("/api/auth/register", { method: "POST", headers: { "x-csrf-intent": "1", "content-type": "application/json" }, body: JSON.stringify({ name: "New Customer", email: "NEW@example.com", password: "strong-password-123", role: "ADMIN", airlineId: 7 }) });
     assert.equal(registration.status, 201);
     assert.equal((await registration.json()).user.role, "CUSTOMER");
@@ -70,9 +86,20 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
     assert.equal((await request("/api/auth/login", { method: "POST", headers: { "x-csrf-intent": "1", "content-type": "application/json" }, body: JSON.stringify({ email: "user1@example.com", password: "wrong-password" }) })).status, 401);
     const customer = await login(2);
     assert.equal((await request("/api/admin/flights", { headers: auth(customer) })).status, 403);
+    assert.equal((await request("/api/airline/dashboard", { headers: auth(customer) })).status, 403);
+    assert.equal((await request("/api/airline/bookings", { headers: auth(customer) })).status, 403);
     assert.equal((await request("/api/admin/read/users", { headers: auth(customer) })).status, 403);
+    const staffBody = JSON.stringify({ name: " New Staff ", email: " NEW.STAFF@example.com ", password: "strong-password-123", role: "AIRLINE_SALES_MANAGER", airlineId: 7 });
+    assert.equal((await request("/api/admin/users", { method: "POST", headers: write(customer), body: staffBody })).status, 403);
     const admin = await login(1);
     assert.match(admin, /^flight_session=/);
+    assert.equal((await request("/api/admin/users", { method: "POST", headers: { ...write(admin), "x-csrf-intent": "0" }, body: staffBody })).status, 403);
+    assert.equal((await request("/api/admin/users", { method: "POST", headers: write(admin), body: staffBody.replace("AIRLINE_SALES_MANAGER", "ADMIN") })).status, 400);
+    const createdStaff = await request("/api/admin/users", { method: "POST", headers: write(admin), body: staffBody });
+    assert.equal(createdStaff.status, 201);
+    assert.deepEqual(await createdStaff.json(), { user: { id: 42, name: "New Staff", email: "new.staff@example.com", role: "AIRLINE_SALES_MANAGER", airlineId: 7, status: "ACTIVE" } });
+    assert.deepEqual(staffInputs, [{ name: "New Staff", email: "new.staff@example.com", role: "AIRLINE_SALES_MANAGER", airlineId: 7, actorId: 1 }]);
+    assert.equal((await request("/api/admin/users", { method: "POST", headers: write(admin), body: staffBody.replace("NEW.STAFF@example.com", "duplicate@example.com") })).status, 409);
     const interventionBody = JSON.stringify({ action: "HIDE_FLIGHT", entityId: 9, reason: "Lịch bay cần kiểm tra" });
     const interventionHeaders = { ...write(admin), "idempotency-key": "11111111-1111-4111-8111-111111111111" };
     assert.equal((await request("/api/admin/interventions", { method: "POST", headers: interventionHeaders, body: interventionBody.replace("Lịch bay cần kiểm tra", "ngắn") })).status, 400);
@@ -93,12 +120,22 @@ test("session roles, CSRF and airline scope protect the APIs", async () => {
     const airline = await login(3);
     assert.equal((await request("/api/admin/flights", { headers: auth(airline) })).status, 403);
     assert.equal((await request("/api/airline/managed-flights", { headers: auth(airline) })).status, 200);
+    assert.equal((await request("/api/airline/dashboard", { headers: auth(airline) })).status, 403);
+    assert.equal((await request("/api/airline/bookings", { headers: auth(airline) })).status, 403);
     assert.deepEqual(scopedAirlineIds, [7]);
-    const flightBody = JSON.stringify({ flightNumber: "FB123", airlineId: 999, departureCode: "HAN", arrivalCode: "SGN", departureTime: "2026-11-01T10:00:00Z", arrivalTime: "2026-11-01T12:00:00Z", capacity: 100, basePrice: 1000000 });
+    const flightBody = JSON.stringify({ flightNumber: "FB123", airlineId: 999, departureCode: "HAN", arrivalCode: "SGN", departureTime: "2026-11-01T10:00:00Z", arrivalTime: "2026-11-01T12:00:00Z" });
+    assert.equal((await request("/api/airline/managed-flights", { method: "POST", headers: write(airline), body: flightBody.replace('"airlineId":999', '"airlineId":999,"capacity":100,"basePrice":100000') })).status, 400);
     assert.equal((await request("/api/airline/managed-flights", { method: "POST", headers: write(airline), body: flightBody })).status, 201);
     assert.deepEqual(createdAirlineIds, [7]);
     const sales = await login(4);
+    assert.equal((await request("/api/airline/dashboard?fromDate=invalid", { headers: auth(sales) })).status, 400);
+    assert.equal((await request("/api/airline/bookings?bookingFromDate=invalid", { headers: auth(sales) })).status, 400);
+    assert.equal((await request("/api/airline/bookings/invalid", { headers: auth(sales) })).status, 400);
     assert.equal((await request("/api/airline/managed-flights", { method: "POST", headers: write(sales), body: flightBody })).status, 403);
+    assert.equal((await request("/api/airline/flights/9/sales-settings", { method: "PUT", headers: write(airline), body: JSON.stringify({ capacity: 100, basePrice: 100000 }) })).status, 403);
+    assert.equal((await request("/api/airline/flights/9/sale-status", { method: "PUT", headers: write(airline), body: JSON.stringify({ saleStatus: "ON_SALE" }) })).status, 403);
+    assert.equal((await request("/api/airline/flights/9/sales-settings", { method: "PUT", headers: write(sales), body: JSON.stringify({ capacity: "invalid", basePrice: 100000 }) })).status, 400);
+    assert.equal((await request("/api/airline/flights/9/sale-status", { method: "PUT", headers: write(sales), body: JSON.stringify({ saleStatus: "CANCELLED" }) })).status, 400);
     users.get("user4@example.com")!.airline!.status = "LOCKED";
     assert.equal((await request("/api/airline/managed-flights", { headers: auth(sales) })).status, 401);
     const otherAirline = await login(5);
