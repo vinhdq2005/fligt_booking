@@ -1,284 +1,111 @@
-
-/* ================================
-   SKYWAY - PAYMENT RESULT PAGE
-   UI only - preserve existing logic
-================================ */
-
 .payment-result-page {
-  min-height: 70vh;
-  padding: 64px 20px;
-  background:
-    radial-gradient(
-      ellipse at top,
-      rgba(219, 234, 254, 0.9) 0%,
-      transparent 48%
-    ),
-    linear-gradient(180deg, #f5f8ff 0%, #f8fafc 100%);
-  box-sizing: border-box;
+  padding: 60px 20px;
 }
 
 .payment-result-content {
-  width: 100%;
-  max-width: 720px;
+  max-width: 650px;
   margin: 0 auto;
-  padding: 44px;
-  box-sizing: border-box;
+  padding: 40px;
   background: #ffffff;
-  border: 1px solid #e4ebf5;
-  border-radius: 24px;
+  border-radius: 12px;
   text-align: center;
-  box-shadow: 0 20px 55px rgba(30, 64, 120, 0.09);
-  animation: paymentResultAppear 0.4s ease-out;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
-
-@keyframes paymentResultAppear {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Success / failure icon */
 
 .result-icon {
-  width: 82px;
-  height: 82px;
-  margin: 0 auto 24px;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 36px;
+  font-weight: bold;
 }
 
 .result-icon.success {
-  color: #16a34a;
   background: #dcfce7;
-  border: 7px solid #f0fdf4;
-  box-shadow: 0 0 0 1px #bbf7d0;
+  color: #16a34a;
 }
 
 .result-icon.failure {
-  color: #dc2626;
   background: #fee2e2;
-  border: 7px solid #fef2f2;
-  box-shadow: 0 0 0 1px #fecaca;
+  color: #dc2626;
 }
 
-/* Headings and description */
-
 .payment-result-content h1 {
-  margin: 0 0 14px;
-  color: #142b4a;
-  font-size: 29px;
-  line-height: 1.35;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  margin: 0 0 12px;
 }
 
 .payment-result-content > p {
-  margin: 10px 0;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.75;
+  color: #6b7280;
 }
-
-/* Booking code */
 
 .booking-code {
   margin: 30px 0;
-  padding: 24px 20px;
-  background: linear-gradient(135deg, #eff6ff, #f8fbff);
-  border: 1px dashed #93baf4;
-  border-radius: 16px;
+  padding: 20px;
+  background: #f3f4f6;
+  border-radius: 8px;
 }
 
 .booking-code span {
   display: block;
-  margin-bottom: 10px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+  color: #6b7280;
 }
 
 .booking-code strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: 27px;
-  font-weight: 800;
+  font-size: 24px;
   letter-spacing: 2px;
-  overflow-wrap: anywhere;
 }
 
-/* Booking information */
-
 .result-info {
-  margin: 26px 0;
-  padding: 24px;
-  background: #f8fafc;
-  border: 1px solid #e8eef6;
-  border-radius: 16px;
+  margin: 24px 0;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
   text-align: left;
 }
 
 .result-info p {
-  margin: 0;
-  padding: 12px 0;
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-  border-bottom: 1px solid #e8eef6;
+  margin: 8px 0;
 }
-
-.result-info p:last-child {
-  border-bottom: none;
-}
-
-.result-info p strong,
-.result-info > div > strong {
-  color: #1e3a5f;
-  font-weight: 750;
-}
-
-.result-info > div {
-  padding-top: 16px;
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.result-info ul {
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.result-info li {
-  margin-top: 8px;
-  padding: 12px 14px;
-  color: #334155;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  overflow-wrap: anywhere;
-}
-
-/* Action buttons */
 
 .result-actions {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
   gap: 12px;
   margin-top: 30px;
 }
 
 .result-actions button {
-  min-height: 48px;
-  padding: 13px 24px;
-  border: 1px solid #2563eb;
-  border-radius: 12px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
   background: #2563eb;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 750;
+  color: white;
   cursor: pointer;
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
 .result-actions button:hover {
   background: #1d4ed8;
-  border-color: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
 }
-
-.result-actions button:active {
-  transform: translateY(0);
-}
-
-.result-actions button:focus-visible {
-  outline: 3px solid #bfdbfe;
-  outline-offset: 3px;
-}
-
-/* Responsive */
 
 @media (max-width: 600px) {
   .payment-result-page {
-    min-height: 60vh;
-    padding: 28px 14px;
+    padding: 30px 16px;
   }
 
   .payment-result-content {
-    padding: 30px 18px;
-    border-radius: 18px;
-  }
-
-  .result-icon {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 20px;
-    font-size: 36px;
-  }
-
-  .payment-result-content h1 {
-    font-size: 23px;
-  }
-
-  .payment-result-content > p {
-    font-size: 14px;
-  }
-
-  .booking-code {
-    margin: 24px 0;
-    padding: 20px 14px;
-  }
-
-  .booking-code strong {
-    font-size: 22px;
-    letter-spacing: 1px;
-  }
-
-  .result-info {
-    padding: 16px;
-  }
-
-  .result-info p {
-    padding: 10px 0;
-    font-size: 13px;
+    padding: 28px 20px;
   }
 
   .result-actions {
     flex-direction: column;
-    gap: 10px;
   }
 
   .result-actions button {
     width: 100%;
-    min-height: 46px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .payment-result-content {
-    animation: none;
-  }
-
-  .result-actions button {
-    transition: none;
   }
 }

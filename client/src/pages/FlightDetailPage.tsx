@@ -241,7 +241,7 @@ function FlightDetailPage() {
 
             <p>
               <strong>Lưu ý:</strong>{' '}
-              Vui lòng kiểm tra kỹ thông tin hành khách và lịch trình trước khi tiếp tục
+              Đây là luồng đặt vé mô phỏng của dự án.
             </p>
           </div>
 

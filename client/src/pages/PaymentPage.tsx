@@ -360,7 +360,8 @@ function PaymentPage() {
         <h1>Thanh toán đặt vé</h1>
 
         <p className="demo-notice">
-          Vui lòng kiểm tra kỹ thông tin chuyến bay trước khi tiến hành thanh toán.
+          Đây là chức năng thanh toán mô phỏng dùng cho bài tập lớn.
+          Không nhập hoặc cung cấp thông tin thẻ ngân hàng thật.
         </p>
 
         <div className="payment-card">

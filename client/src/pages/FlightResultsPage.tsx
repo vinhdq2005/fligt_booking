@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -29,7 +30,7 @@ function formatDuration(departure: string, arrival: string) {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
 
-  return `${hours}h ${remainingMinutes}m`
+  return `${hours} giờ ${remainingMinutes} phút`
 }
 
 function formatDate(value: string) {
@@ -209,12 +210,11 @@ function FlightResultsPage() {
   return (
     <section className="flight-results-page">
       <div className="flight-results-content">
-        <div className="results-header-section">
-          <h1>Kết quả tìm kiếm chuyến bay</h1>
-          <p className="demo-notice">
-            Hệ thống cung cấp thông tin chuyến bay trực tuyến từ cơ sở dữ liệu.
-          </p>
-        </div>
+        <h1>Kết quả tìm kiếm chuyến bay</h1>
+
+        <p className="demo-notice">
+          Chuyến bay được lấy từ hệ thống backend.
+        </p>
 
         <div className="search-summary">
           <div className="summary-heading">
@@ -274,7 +274,7 @@ function FlightResultsPage() {
                   <input type="number" min="1" max="9" value={draft.passengers} onChange={(event) => updateDraft('passengers', event.target.value)} />
                 </label>
                 <label>
-                  <span>Hãng bay (tùy chọn)</span>
+                  <span>Hãng bay (không bắt buộc)</span>
                   <input
                     value={draft.airline}
                     maxLength={120}
@@ -343,7 +343,7 @@ function FlightResultsPage() {
 
           <div className="summary-details">
             <div className="summary-detail-item">
-              <span className="summary-detail-icon">📅</span>
+              <span className="summary-detail-icon">▦</span>
               <div>
                 <span>Ngày khởi hành</span>
                 <strong>{formatDate(date)}</strong>
@@ -351,10 +351,10 @@ function FlightResultsPage() {
             </div>
 
             <div className="summary-detail-item">
-              <span className="summary-detail-icon">👤</span>
+              <span className="summary-detail-icon">♙</span>
               <div>
                 <span>Hành khách</span>
-                <strong>{passengers} hành khách</strong>
+                <strong>{passengers} người lớn</strong>
               </div>
             </div>
 
@@ -383,37 +383,33 @@ function FlightResultsPage() {
 
         {loading ? (
           <div className="empty-results">
-            <div className="spinner-loader" />
-            <p>Đang tìm kiếm chuyến bay phù hợp...</p>
+            <p>Đang tải danh sách chuyến bay...</p>
           </div>
         ) : error ? (
           <div className="empty-results">
             <h2>Không thể tải chuyến bay</h2>
             <p>{error}</p>
 
-            <div className="empty-actions">
-              <button
-                type="button"
-                onClick={() => setRetryCount((count) => count + 1)}
-              >
-                Thử lại
-              </button>
+            <button
+              type="button"
+              onClick={() => setRetryCount((count) => count + 1)}
+            >
+              Thử lại
+            </button>
 
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={openEditor}
-              >
-                Thay đổi tìm kiếm
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={openEditor}
+            >
+              Thay đổi tìm kiếm
+            </button>
           </div>
         ) : flights.length === 0 ? (
           <div className="empty-results">
             <h2>Không tìm thấy chuyến bay</h2>
             <p>
               Không có chuyến bay phù hợp trong cơ sở dữ liệu
-              với điều kiện tìm kiếm hiện tại của bạn.
+              với điều kiện tìm kiếm hiện tại.
             </p>
 
             <button
@@ -444,16 +440,13 @@ function FlightResultsPage() {
                   className="flight-card"
                   key={flight.id}
                 >
-                  <div className="flight-airline-info">
-                    <div className="airline-badge-icon">✈</div>
-                    <div>
-                      <strong>{flight.airline.name}</strong>
-                      <span className="flight-number-tag">{flight.flightNumber}</span>
-                    </div>
+                  <div className="flight-airline">
+                    <strong>{flight.airline.name}</strong>
+                    <span>{flight.flightNumber}</span>
                   </div>
 
-                  <div className="flight-route-details">
-                    <div className="time-location">
+                  <div className="flight-route">
+                    <div>
                       <strong>
                         {formatTime(flight.departureTime)}
                       </strong>
@@ -464,21 +457,17 @@ function FlightResultsPage() {
                       </span>
                     </div>
 
-                    <div className="flight-duration-line">
+                    <div className="flight-duration">
                       <span>
                         {formatDuration(
                           flight.departureTime,
                           flight.arrivalTime,
                         )}
                       </span>
-                      <div className="line-visual">
-                        <div />
-                        <span>→</span>
-                      </div>
-                      <span className="flight-type-tag">Bay thẳng</span>
+                      <span>→</span>
                     </div>
 
-                    <div className="time-location text-end">
+                    <div>
                       <strong>
                         {formatTime(flight.arrivalTime)}
                       </strong>
@@ -490,38 +479,40 @@ function FlightResultsPage() {
                     </div>
                   </div>
 
-                  <div className="flight-pricing-section">
-                    <div className="flight-price">
-                      <span className="price-label">Giá vé / người</span>
-                      <strong>
-                        {flight.currentPrice.toLocaleString('vi-VN')} ₫
-                      </strong>
-                    </div>
+                  <div className="flight-price">
+                    <span>Giá vé / người</span>
 
-                    <div className="flight-seats-info">
-                      <span className={`seat-badge ${enoughSeats ? 'success' : 'danger'}`}>
-                        {enoughSeats ? `Còn ${flight.availableSeats} chỗ trống` : 'Không đủ chỗ'}
-                      </span>
-                      <span className="seat-subtext">
-                        Sức chứa tổng: {flight.capacity} chỗ
-                      </span>
-                    </div>
+                    <strong>
+                      {flight.currentPrice.toLocaleString('vi-VN')} ₫
+                    </strong>
 
-                    <button
-                      type="button"
-                      className={`select-flight-btn ${!enoughSeats ? 'disabled' : ''}`}
-                      disabled={!enoughSeats}
-                      onClick={() =>
-                        navigate(
-                          `/flights/${flight.id}?passengers=${passengers}&date=${encodeURIComponent(date)}`,
-                        )
-                      }
-                    >
-                      {enoughSeats
-                        ? 'Chọn chuyến'
-                        : 'Hết chỗ'}
-                    </button>
+                    <span>
+                      Sức chứa: {flight.capacity} chỗ
+                    </span>
+
+                    <span>
+                      Còn trống: {flight.availableSeats} chỗ
+                    </span>
+
+                    <span>
+                      Đã sử dụng: {flight.occupiedSeats}/
+                      {flight.capacity} chỗ
+                    </span>
                   </div>
+
+                  <button
+                    type="button"
+                    disabled={!enoughSeats}
+                    onClick={() =>
+                      navigate(
+                        `/flights/${flight.id}?passengers=${passengers}&date=${encodeURIComponent(date)}`,
+                      )
+                    }
+                  >
+                    {enoughSeats
+                      ? 'Xem chi tiết'
+                      : 'Không đủ chỗ'}
+                  </button>
                 </article>
               )
             })}
