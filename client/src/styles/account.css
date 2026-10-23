@@ -116,3 +116,11 @@
     width: 100%;
   }
 }
+
+/* UI upgrade phase 2: account page polish (CSS only) */
+.account-page { background: radial-gradient(ellipse at top left, #eaf2ff 0, transparent 42%), #f5f7fb; }
+.account-content { max-width: 1040px; }
+.account-header, .account-card { border: 1px solid #e3eaf4; border-radius: 20px; box-shadow: 0 12px 32px rgba(20, 43, 77, .07); }
+.account-avatar { box-shadow: 0 8px 18px rgba(37, 99, 235, .18); }
+.account-actions button { transition: transform .18s ease, box-shadow .18s ease; }
+.account-actions button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(23, 78, 166, .14); }

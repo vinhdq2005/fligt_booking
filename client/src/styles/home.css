@@ -1,657 +1,459 @@
-
-/* =========================
-   HOME PAGE
-========================= */
-
+/* ==========================================
+   1. RESET & GIAO DIỆN CHUNG
+   ================================---------- */
 .home-page {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
   min-height: 100vh;
-  background: #f5f7fb;
-  color: #111827;
 }
 
-/* =========================
-   HERO
-========================= */
-
+/* ==========================================
+   2. HERO SECTION & ẢNH NỀN MÂY HOÀNG HÔN (LỰA CHỌN 1)
+   ================================---------- */
 .hero-section {
-  min-height: 620px;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(15, 23, 42, 0.82),
-      rgba(15, 23, 42, 0.45),
-      rgba(15, 23, 42, 0.2)
-    ),
-    url("https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1800&q=85")
-    center / cover no-repeat;
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.45) 0%, rgba(30, 58, 138, 0.4) 100%), 
+              url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop') center/cover no-repeat;
+  padding: 60px 20px 90px;
   color: #ffffff;
 }
 
 .hero-overlay {
-  min-height: 620px;
-  display: flex;
-  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .hero-content {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 70px 24px 90px;
-  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .hero-badge {
   display: inline-block;
-  margin-bottom: 18px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  font-size: 14px;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .hero-content h1 {
-  max-width: 700px;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.25;
   margin: 0 0 16px;
-  font-size: clamp(34px, 4vw, 52px);
-  line-height: 1.15;
-  letter-spacing: -1px;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-.hero-content > p {
-  max-width: 620px;
-  margin: 0 0 32px;
-  font-size: 18px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.9);
+.hero-content p {
+  font-size: 16px;
+  color: #f8fafc;
+  margin: 0 0 40px;
+  max-width: 600px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
-/* =========================
-   SEARCH BOX
-========================= */
-
+/* ==========================================
+   3. KHUNG TÌM KIẾM CHUYẾN BAY (SEARCH BOX)
+   ================================---------- */
 .search-box {
-  width: 100%;
-  max-width: 1120px;
-  padding: 24px;
-  box-sizing: border-box;
   background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 18px;
-  color: #1f2937;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 1100px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  text-align: left;
+  color: #1e293b;
 }
 
 .trip-type {
   display: flex;
-  flex-wrap: wrap;
   gap: 24px;
   margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
 }
 
 .trip-type label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
 }
 
-.trip-type input {
+.trip-type input[type="radio"] {
   accent-color: #2563eb;
+  width: 16px;
+  height: 16px;
 }
 
-/* =========================
-   SEARCH FIELDS
-========================= */
-
+/* Lưới chứa các trường tìm kiếm - Đã cố định cột nút swap là 40px */
 .search-fields {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.2fr)
-    40px
-    minmax(0, 1.2fr)
-    minmax(0, 1fr)
-    minmax(0, 0.9fr);
-  align-items: center;
-  gap: 10px;
-}
-
-.airport-picker {
-  position: relative;
-  min-width: 0;
-}
-
-.airline-picker {
-  grid-column: 1 / -1;
-}
-
-.airline-picker .airport-field .airport-entry input {
-  width: 100%;
-  flex: 1;
-  font-size: 15px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.airport-entry {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.airport-field .airport-entry input {
-  width: 86px;
-  flex: 0 1 86px;
-  font-size: 22px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.airport-entry input::placeholder {
-  font-size: 14px;
-  letter-spacing: 0;
-  text-transform: none;
-  font-weight: 400;
-}
-
-.airport-city {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  border: 1px solid #b6d2df;
-  border-radius: 999px;
-  padding: 3px 7px;
-  color: #306e88;
-  font-size: 11px;
-}
-
-.airport-suggestions {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 10;
-  width: max(100%, 300px);
-  max-height: 300px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  border: 1px solid #d9e2e8;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22);
-}
-
-.airport-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: 1fr 40px 1fr 1fr 1fr 1fr;
   gap: 12px;
-  width: 100%;
-  padding: 12px 14px;
-  border: 0;
-  background: #fff;
-  color: #1f2937;
-  text-align: left;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* Nút đổi chiều (Swap) */
+.swap-button {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  font-size: 16px;
+  color: #475569;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.airport-option:hover,
-.airport-option:focus-visible,
-.airport-option[aria-selected="true"] {
-  background: #d7e8ef;
+.swap-button:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
 }
 
-.airport-option strong,
-.airport-option small {
-  display: block;
+/* ==========================================
+   4. CÁC Ô NHẬP LIỆU & DROPDOWN NỔI ĐÚNG VỊ TRÍ
+   ================================---------- */
+.airport-picker {
+  position: relative; 
+  width: 100%;
 }
 
-.airport-option small {
-  margin-top: 4px;
-  color: #64748b;
-}
-
-.airport-code {
-  flex: none;
-  border: 1px solid #39748c;
-  border-radius: 999px;
-  padding: 4px 8px;
-  color: #39748c;
-}
-
-.airport-message {
-  margin: 0;
-  padding: 16px;
-  color: #64748b;
-  font-size: 13px;
-}
-
+/* Cố định chiều cao các ô tìm kiếm bằng nhau hoàn toàn (62px) */
 .search-field {
-  min-width: 0;
-  min-height: 76px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  box-sizing: border-box;
-  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: #ffffff;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 10px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  height: 62px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
 }
 
 .search-field:focus-within {
+  background: #ffffff;
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .field-icon {
-  font-size: 21px;
-  flex-shrink: 0;
+  font-size: 18px;
+  margin-top: 2px;
 }
 
 .search-field > div {
-  min-width: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .search-field label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #64748b;
+  margin-bottom: 2px;
+  text-transform: uppercase;
 }
 
-.search-field select,
 .search-field input {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  padding: 0;
   border: none;
-  outline: none;
   background: transparent;
-  color: #111827;
-  font-family: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-}
-
-.search-field select {
-  cursor: pointer;
-}
-
-.search-field input[type="date"] {
-  cursor: pointer;
-}
-
-.search-field input[type="number"] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-.search-field input[type="number"]::-webkit-inner-spin-button,
-.search-field input[type="number"]::-webkit-outer-spin-button {
-  margin: 0;
-  -webkit-appearance: none;
-}
-
-.swap-button {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
+  color: #0f172a;
+  outline: none;
   padding: 0;
-  border: 1px solid #dbe3ef;
-  border-radius: 50%;
-  background: #ffffff;
+  width: 100%;
+}
+
+.search-field input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.airport-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.airport-city {
+  font-size: 12px;
   color: #2563eb;
-  font-size: 21px;
+  font-weight: 500;
+  margin-top: 2px;
+  height: 16px; 
+}
+
+/* Bảng gợi ý nổi ngay bên dưới ô đang nhập */
+.airport-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 999;
+  padding: 6px;
+}
+
+.airport-option {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.airport-option:hover {
+  background: #f1f5f9;
+}
+
+.airport-option span {
+  display: flex;
+  flex-direction: column;
+}
+
+.airport-option strong {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.airport-option small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.airport-code {
+  font-size: 12px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.airport-message {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Nút tìm kiếm chuyến bay */
+.search-button {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  z-index: 2;
-  transition:
-    transform 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
-}
-
-.swap-button:hover {
-  transform: rotate(180deg);
-  background: #eff6ff;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.12);
-}
-
-/* =========================
-   SEARCH BUTTON
-========================= */
-
-.search-button {
-  width: 100%;
-  min-height: 50px;
-  margin-top: 16px;
-  padding: 15px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: none;
-  border-radius: 10px;
-  background: #2563eb;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    transform 0.2s,
-    box-shadow 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .search-button:hover {
-  background: #1d4ed8;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
   transform: translateY(-1px);
 }
 
-.search-button:active {
-  transform: translateY(0);
-}
-
-.search-button:focus-visible,
-.swap-button:focus-visible {
-  outline: 3px solid #93c5fd;
-  outline-offset: 3px;
-}
-
-/* =========================
-   HOME CONTENT
-========================= */
-
+/* ==========================================
+   5. PHẦN ĐIỂM ĐẾN NỔI BẬT
+   ================================---------- */
 .home-bottom {
-  padding: 64px 24px;
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 0 20px;
 }
 
 .home-section {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
+  margin-bottom: 50px;
 }
 
 .section-heading {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
-  gap: 30px;
-  margin-bottom: 28px;
+  align-items: flex-end;
+  margin-bottom: 30px;
 }
 
 .section-label {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 1.5px;
   color: #2563eb;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
 }
 
 .section-heading h2 {
-  margin: 6px 0 0;
-  font-size: 30px;
-  line-height: 1.3;
-  color: #111827;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
 }
 
 .section-heading p {
+  font-size: 14px;
+  color: #64748b;
   margin: 0;
-  color: #6b7280;
-  line-height: 1.6;
 }
-
-/* =========================
-   DESTINATIONS
-========================= */
 
 .destination-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
 }
 
 .destination-card {
-  min-width: 0;
-  min-height: 240px;
-  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  height: 220px;
   display: flex;
   align-items: flex-end;
-  overflow: hidden;
-  border-radius: 16px;
+  padding: 24px;
   background-size: cover;
   background-position: center;
-  background-color: #cbd5e1;
-  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.12);
-  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+/* Hà Nội - Hồ Gươm */
+.destination-hanoi {
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%), 
+              url('https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
+}
+
+/* TP. Hồ Chí Minh - Tòa nhà hiện đại */
+.destination-saigon {
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%), 
+              url('https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
+}
+
+/* Đà Nẵng - Cầu Vàng */
+.destination-danang {
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%), 
+              url('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
 }
 
 .destination-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.18);
-}
-
-.destination-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(15, 23, 42, 0.85),
-    rgba(15, 23, 42, 0.05)
-  );
-  pointer-events: none;
-}
-
-.destination-hanoi {
-  background-image: url("https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?auto=format&fit=crop&w=900&q=80");
-}
-
-.destination-saigon {
-  background-image: url("https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=900&q=80");
-}
-
-.destination-danang {
-  background-image: url("https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=900&q=80");
+  transform: translateY(-6px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15);
 }
 
 .destination-content {
-  position: relative;
-  z-index: 1;
-  padding: 24px;
   color: #ffffff;
 }
 
 .destination-content span {
-  font-size: 24px;
+  font-size: 22px;
+  display: block;
+  margin-bottom: 6px;
 }
 
 .destination-content h3 {
-  margin: 8px 0 4px;
-  font-size: 23px;
-  line-height: 1.3;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px;
 }
 
 .destination-content p {
+  font-size: 13px;
+  color: #cbd5e1;
   margin: 0;
-  color: rgba(255, 255, 255, 0.85);
 }
 
-/* =========================
-   DEMO BANNER
-========================= */
-
 .demo-banner {
-  width: 100%;
-  max-width: 1180px;
-  margin: 44px auto 0;
-  padding: 22px 26px;
-  box-sizing: border-box;
-  border: 1px solid #dbeafe;
-  border-radius: 14px;
-  background: #eff6ff;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #2563eb;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .demo-banner strong {
-  color: #1e40af;
+  font-size: 15px;
+  color: #0f172a;
+  display: block;
+  margin-bottom: 4px;
 }
 
 .demo-banner p {
-  margin: 6px 0 0;
-  color: #475569;
-  line-height: 1.6;
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
 }
 
-/* =========================
-   RESPONSIVE: TABLET
-========================= */
-
-@media (max-width: 1050px) {
+/* ==========================================
+   6. RESPONSIVE (MÀN HÌNH NHỎ)
+   ================================---------- */
+@media (max-width: 968px) {
   .search-fields {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
-  }
-
-  .swap-button {
-    display: none;
-  }
-
-  .destination-grid {
-    gap: 16px;
-  }
-}
-
-/* =========================
-   RESPONSIVE: MOBILE
-========================= */
-
-@media (max-width: 700px) {
-  .hero-section,
-  .hero-overlay {
-    min-height: auto;
-  }
-
-  .hero-section {
-    background-position: center;
-  }
-
-  .hero-content {
-    padding: 48px 16px 56px;
-  }
-
-  .hero-content h1 {
-    font-size: 34px;
-    letter-spacing: -0.6px;
-  }
-
-  .hero-content > p {
-    font-size: 16px;
-    margin-bottom: 24px;
-  }
-
-  .search-box {
-    padding: 18px;
-    border-radius: 14px;
-  }
-
-  .trip-type {
-    gap: 18px;
-  }
-
-  .search-fields {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  .airport-suggestions {
-    width: 100%;
+  .swap-button {
+    margin: 0 auto;
+    transform: rotate(90deg);
   }
 
   .search-field {
-    min-height: 68px;
-    padding: 12px;
-  }
-
-  .search-field select,
-  .search-field input {
-    font-size: 14px;
-  }
-
-  .search-button {
-    min-height: 48px;
-    font-size: 15px;
-  }
-
-  .home-bottom {
-    padding: 44px 16px;
-  }
-
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .section-heading h2 {
-    font-size: 26px;
+    height: auto; /* Linh hoạt trên màn hình điện thoại */
   }
 
   .destination-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 1fr;
   }
 
-  .destination-card {
-    min-height: 220px;
+  .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
-  .destination-content {
-    padding: 20px;
-  }
-
-  .demo-banner {
-    margin-top: 32px;
-    padding: 18px;
-  }
-}
-
-/* =========================
-   SMALL MOBILE
-========================= */
-
-@media (max-width: 380px) {
   .hero-content h1 {
     font-size: 30px;
-  }
-
-  .search-box {
-    padding: 14px;
-  }
-
-  .trip-type {
-    gap: 12px;
-  }
-
-  .trip-type label {
-    font-size: 13px;
-  }
-
-  .section-heading h2 {
-    font-size: 23px;
   }
 }
