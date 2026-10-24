@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -19,16 +18,22 @@ type Passenger = {
 }
 
 type SavedPassengerInfo = {
-  flightId: number
+  flightId?: number
+  outboundId?: number
+  inboundId?: number
   date: string
+  returnDate?: string
   passengers: Passenger[]
   contactEmail: string
   contactPhone: string
 }
 
 type PendingBooking = {
-  flightId: number
+  flightId?: number
+  outboundId?: number
+  inboundId?: number
   date: string
+  returnDate?: string
   passengers: number
   bookingCode: string
   detailsSignature: string
@@ -44,7 +49,11 @@ function PaymentPage() {
   const [searchParams] = useSearchParams()
 
   const flightId = searchParams.get('flightId') || ''
+  const outboundId = searchParams.get('outboundId') || ''
+  const inboundId = searchParams.get('inboundId') || ''
   const date = searchParams.get('date') || ''
+  const returnDate = searchParams.get('returnDate') || ''
+  const isRoundTrip = Boolean(outboundId && inboundId)
 
   const passengerParam = Number(searchParams.get('passengers') || '1')
   const passengers = Math.min(
@@ -56,13 +65,13 @@ function PaymentPage() {
   )
 
   const [flight, setFlight] = useState<PublicFlight | null>(null)
+  const [outboundFlight, setOutboundFlight] = useState<PublicFlight | null>(null)
+  const [inboundFlight, setInboundFlight] = useState<PublicFlight | null>(null)
+
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [paymentError, setPaymentError] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [bookingTotalAmount, setBookingTotalAmount] = useState<number | null>(
-    null,
-  )
   const [bookingCode, setBookingCode] = useState('')
 
   const paymentLock = useRef(false)
@@ -70,34 +79,61 @@ function PaymentPage() {
   useEffect(() => {
     let cancelled = false
 
-    async function loadFlight() {
-      const id = Number(flightId)
-
-      if (!flightId || !Number.isInteger(id) || id <= 0) {
-        setFlight(null)
-        setLoadError('Mã chuyến bay không hợp lệ.')
-        setLoading(false)
-        return
-      }
-
+    async function loadFlightsData() {
       setLoading(true)
       setLoadError('')
 
       try {
-        const result = await getPublicFlight(id)
+        if (isRoundTrip) {
+          const outId = Number(outboundId)
+          const inId = Number(inboundId)
 
-        if (cancelled) return
+          if (!Number.isInteger(outId) || outId <= 0 || !Number.isInteger(inId) || inId <= 0) {
+            setLoadError('Mã chuyến bay khứ hồi không hợp lệ.')
+            setLoading(false)
+            return
+          }
 
-        if (result.item) {
-          setFlight(result.item)
+          const [outRes, inRes] = await Promise.all([
+            getPublicFlight(outId),
+            getPublicFlight(inId),
+          ])
+
+          if (cancelled) return
+
+          if (outRes.item && inRes.item) {
+            setOutboundFlight(outRes.item)
+            setInboundFlight(inRes.item)
+          } else {
+            setLoadError('Không tìm thấy thông tin chuyến bay khứ hồi.')
+          }
         } else {
-          setFlight(null)
-          setLoadError('Không tìm thấy chuyến bay.')
+          const id = Number(flightId)
+
+          if (!flightId || !Number.isInteger(id) || id <= 0) {
+            setFlight(null)
+            setLoadError('Mã chuyến bay không hợp lệ.')
+            setLoading(false)
+            return
+          }
+
+          const result = await getPublicFlight(id)
+
+          if (cancelled) return
+
+          if (result.item) {
+            setFlight(result.item)
+          } else {
+            setFlight(null)
+            setLoadError('Không tìm thấy chuyến bay.')
+          }
         }
       } catch (error) {
         if (cancelled) return
 
         setFlight(null)
+        setOutboundFlight(null)
+        setInboundFlight(null)
         setLoadError(
           error instanceof Error
             ? error.message
@@ -110,12 +146,12 @@ function PaymentPage() {
       }
     }
 
-    void loadFlight()
+    void loadFlightsData()
 
     return () => {
       cancelled = true
     }
-  }, [flightId])
+  }, [flightId, outboundId, inboundId, isRoundTrip])
 
   const formatPrice = (price: number) =>
     `${Number(price).toLocaleString('vi-VN')} ₫`
@@ -152,9 +188,15 @@ function PaymentPage() {
       )
     }
 
+    const isValidMatch = isRoundTrip
+      ? parsed.outboundId === Number(outboundId) &&
+        parsed.inboundId === Number(inboundId) &&
+        parsed.date === date &&
+        parsed.returnDate === returnDate
+      : parsed.flightId === Number(flightId) && parsed.date === date
+
     if (
-      parsed.flightId !== Number(flightId) ||
-      parsed.date !== date ||
+      !isValidMatch ||
       !Array.isArray(parsed.passengers) ||
       parsed.passengers.length !== passengers ||
       typeof parsed.contactEmail !== 'string' ||
@@ -206,14 +248,19 @@ function PaymentPage() {
     }
   }
 
-  /**
-   * Tạo booking ở trạng thái chờ thanh toán hoặc dùng lại booking
-   * đang chờ thanh toán nếu thông tin hành khách không thay đổi.
-   *
-   * Hàm này KHÔNG gọi API payBooking và KHÔNG phát hành vé.
-   */
+  // Tính toán chi phí thống nhất chuẩn xác ở Frontend
+  const ticketPrice = !isRoundTrip && flight ? Number(flight.currentPrice ?? flight.basePrice ?? 0) : 0
+  const outboundPrice = isRoundTrip && outboundFlight ? Number(outboundFlight.currentPrice ?? outboundFlight.basePrice ?? 0) : 0
+  const inboundPrice = isRoundTrip && inboundFlight ? Number(inboundFlight.currentPrice ?? inboundFlight.basePrice ?? 0) : 0
+  
+  const pricePerPassenger = isRoundTrip ? (outboundPrice + inboundPrice) : ticketPrice
+  const totalPrice = pricePerPassenger * passengers
+
   async function createOrGetPendingBooking(): Promise<string> {
-    if (!flight) {
+    if (isRoundTrip && (!outboundFlight || !inboundFlight)) {
+      throw new Error('Không có thông tin chuyến bay khứ hồi.')
+    }
+    if (!isRoundTrip && !flight) {
       throw new Error('Không có thông tin chuyến bay.')
     }
 
@@ -231,35 +278,37 @@ function PaymentPage() {
       try {
         const parsed = JSON.parse(pendingRaw) as PendingBooking
 
-        const matches =
-          parsed.flightId === flight.id &&
-          parsed.date === date &&
-          parsed.passengers === passengers &&
-          parsed.detailsSignature === detailsSignature &&
-          typeof parsed.bookingCode === 'string' &&
-          parsed.bookingCode.length > 0
+        const matches = isRoundTrip
+          ? parsed.outboundId === outboundFlight!.id &&
+            parsed.inboundId === inboundFlight!.id &&
+            parsed.date === date &&
+            parsed.returnDate === returnDate &&
+            parsed.passengers === passengers &&
+            parsed.detailsSignature === detailsSignature &&
+            typeof parsed.bookingCode === 'string' &&
+            parsed.bookingCode.length > 0
+          : parsed.flightId === flight!.id &&
+            parsed.date === date &&
+            parsed.passengers === passengers &&
+            parsed.detailsSignature === detailsSignature &&
+            typeof parsed.bookingCode === 'string' &&
+            parsed.bookingCode.length > 0
 
         if (matches) {
-          if (
-            typeof parsed.totalAmount === 'number' &&
-            Number.isFinite(parsed.totalAmount) &&
-            parsed.totalAmount >= 0
-          ) {
-            setBookingTotalAmount(parsed.totalAmount)
-          }
-
           setBookingCode(parsed.bookingCode)
           return parsed.bookingCode
         }
       } catch {
-        // Dữ liệu chờ thanh toán bị lỗi: tạo lại booking.
+        // Ignore parsing error
       }
 
       sessionStorage.removeItem(PENDING_BOOKING_KEY)
     }
 
+    const targetFlightId = isRoundTrip ? outboundFlight!.id : flight!.id
+
     const result = await createBooking({
-      flightId: flight.id,
+      flightId: targetFlightId,
       contactName: firstPassenger.fullName.trim(),
       contactEmail: savedInfo.contactEmail.trim(),
       contactPhone: savedInfo.contactPhone,
@@ -277,36 +326,37 @@ function PaymentPage() {
     }
 
     const code = result.item.bookingCode
-    const amount = Number(result.item.totalAmount)
-    const validAmount = Number.isFinite(amount) && amount >= 0
 
-    const pending: PendingBooking = {
-      flightId: flight.id,
-      date,
-      passengers,
-      bookingCode: code,
-      detailsSignature,
-      ...(validAmount ? { totalAmount: amount } : {}),
-    }
+    const pending: PendingBooking = isRoundTrip
+      ? {
+          outboundId: outboundFlight!.id,
+          inboundId: inboundFlight!.id,
+          date,
+          returnDate,
+          passengers,
+          bookingCode: code,
+          detailsSignature,
+          totalAmount: totalPrice,
+        }
+      : {
+          flightId: flight!.id,
+          date,
+          passengers,
+          bookingCode: code,
+          detailsSignature,
+          totalAmount: totalPrice,
+        }
 
     sessionStorage.setItem(
       PENDING_BOOKING_KEY,
       JSON.stringify(pending),
     )
 
-    if (validAmount) {
-      setBookingTotalAmount(amount)
-    }
-
     setBookingCode(code)
 
     return code
   }
 
-  /**
-   * Bước 1: tạo booking và hiển thị QR thanh toán giả lập.
-   * Chưa xác nhận thanh toán và chưa phát hành vé.
-   */
   async function handleCreatePaymentQR() {
     if (paymentLock.current || processing || bookingCode) return
 
@@ -328,15 +378,14 @@ function PaymentPage() {
     }
   }
 
-  /**
-   * Bước 2: chỉ gọi backend thanh toán khi người dùng xác nhận.
-   */
   async function handlePayment(success: boolean) {
     if (paymentLock.current || processing) return
 
     if (!success) {
       navigate(
-        `/payment/result?status=failure&flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+        isRoundTrip
+          ? `/payment/result?status=failure&outboundId=${encodeURIComponent(outboundId)}&inboundId=${encodeURIComponent(inboundId)}&passengers=${passengers}&date=${encodeURIComponent(date)}&returnDate=${encodeURIComponent(returnDate)}`
+          : `/payment/result?status=failure&flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
       )
       return
     }
@@ -351,7 +400,6 @@ function PaymentPage() {
     setPaymentError('')
 
     try {
-      // Backend xác nhận thanh toán và phát hành vé.
       await payBooking(bookingCode)
 
       saveBookingCode(bookingCode)
@@ -385,7 +433,7 @@ function PaymentPage() {
     )
   }
 
-  if (loadError || !flight) {
+  if (loadError || (isRoundTrip && (!outboundFlight || !inboundFlight)) || (!isRoundTrip && !flight)) {
     return (
       <section className="payment-page">
         <div className="payment-content">
@@ -399,16 +447,6 @@ function PaymentPage() {
     )
   }
 
-  const ticketPrice = Number(
-    flight.currentPrice ?? flight.basePrice ?? 0,
-  )
-
-  const totalPrice =
-    bookingTotalAmount !== null
-      ? bookingTotalAmount
-      : ticketPrice * passengers
-
-  // Đây là chuỗi dữ liệu QR giả lập, không phải mã QR chuyển khoản ngân hàng.
   const qrValue = bookingCode
     ? JSON.stringify({
         type: 'FLIGHT_BOOKING_MOCK_PAYMENT',
@@ -434,40 +472,83 @@ function PaymentPage() {
           <section className="payment-section">
             <h2>Thông tin chuyến bay</h2>
 
-            <p>
-              <strong>Hãng hàng không:</strong> {flight.airline.name}
-            </p>
+            {isRoundTrip && outboundFlight && inboundFlight ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <span style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-block', marginBottom: '4px' }}>
+                    ✈ CHIỀU ĐI
+                  </span>
+                  <p><strong>Hãng hàng không:</strong> {outboundFlight.airline.name}</p>
+                  <p><strong>Mã chuyến bay:</strong> {outboundFlight.flightNumber}</p>
+                  <p><strong>Hành trình:</strong> {outboundFlight.departureCode} → {outboundFlight.arrivalCode}</p>
+                  <p><strong>Giờ đi - đến:</strong> {formatTime(outboundFlight.departureTime)} - {formatTime(outboundFlight.arrivalTime)}</p>
+                  <p><strong>Ngày đi:</strong> {date || 'Chưa chọn'}</p>
+                </div>
 
-            <p>
-              <strong>Mã chuyến bay:</strong> {flight.flightNumber}
-            </p>
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                  <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-block', marginBottom: '4px' }}>
+                    🛬 CHIỀU VỀ
+                  </span>
+                  <p><strong>Hãng hàng không:</strong> {inboundFlight.airline.name}</p>
+                  <p><strong>Mã chuyến bay:</strong> {inboundFlight.flightNumber}</p>
+                  <p><strong>Hành trình:</strong> {inboundFlight.departureCode} → {inboundFlight.arrivalCode}</p>
+                  <p><strong>Giờ đi - đến:</strong> {formatTime(inboundFlight.departureTime)} - {formatTime(inboundFlight.arrivalTime)}</p>
+                  <p><strong>Ngày về:</strong> {returnDate || 'Chưa chọn'}</p>
+                </div>
+              </div>
+            ) : (
+              flight && (
+                <>
+                  <p>
+                    <strong>Hãng hàng không:</strong> {flight.airline.name}
+                  </p>
 
-            <p>
-              <strong>Hành trình:</strong> {flight.departureCode} →{' '}
-              {flight.arrivalCode}
-            </p>
+                  <p>
+                    <strong>Mã chuyến bay:</strong> {flight.flightNumber}
+                  </p>
 
-            <p>
-              <strong>Giờ khởi hành:</strong>{' '}
-              {formatTime(flight.departureTime)}
-            </p>
+                  <p>
+                    <strong>Hành trình:</strong> {flight.departureCode} →{' '}
+                    {flight.arrivalCode}
+                  </p>
 
-            <p>
-              <strong>Giờ đến:</strong> {formatTime(flight.arrivalTime)}
-            </p>
+                  <p>
+                    <strong>Giờ khởi hành:</strong>{' '}
+                    {formatTime(flight.departureTime)}
+                  </p>
 
-            <p>
-              <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
-            </p>
+                  <p>
+                    <strong>Giờ đến:</strong> {formatTime(flight.arrivalTime)}
+                  </p>
+
+                  <p>
+                    <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
+                  </p>
+                </>
+              )
+            )}
           </section>
 
           <section className="payment-summary">
             <h2>Chi tiết chi phí</h2>
 
-            <div className="summary-row">
-              <span>Giá vé mỗi người</span>
-              <strong>{formatPrice(ticketPrice)}</strong>
-            </div>
+            {isRoundTrip ? (
+              <>
+                <div className="summary-row">
+                  <span>Giá vé chiều đi (mỗi người)</span>
+                  <strong>{formatPrice(outboundPrice)}</strong>
+                </div>
+                <div className="summary-row">
+                  <span>Giá vé chiều về (mỗi người)</span>
+                  <strong>{formatPrice(inboundPrice)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="summary-row">
+                <span>Giá vé mỗi người</span>
+                <strong>{formatPrice(ticketPrice)}</strong>
+              </div>
+            )}
 
             <div className="summary-row">
               <span>Số hành khách</span>

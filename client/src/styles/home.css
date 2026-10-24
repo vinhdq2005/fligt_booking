@@ -97,7 +97,7 @@
   height: 16px;
 }
 
-/* Bố cục tìm kiếm cũ: hành trình ở hàng đầu, hãng bay ở hàng dưới. */
+/* Bố cục tìm kiếm một chiều gốc */
 .search-fields {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) 40px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.9fr);
@@ -108,6 +108,20 @@
 
 .airline-picker {
   grid-column: 1 / -1;
+}
+
+/* Bố cục Khứ hồi: Hãng bay bên trái, Hành khách bên phải ở hàng 2 */
+.search-fields.round-trip-layout {
+  grid-template-columns: minmax(0, 1.2fr) 40px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+}
+
+.search-fields.round-trip-layout .airline-picker {
+  grid-column: 1 / span 3; /* Hãng bay nằm bên trái hàng 2 */
+}
+
+.search-fields.round-trip-layout .passenger-field {
+  grid-column: 4 / span 2; /* Hành khách nằm bên phải hàng 2 */
 }
 
 /* Nút đổi chiều (Swap) */
@@ -142,7 +156,6 @@
   min-width: 0;
 }
 
-/* Các ô tìm kiếm cùng chiều cao trong từng hàng. */
 .search-field {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -324,7 +337,7 @@
 }
 
 .search-button:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #1d4ed8 100%, #1e40af 100%);
   transform: translateY(-1px);
 }
 
@@ -391,19 +404,16 @@
   background-position: center;
 }
 
-/* Hà Nội - Hồ Gươm */
 .destination-hanoi {
   background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%),
               url('https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
 }
 
-/* TP. Hồ Chí Minh - Tòa nhà hiện đại */
 .destination-saigon {
   background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%),
               url('https://images.unsplash.com/photo-1583417319070-4a69db38a482?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
 }
 
-/* Đà Nẵng - Cầu Vàng */
 .destination-danang {
   background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%),
               url('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=600&auto=format&fit=crop') center/cover no-repeat;
@@ -467,11 +477,17 @@
     gap: 12px;
   }
 
+  .search-fields.round-trip-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .swap-button {
     display: none;
   }
 
-  .airline-picker {
+  .airline-picker,
+  .search-fields.round-trip-layout .airline-picker,
+  .search-fields.round-trip-layout .passenger-field {
     grid-column: 1 / -1;
   }
 
@@ -491,12 +507,15 @@
 }
 
 @media (max-width: 700px) {
-  .search-fields {
+  .search-fields,
+  .search-fields.round-trip-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
-  .airline-picker {
+  .airline-picker,
+  .search-fields.round-trip-layout .airline-picker,
+  .search-fields.round-trip-layout .passenger-field {
     grid-column: auto;
   }
 
