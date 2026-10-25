@@ -1452,6 +1452,9 @@ export const BookingScalarFieldEnum = {
   id: 'id',
   bookingCode: 'bookingCode',
   flightId: 'flightId',
+  returnFlightId: 'returnFlightId',
+  outboundUnitPrice: 'outboundUnitPrice',
+  returnUnitPrice: 'returnUnitPrice',
   userId: 'userId',
   contactName: 'contactName',
   contactEmail: 'contactEmail',
@@ -1483,6 +1486,7 @@ export type PassengerScalarFieldEnum = (typeof PassengerScalarFieldEnum)[keyof t
 export const TicketScalarFieldEnum = {
   id: 'id',
   passengerId: 'passengerId',
+  flightId: 'flightId',
   ticketCode: 'ticketCode',
   qrToken: 'qrToken',
   price: 'price',

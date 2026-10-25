@@ -211,6 +211,16 @@ function BookingDetailPage() {
               <strong>Giờ đến:</strong>{' '}
               {formatDateTime(booking.flight.arrivalTime)}
             </p>
+            {booking.returnFlight && (
+              <>
+                <h3>Chiều về</h3>
+                <p><strong>Hãng bay:</strong> {booking.returnFlight.airline.name}</p>
+                <p><strong>Số hiệu chuyến bay:</strong> {booking.returnFlight.flightNumber}</p>
+                <p><strong>Hành trình:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                <p><strong>Giờ khởi hành:</strong> {formatDateTime(booking.returnFlight.departureTime)}</p>
+                <p><strong>Giờ đến:</strong> {formatDateTime(booking.returnFlight.arrivalTime)}</p>
+              </>
+            )}
           </div>
 
           <div className="booking-detail-section">
@@ -250,23 +260,18 @@ function BookingDetailPage() {
                 Vé điện tử và QR sẽ hiển thị khi đặt chỗ được xác nhận
                 và vé đã được phát hành.
               </p>
-            ) : passengers.some(
-                (passenger) =>
-                  passenger.ticket?.qrToken &&
-                  passenger.ticket?.ticketCode,
-              ) ? (
+            ) : passengers.some((passenger) => passenger.tickets.length > 0) ? (
               <div className="customer-tickets">
-                {passengers.map((passenger, index) => {
-                  const ticket = passenger.ticket
+                {passengers.flatMap((passenger, index) => passenger.tickets.map((ticket) => {
                   const qrToken = ticket?.qrToken
                   const ticketCode = ticket?.ticketCode
 
                   return (
                     <article
                       className="customer-ticket"
-                      key={ticket?.id ?? ticketCode ?? passenger.id ?? index}
+                      key={ticketCode ?? `${passenger.id}-${ticket.flightId}`}
                     >
-                      <h4>Hành khách {index + 1}</h4>
+                      <h4>Hành khách {index + 1} · {ticket.flightId === booking.flightId ? 'Chiều đi' : 'Chiều về'}</h4>
 
                       <p>
                         <strong>Họ và tên:</strong>{' '}
@@ -309,7 +314,7 @@ function BookingDetailPage() {
                       )}
                     </article>
                   )
-                })}
+                }))}
               </div>
             ) : (
               <p>
@@ -329,11 +334,9 @@ function BookingDetailPage() {
                   <li key={passenger.id ?? index}>
                     <strong>{passenger.fullName}</strong>
 
-                    {passenger.ticket?.ticketCode && (
-                      <span>
-                        {' '}— Mã vé: {passenger.ticket.ticketCode}
-                      </span>
-                    )}
+                    {passenger.tickets.map((ticket) => (
+                      <span key={ticket.ticketCode}> — {ticket.flightId === booking.flightId ? 'Chiều đi' : 'Chiều về'}: {ticket.ticketCode}</span>
+                    ))}
                   </li>
                 ))}
               </ul>

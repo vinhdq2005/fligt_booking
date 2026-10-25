@@ -207,6 +207,7 @@ export type BookingPassengerInput = {
 
 export type CreateBookingInput = {
   flightId: number
+  returnFlightId?: number
   contactName: string
   contactEmail: string
   contactPhone: string
@@ -216,6 +217,8 @@ export type CreateBookingInput = {
 export type CreatedBooking = {
   bookingCode: string
   totalAmount: number
+  outboundUnitPrice?: number | null
+  returnUnitPrice?: number | null
   status: string
   expiresAt: string
 }
@@ -245,6 +248,10 @@ export async function payBooking(
 
 export type BookingDetails = {
   bookingCode: string
+  flightId: number
+  returnFlightId: number | null
+  outboundUnitPrice: number | null
+  returnUnitPrice: number | null
   contactName: string
   contactEmail: string | null
   contactPhone: string | null
@@ -264,15 +271,26 @@ export type BookingDetails = {
       name: string
     }
   }
+  returnFlight: BookingDetails['flight'] | null
   passengers: Array<{
     id: number
     fullName: string
     ticket: {
       ticketCode: string
+      flightId: number
+      qrToken: string
       price: number
       status: string
       issuedAt: string
     } | null
+    tickets: Array<{
+      ticketCode: string
+      flightId: number
+      qrToken: string
+      price: number
+      status: string
+      issuedAt: string
+    }>
   }>
   payments: Array<{
     amount: number

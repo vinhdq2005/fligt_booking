@@ -16,6 +16,7 @@ type PayBookingResult = {
     tickets: Array<{
       ticketCode: string;
       passengerId: number;
+      flightId: number;
       price: number;
       status: string;
       qrToken: string;
@@ -49,9 +50,10 @@ export async function payBooking(
       where: { bookingCode: code },
       include: {
         flight: true,
+        returnFlight: true,
         passengers: {
           include: {
-            ticket: true,
+            tickets: true,
           },
         },
         payments: true,
@@ -84,13 +86,16 @@ export async function payBooking(
     if (booking.flight.status !== "SCHEDULED") {
       throw new Error("Chuyến bay không còn khả dụng.");
     }
+    if (booking.returnFlight && booking.returnFlight.status !== "SCHEDULED") {
+      throw new Error("Chuyến bay không còn khả dụng.");
+    }
 
     if (booking.passengers.length === 0) {
       throw new Error("Đặt chỗ chưa có hành khách.");
     }
 
     // Không phát hành vé trùng cho cùng hành khách.
-    if (booking.passengers.some((p) => p.ticket !== null)) {
+    if (booking.passengers.some((p) => p.tickets.length > 0)) {
       throw new Error(
         "Đặt chỗ đã có vé; không thể thanh toán lại.",
       );
@@ -100,18 +105,16 @@ export async function payBooking(
     const passengerCount = booking.passengers.length;
     const totalAmount = booking.totalAmount;
 
-    if (
-      !Number.isSafeInteger(totalAmount) ||
-      totalAmount < 0 ||
-      totalAmount % passengerCount !== 0
-    ) {
+    const outboundPrice = booking.outboundUnitPrice ?? totalAmount / passengerCount;
+    const returnPrice = booking.returnFlight ? booking.returnUnitPrice : null;
+    if (!Number.isSafeInteger(totalAmount) || totalAmount < 0 ||
+        !Number.isSafeInteger(outboundPrice) || outboundPrice < 0 ||
+        (booking.returnFlight && (!Number.isSafeInteger(returnPrice) || returnPrice === null || returnPrice < 0)) ||
+        (outboundPrice + (returnPrice ?? 0)) * passengerCount !== totalAmount) {
       throw new Error(
         "Tổng tiền đặt chỗ không hợp lệ để phát hành vé.",
       );
     }
-
-    const pricePerPassenger =
-      totalAmount / passengerCount;
 
     // Thanh toán mô phỏng, chưa kết nối cổng thanh toán thật.
     const payment = await tx.payment.create({
@@ -132,28 +135,29 @@ export async function payBooking(
     const tickets: Array<{
       ticketCode: string;
       passengerId: number;
+      flightId: number;
       price: number;
       status: string;
       qrToken: string;
     }> = [];
 
     for (const passenger of booking.passengers) {
-      // Prisma tự tạo ticketCode và qrToken theo schema hiện tại.
-      const ticket = await tx.ticket.create({
-        data: {
-          passengerId: passenger.id,
-          price: pricePerPassenger,
-          status: "ISSUED",
-        },
-      });
-
-      tickets.push({
-        ticketCode: ticket.ticketCode,
-        passengerId: ticket.passengerId,
-        price: ticket.price,
-        status: ticket.status,
-        qrToken: ticket.qrToken,
-      });
+      for (const [flightId, price] of [
+        [booking.flightId, outboundPrice],
+        ...(booking.returnFlightId && returnPrice !== null ? [[booking.returnFlightId, returnPrice]] : []),
+      ]) {
+        const ticket = await tx.ticket.create({
+          data: { passengerId: passenger.id, flightId, price, status: "ISSUED" },
+        });
+        tickets.push({
+          ticketCode: ticket.ticketCode,
+          passengerId: ticket.passengerId,
+          flightId: ticket.flightId,
+          price: ticket.price,
+          status: ticket.status,
+          qrToken: ticket.qrToken,
+        });
+      }
     }
 
     return {

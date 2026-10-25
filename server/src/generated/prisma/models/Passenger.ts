@@ -245,7 +245,7 @@ export type PassengerWhereInput = {
   nationality?: Prisma.StringNullableFilter<"Passenger"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Passenger"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
-  ticket?: Prisma.XOR<Prisma.TicketNullableScalarRelationFilter, Prisma.TicketWhereInput> | null
+  tickets?: Prisma.TicketListRelationFilter
 }
 
 export type PassengerOrderByWithRelationInput = {
@@ -258,7 +258,7 @@ export type PassengerOrderByWithRelationInput = {
   nationality?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   booking?: Prisma.BookingOrderByWithRelationInput
-  ticket?: Prisma.TicketOrderByWithRelationInput
+  tickets?: Prisma.TicketOrderByRelationAggregateInput
   _relevance?: Prisma.PassengerOrderByRelevanceInput
 }
 
@@ -275,7 +275,7 @@ export type PassengerWhereUniqueInput = Prisma.AtLeast<{
   nationality?: Prisma.StringNullableFilter<"Passenger"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Passenger"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
-  ticket?: Prisma.XOR<Prisma.TicketNullableScalarRelationFilter, Prisma.TicketWhereInput> | null
+  tickets?: Prisma.TicketListRelationFilter
 }, "id">
 
 export type PassengerOrderByWithAggregationInput = {
@@ -316,7 +316,7 @@ export type PassengerCreateInput = {
   nationality?: string | null
   createdAt?: Date | string
   booking: Prisma.BookingCreateNestedOneWithoutPassengersInput
-  ticket?: Prisma.TicketCreateNestedOneWithoutPassengerInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutPassengerInput
 }
 
 export type PassengerUncheckedCreateInput = {
@@ -328,7 +328,7 @@ export type PassengerUncheckedCreateInput = {
   dateOfBirth?: Date | string | null
   nationality?: string | null
   createdAt?: Date | string
-  ticket?: Prisma.TicketUncheckedCreateNestedOneWithoutPassengerInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutPassengerInput
 }
 
 export type PassengerUpdateInput = {
@@ -339,7 +339,7 @@ export type PassengerUpdateInput = {
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   booking?: Prisma.BookingUpdateOneRequiredWithoutPassengersNestedInput
-  ticket?: Prisma.TicketUpdateOneWithoutPassengerNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutPassengerNestedInput
 }
 
 export type PassengerUncheckedUpdateInput = {
@@ -351,7 +351,7 @@ export type PassengerUncheckedUpdateInput = {
   dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ticket?: Prisma.TicketUncheckedUpdateOneWithoutPassengerNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutPassengerNestedInput
 }
 
 export type PassengerCreateManyInput = {
@@ -495,18 +495,18 @@ export type NullableEnumPassengerGenderFieldUpdateOperationsInput = {
   set?: $Enums.PassengerGender | null
 }
 
-export type PassengerCreateNestedOneWithoutTicketInput = {
-  create?: Prisma.XOR<Prisma.PassengerCreateWithoutTicketInput, Prisma.PassengerUncheckedCreateWithoutTicketInput>
-  connectOrCreate?: Prisma.PassengerCreateOrConnectWithoutTicketInput
+export type PassengerCreateNestedOneWithoutTicketsInput = {
+  create?: Prisma.XOR<Prisma.PassengerCreateWithoutTicketsInput, Prisma.PassengerUncheckedCreateWithoutTicketsInput>
+  connectOrCreate?: Prisma.PassengerCreateOrConnectWithoutTicketsInput
   connect?: Prisma.PassengerWhereUniqueInput
 }
 
-export type PassengerUpdateOneRequiredWithoutTicketNestedInput = {
-  create?: Prisma.XOR<Prisma.PassengerCreateWithoutTicketInput, Prisma.PassengerUncheckedCreateWithoutTicketInput>
-  connectOrCreate?: Prisma.PassengerCreateOrConnectWithoutTicketInput
-  upsert?: Prisma.PassengerUpsertWithoutTicketInput
+export type PassengerUpdateOneRequiredWithoutTicketsNestedInput = {
+  create?: Prisma.XOR<Prisma.PassengerCreateWithoutTicketsInput, Prisma.PassengerUncheckedCreateWithoutTicketsInput>
+  connectOrCreate?: Prisma.PassengerCreateOrConnectWithoutTicketsInput
+  upsert?: Prisma.PassengerUpsertWithoutTicketsInput
   connect?: Prisma.PassengerWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.PassengerUpdateToOneWithWhereWithoutTicketInput, Prisma.PassengerUpdateWithoutTicketInput>, Prisma.PassengerUncheckedUpdateWithoutTicketInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PassengerUpdateToOneWithWhereWithoutTicketsInput, Prisma.PassengerUpdateWithoutTicketsInput>, Prisma.PassengerUncheckedUpdateWithoutTicketsInput>
 }
 
 export type PassengerCreateWithoutBookingInput = {
@@ -516,7 +516,7 @@ export type PassengerCreateWithoutBookingInput = {
   dateOfBirth?: Date | string | null
   nationality?: string | null
   createdAt?: Date | string
-  ticket?: Prisma.TicketCreateNestedOneWithoutPassengerInput
+  tickets?: Prisma.TicketCreateNestedManyWithoutPassengerInput
 }
 
 export type PassengerUncheckedCreateWithoutBookingInput = {
@@ -527,7 +527,7 @@ export type PassengerUncheckedCreateWithoutBookingInput = {
   dateOfBirth?: Date | string | null
   nationality?: string | null
   createdAt?: Date | string
-  ticket?: Prisma.TicketUncheckedCreateNestedOneWithoutPassengerInput
+  tickets?: Prisma.TicketUncheckedCreateNestedManyWithoutPassengerInput
 }
 
 export type PassengerCreateOrConnectWithoutBookingInput = {
@@ -570,7 +570,7 @@ export type PassengerScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Passenger"> | Date | string
 }
 
-export type PassengerCreateWithoutTicketInput = {
+export type PassengerCreateWithoutTicketsInput = {
   fullName: string
   documentNumber?: string | null
   gender?: $Enums.PassengerGender | null
@@ -580,7 +580,7 @@ export type PassengerCreateWithoutTicketInput = {
   booking: Prisma.BookingCreateNestedOneWithoutPassengersInput
 }
 
-export type PassengerUncheckedCreateWithoutTicketInput = {
+export type PassengerUncheckedCreateWithoutTicketsInput = {
   id?: number
   bookingId: number
   fullName: string
@@ -591,23 +591,23 @@ export type PassengerUncheckedCreateWithoutTicketInput = {
   createdAt?: Date | string
 }
 
-export type PassengerCreateOrConnectWithoutTicketInput = {
+export type PassengerCreateOrConnectWithoutTicketsInput = {
   where: Prisma.PassengerWhereUniqueInput
-  create: Prisma.XOR<Prisma.PassengerCreateWithoutTicketInput, Prisma.PassengerUncheckedCreateWithoutTicketInput>
+  create: Prisma.XOR<Prisma.PassengerCreateWithoutTicketsInput, Prisma.PassengerUncheckedCreateWithoutTicketsInput>
 }
 
-export type PassengerUpsertWithoutTicketInput = {
-  update: Prisma.XOR<Prisma.PassengerUpdateWithoutTicketInput, Prisma.PassengerUncheckedUpdateWithoutTicketInput>
-  create: Prisma.XOR<Prisma.PassengerCreateWithoutTicketInput, Prisma.PassengerUncheckedCreateWithoutTicketInput>
+export type PassengerUpsertWithoutTicketsInput = {
+  update: Prisma.XOR<Prisma.PassengerUpdateWithoutTicketsInput, Prisma.PassengerUncheckedUpdateWithoutTicketsInput>
+  create: Prisma.XOR<Prisma.PassengerCreateWithoutTicketsInput, Prisma.PassengerUncheckedCreateWithoutTicketsInput>
   where?: Prisma.PassengerWhereInput
 }
 
-export type PassengerUpdateToOneWithWhereWithoutTicketInput = {
+export type PassengerUpdateToOneWithWhereWithoutTicketsInput = {
   where?: Prisma.PassengerWhereInput
-  data: Prisma.XOR<Prisma.PassengerUpdateWithoutTicketInput, Prisma.PassengerUncheckedUpdateWithoutTicketInput>
+  data: Prisma.XOR<Prisma.PassengerUpdateWithoutTicketsInput, Prisma.PassengerUncheckedUpdateWithoutTicketsInput>
 }
 
-export type PassengerUpdateWithoutTicketInput = {
+export type PassengerUpdateWithoutTicketsInput = {
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
   documentNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   gender?: Prisma.NullableEnumPassengerGenderFieldUpdateOperationsInput | $Enums.PassengerGender | null
@@ -617,7 +617,7 @@ export type PassengerUpdateWithoutTicketInput = {
   booking?: Prisma.BookingUpdateOneRequiredWithoutPassengersNestedInput
 }
 
-export type PassengerUncheckedUpdateWithoutTicketInput = {
+export type PassengerUncheckedUpdateWithoutTicketsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   bookingId?: Prisma.IntFieldUpdateOperationsInput | number
   fullName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -645,7 +645,7 @@ export type PassengerUpdateWithoutBookingInput = {
   dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ticket?: Prisma.TicketUpdateOneWithoutPassengerNestedInput
+  tickets?: Prisma.TicketUpdateManyWithoutPassengerNestedInput
 }
 
 export type PassengerUncheckedUpdateWithoutBookingInput = {
@@ -656,7 +656,7 @@ export type PassengerUncheckedUpdateWithoutBookingInput = {
   dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ticket?: Prisma.TicketUncheckedUpdateOneWithoutPassengerNestedInput
+  tickets?: Prisma.TicketUncheckedUpdateManyWithoutPassengerNestedInput
 }
 
 export type PassengerUncheckedUpdateManyWithoutBookingInput = {
@@ -670,6 +670,35 @@ export type PassengerUncheckedUpdateManyWithoutBookingInput = {
 }
 
 
+/**
+ * Count Type PassengerCountOutputType
+ */
+
+export type PassengerCountOutputType = {
+  tickets: number
+}
+
+export type PassengerCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  tickets?: boolean | PassengerCountOutputTypeCountTicketsArgs
+}
+
+/**
+ * PassengerCountOutputType without action
+ */
+export type PassengerCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PassengerCountOutputType
+   */
+  select?: Prisma.PassengerCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PassengerCountOutputType without action
+ */
+export type PassengerCountOutputTypeCountTicketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TicketWhereInput
+}
+
 
 export type PassengerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -681,7 +710,8 @@ export type PassengerSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   nationality?: boolean
   createdAt?: boolean
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
-  ticket?: boolean | Prisma.Passenger$ticketArgs<ExtArgs>
+  tickets?: boolean | Prisma.Passenger$ticketsArgs<ExtArgs>
+  _count?: boolean | Prisma.PassengerCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["passenger"]>
 
 
@@ -700,14 +730,15 @@ export type PassengerSelectScalar = {
 export type PassengerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookingId" | "fullName" | "documentNumber" | "gender" | "dateOfBirth" | "nationality" | "createdAt", ExtArgs["result"]["passenger"]>
 export type PassengerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
-  ticket?: boolean | Prisma.Passenger$ticketArgs<ExtArgs>
+  tickets?: boolean | Prisma.Passenger$ticketsArgs<ExtArgs>
+  _count?: boolean | Prisma.PassengerCountOutputTypeDefaultArgs<ExtArgs>
 }
 
 export type $PassengerPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Passenger"
   objects: {
     booking: Prisma.$BookingPayload<ExtArgs>
-    ticket: Prisma.$TicketPayload<ExtArgs> | null
+    tickets: Prisma.$TicketPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1059,7 +1090,7 @@ readonly fields: PassengerFieldRefs;
 export interface Prisma__PassengerClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   booking<T extends Prisma.BookingDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookingDefaultArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  ticket<T extends Prisma.Passenger$ticketArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Passenger$ticketArgs<ExtArgs>>): Prisma.Prisma__TicketClient<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  tickets<T extends Prisma.Passenger$ticketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Passenger$ticketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1445,9 +1476,9 @@ export type PassengerDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
 }
 
 /**
- * Passenger.ticket
+ * Passenger.tickets
  */
-export type Passenger$ticketArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Passenger$ticketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Ticket
    */
@@ -1461,6 +1492,11 @@ export type Passenger$ticketArgs<ExtArgs extends runtime.Types.Extensions.Intern
    */
   include?: Prisma.TicketInclude<ExtArgs> | null
   where?: Prisma.TicketWhereInput
+  orderBy?: Prisma.TicketOrderByWithRelationInput | Prisma.TicketOrderByWithRelationInput[]
+  cursor?: Prisma.TicketWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TicketScalarFieldEnum | Prisma.TicketScalarFieldEnum[]
 }
 
 /**

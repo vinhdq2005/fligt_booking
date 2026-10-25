@@ -12,6 +12,10 @@ export async function getBookingByCode(bookingCode: string) {
     where: { bookingCode: code },
     select: {
       bookingCode: true,
+      flightId: true,
+      returnFlightId: true,
+      outboundUnitPrice: true,
+      returnUnitPrice: true,
       contactName: true,
       contactEmail: true,
       contactPhone: true,
@@ -37,12 +41,26 @@ export async function getBookingByCode(bookingCode: string) {
         },
       },
 
+      returnFlight: {
+        select: {
+          flightNumber: true,
+          departureCode: true,
+          arrivalCode: true,
+          departureTime: true,
+          arrivalTime: true,
+          basePrice: true,
+          airline: { select: { code: true, name: true } },
+        },
+      },
+
       passengers: {
         select: {
           id: true,
           fullName: true,
-          ticket: {
+          tickets: {
+            orderBy: { id: "asc" },
             select: {
+              flightId: true,
               ticketCode: true,
               qrToken: true,
               price: true,
@@ -69,5 +87,11 @@ export async function getBookingByCode(bookingCode: string) {
     throw new Error("Không tìm thấy đặt chỗ.");
   }
 
-  return booking;
+  return {
+    ...booking,
+    passengers: booking.passengers.map((passenger) => ({
+      ...passenger,
+      ticket: passenger.tickets.find((ticket) => ticket.flightId === booking.flightId) ?? null,
+    })),
+  };
 }

@@ -84,21 +84,26 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         if (flight.status !== "SCHEDULED" || flight.departureTime <= now) throw new InterventionError(409, "Chuyến bay không còn hợp lệ để can thiệp bán vé.");
         if (saleStatus === "ON_SALE" && flight.airline.status !== "ACTIVE") throw new InterventionError(409, "Hãng bay đang bị khóa.");
         if (saleStatus === "ON_SALE" && (flight.basePrice < 1 || flight.capacity < 1)) throw new InterventionError(409, "Chuyến bay chưa có số ghế bán ra hoặc giá gốc.");
-        const activeBookings = await tx.booking.count({ where: { flightId: input.entityId, OR: [{ status: "CONFIRMED" }, { status: "PENDING", expiresAt: { gt: now } }] } });
+        const activeBookings = await tx.booking.count({ where: { AND: [
+          { OR: [{ flightId: input.entityId }, { returnFlightId: input.entityId }] },
+          { OR: [{ status: "CONFIRMED" }, { status: "PENDING", expiresAt: { gt: now } }] },
+        ] } });
         before = { saleStatus: flight.saleStatus, activeBookings }; after = { saleStatus, activeBookings };
         await tx.flight.update({ where: { id: input.entityId }, data: { saleStatus } });
       } else if (input.action === "CANCEL_BOOKING_EXCEPTION") {
         // Payment serializes on Booking; lock it before reading state to avoid a stale snapshot.
-        const rows = await tx.$queryRaw<{ flightId: number }[]>`SELECT flightId FROM Booking WHERE id = ${input.entityId} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ flightId: number; returnFlightId: number | null }[]>`SELECT flightId, returnFlightId FROM Booking WHERE id = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy booking.");
-        await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${rows[0].flightId} FOR UPDATE`;
-        const booking = await tx.booking.findUniqueOrThrow({ where: { id: input.entityId }, include: { flight: true, passengers: { include: { ticket: true } }, payments: true } });
+        for (const flightId of [rows[0].flightId, rows[0].returnFlightId].filter((id): id is number => id !== null).sort((a, b) => a - b)) {
+          await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${flightId} FOR UPDATE`;
+        }
+        const booking = await tx.booking.findUniqueOrThrow({ where: { id: input.entityId }, include: { flight: true, returnFlight: true, passengers: { include: { tickets: true } }, payments: true } });
         if (booking.status === "CANCELLED") return { status: "already_applied" };
         if (booking.status !== "PENDING" && booking.status !== "CONFIRMED") throw new InterventionError(409, "Booking không còn hiệu lực để hủy.");
         if (booking.status === "PENDING" && (!booking.expiresAt || booking.expiresAt <= now)) throw new InterventionError(409, "Booking đã hết hạn giữ chỗ.");
-        if (booking.flight.status !== "SCHEDULED" || booking.flight.departureTime <= now) throw new InterventionError(409, "Chuyến bay đã đến giờ hoặc không còn theo lịch.");
-        if (booking.passengers.some(person => person.ticket?.status === "USED")) throw new InterventionError(409, "Booking đã có vé được sử dụng.");
-        const ticketIds = booking.passengers.flatMap(person => person.ticket?.status === "ISSUED" ? [person.ticket.id] : []);
+        if ([booking.flight, booking.returnFlight].some(flight => flight && (flight.status !== "SCHEDULED" || flight.departureTime <= now))) throw new InterventionError(409, "Chuyến bay đã đến giờ hoặc không còn theo lịch.");
+        if (booking.passengers.some(person => person.tickets.some(ticket => ticket.status === "USED"))) throw new InterventionError(409, "Booking đã có vé được sử dụng.");
+        const ticketIds = booking.passengers.flatMap(person => person.tickets.filter(ticket => ticket.status === "ISSUED").map(ticket => ticket.id));
         const paidIds = booking.payments.filter(payment => payment.status === "PAID").map(payment => payment.id);
         before = { status: booking.status, ticketIds, paidPaymentIds: paidIds, seatCount: booking.passengers.length };
         after = { status: "CANCELLED", ticketStatus: "CANCELLED", paidPaymentReviewStatus: "NEEDS_REVIEW", seatCountReleased: booking.passengers.length };

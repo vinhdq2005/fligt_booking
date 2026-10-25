@@ -30,8 +30,8 @@ test("sales manager booking read stays in airline scope and lists tickets withou
       contactEmail: "demo@example.invalid", totalAmount: 1000000, status: "CONFIRMED", createdAt: new Date("2026-10-20T03:00:00Z"),
       passengers: { create: [{ fullName: "Passenger One" }, { fullName: "Passenger Two" }] } }, include: { passengers: true } });
     bookingIds.push(paid.id);
-    await prisma.ticket.create({ data: { passengerId: paid.passengers[0].id, price: 500000 } });
-    await prisma.ticket.create({ data: { passengerId: paid.passengers[1].id, price: 500000 } });
+    await prisma.ticket.create({ data: { passengerId: paid.passengers[0].id, flightId: flight.id, price: 500000 } });
+    await prisma.ticket.create({ data: { passengerId: paid.passengers[1].id, flightId: flight.id, price: 500000 } });
     await prisma.payment.create({ data: { bookingId: paid.id, amount: 1000000, method: "MOCK", status: "PAID" } });
     const pending = await prisma.booking.create({ data: { flightId: flight.id, contactName: "Pending Contact", totalAmount: 500000,
       status: "PENDING", expiresAt: new Date("2026-11-04T00:00:00Z"), passengers: { create: [{ fullName: "Passenger Three" }] } } });
@@ -49,12 +49,13 @@ test("sales manager booking read stays in airline scope and lists tickets withou
     assert.equal((await listAirlineBookings(airline.id, parseAirlineBookingQuery({ paymentStatus: "NO_PAYMENT" })!)).pagination.total, 1);
     const detail = await getAirlineBooking(airline.id, paid.id);
     assert.equal(detail?.passengers.length, 2);
-    assert.ok(detail?.passengers.every(person => person.ticket?.ticketCode));
+    assert.ok(detail?.passengers.every(person => person.tickets[0]?.ticketCode));
     assert.equal(JSON.stringify(detail).includes("qrToken"), false);
     assert.equal(JSON.stringify(detail).includes("documentNumber"), false);
-    assert.equal((await getAirlineBooking(airline.id, pending.id))?.passengers[0].ticket, null);
+    assert.deepEqual((await getAirlineBooking(airline.id, pending.id))?.passengers[0].tickets, []);
     assert.equal(await getAirlineBooking(other.id, paid.id), null);
-    assert.equal((await listAirlineBookings(other.id, query)).pagination.total, 0);
+    const otherList = await listAirlineBookings(other.id, query);
+    assert.equal(otherList.pagination.total, 0);
   } finally {
     if (bookingIds.length) {
       await prisma.payment.deleteMany({ where: { bookingId: { in: bookingIds } } });

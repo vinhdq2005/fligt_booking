@@ -190,6 +190,14 @@ function MyBookingsPage() {
                     {booking.flight.departureTime.slice(0, 10)}
                   </p>
 
+                  {booking.returnFlight && (
+                    <>
+                      <p><strong>Chuyến về:</strong> {booking.returnFlight.airline.name} {booking.returnFlight.flightNumber}</p>
+                      <p><strong>Hành trình về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                      <p><strong>Ngày về:</strong> {booking.returnFlight.departureTime.slice(0, 10)}</p>
+                    </>
+                  )}
+
                   <p>
                     <strong>Hành khách:</strong>{' '}
                     {booking.passengers.length} người

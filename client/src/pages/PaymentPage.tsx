@@ -29,6 +29,7 @@ type SavedPassengerInfo = {
 }
 
 type PendingBooking = {
+  schemaVersion?: number
   flightId?: number
   outboundId?: number
   inboundId?: number
@@ -38,6 +39,8 @@ type PendingBooking = {
   bookingCode: string
   detailsSignature: string
   totalAmount?: number
+  outboundUnitPrice?: number | null
+  returnUnitPrice?: number | null
 }
 
 const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
@@ -73,6 +76,7 @@ function PaymentPage() {
   const [paymentError, setPaymentError] = useState('')
   const [processing, setProcessing] = useState(false)
   const [bookingCode, setBookingCode] = useState('')
+  const [bookedPrice, setBookedPrice] = useState<{ total: number; outbound: number; inbound: number } | null>(null)
 
   const paymentLock = useRef(false)
 
@@ -255,6 +259,7 @@ function PaymentPage() {
   
   const pricePerPassenger = isRoundTrip ? (outboundPrice + inboundPrice) : ticketPrice
   const totalPrice = pricePerPassenger * passengers
+  const payableTotal = bookedPrice?.total ?? totalPrice
 
   async function createOrGetPendingBooking(): Promise<string> {
     if (isRoundTrip && (!outboundFlight || !inboundFlight)) {
@@ -279,7 +284,8 @@ function PaymentPage() {
         const parsed = JSON.parse(pendingRaw) as PendingBooking
 
         const matches = isRoundTrip
-          ? parsed.outboundId === outboundFlight!.id &&
+          ? parsed.schemaVersion === 2 &&
+            parsed.outboundId === outboundFlight!.id &&
             parsed.inboundId === inboundFlight!.id &&
             parsed.date === date &&
             parsed.returnDate === returnDate &&
@@ -296,6 +302,11 @@ function PaymentPage() {
 
         if (matches) {
           setBookingCode(parsed.bookingCode)
+          if (typeof parsed.totalAmount === 'number') setBookedPrice({
+            total: parsed.totalAmount,
+            outbound: parsed.outboundUnitPrice ?? parsed.totalAmount / passengers,
+            inbound: parsed.returnUnitPrice ?? 0,
+          })
           return parsed.bookingCode
         }
       } catch {
@@ -309,6 +320,7 @@ function PaymentPage() {
 
     const result = await createBooking({
       flightId: targetFlightId,
+      ...(isRoundTrip ? { returnFlightId: inboundFlight!.id } : {}),
       contactName: firstPassenger.fullName.trim(),
       contactEmail: savedInfo.contactEmail.trim(),
       contactPhone: savedInfo.contactPhone,
@@ -329,6 +341,7 @@ function PaymentPage() {
 
     const pending: PendingBooking = isRoundTrip
       ? {
+          schemaVersion: 2,
           outboundId: outboundFlight!.id,
           inboundId: inboundFlight!.id,
           date,
@@ -336,7 +349,9 @@ function PaymentPage() {
           passengers,
           bookingCode: code,
           detailsSignature,
-          totalAmount: totalPrice,
+          totalAmount: result.item.totalAmount,
+          outboundUnitPrice: result.item.outboundUnitPrice,
+          returnUnitPrice: result.item.returnUnitPrice,
         }
       : {
           flightId: flight!.id,
@@ -344,7 +359,8 @@ function PaymentPage() {
           passengers,
           bookingCode: code,
           detailsSignature,
-          totalAmount: totalPrice,
+          totalAmount: result.item.totalAmount,
+          outboundUnitPrice: result.item.outboundUnitPrice,
         }
 
     sessionStorage.setItem(
@@ -353,6 +369,11 @@ function PaymentPage() {
     )
 
     setBookingCode(code)
+    setBookedPrice({
+      total: result.item.totalAmount,
+      outbound: result.item.outboundUnitPrice ?? result.item.totalAmount / passengers,
+      inbound: result.item.returnUnitPrice ?? 0,
+    })
 
     return code
   }
@@ -451,7 +472,7 @@ function PaymentPage() {
     ? JSON.stringify({
         type: 'FLIGHT_BOOKING_MOCK_PAYMENT',
         bookingCode,
-        amount: totalPrice,
+        amount: payableTotal,
         currency: 'VND',
         description: `Thanh toan dat ve ${bookingCode}`,
       })
@@ -536,17 +557,17 @@ function PaymentPage() {
               <>
                 <div className="summary-row">
                   <span>Giá vé chiều đi (mỗi người)</span>
-                  <strong>{formatPrice(outboundPrice)}</strong>
+                  <strong>{formatPrice(bookedPrice?.outbound ?? outboundPrice)}</strong>
                 </div>
                 <div className="summary-row">
                   <span>Giá vé chiều về (mỗi người)</span>
-                  <strong>{formatPrice(inboundPrice)}</strong>
+                  <strong>{formatPrice(bookedPrice?.inbound ?? inboundPrice)}</strong>
                 </div>
               </>
             ) : (
               <div className="summary-row">
                 <span>Giá vé mỗi người</span>
-                <strong>{formatPrice(ticketPrice)}</strong>
+                <strong>{formatPrice(bookedPrice?.outbound ?? ticketPrice)}</strong>
               </div>
             )}
 
@@ -557,7 +578,7 @@ function PaymentPage() {
 
             <div className="summary-total">
               <span>Tổng thanh toán</span>
-              <strong>{formatPrice(totalPrice)}</strong>
+              <strong>{formatPrice(payableTotal)}</strong>
             </div>
           </section>
 
@@ -590,7 +611,7 @@ function PaymentPage() {
 
                   <p className="qr-payment-label">Số tiền mô phỏng</p>
                   <p className="qr-payment-amount">
-                    {formatPrice(totalPrice)}
+                    {formatPrice(payableTotal)}
                   </p>
 
                   <p className="qr-payment-label">Nội dung</p>

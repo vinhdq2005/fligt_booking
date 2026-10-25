@@ -12,6 +12,7 @@ type PassengerInput = {
 
 export type CreateBookingInput = {
   flightId: number;
+  returnFlightId?: number;
   userId?: number;
   contactName: string;
   contactEmail: string;
@@ -22,6 +23,10 @@ export type CreateBookingInput = {
 export async function createBooking(input: CreateBookingInput) {
   if (!Number.isInteger(input.flightId) || input.flightId < 1) {
     throw new Error("Mã chuyến bay không hợp lệ.");
+  }
+  if (input.returnFlightId !== undefined &&
+      (!Number.isInteger(input.returnFlightId) || input.returnFlightId < 1 || input.returnFlightId === input.flightId)) {
+    throw new Error("Mã chuyến bay chiều về không hợp lệ.");
   }
 
   const contactName = input.contactName.trim();
@@ -95,99 +100,75 @@ export async function createBooking(input: CreateBookingInput) {
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
   return prisma.$transaction(async (tx) => {
-    // Khóa chuyến bay để tuần tự hóa các yêu cầu đặt chỗ.
-    const lockedFlights = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id
-      FROM Flight
-      WHERE id = ${input.flightId}
-      FOR UPDATE
-    `;
-
-    if (lockedFlights.length === 0) {
-      throw new Error("Không tìm thấy chuyến bay.");
+    const flightIds = [input.flightId, ...(input.returnFlightId ? [input.returnFlightId] : [])];
+    for (const flightId of [...flightIds].sort((a, b) => a - b)) {
+      const rows = await tx.$queryRaw<{ id: number }[]>`
+        SELECT id FROM Flight WHERE id = ${flightId} FOR UPDATE
+      `;
+      if (!rows.length) throw new Error("Không tìm thấy chuyến bay.");
     }
 
-    const activeAirline = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id FROM Airline WHERE id = (SELECT airlineId FROM Flight WHERE id = ${input.flightId}) AND status = 'ACTIVE' FOR UPDATE
-    `;
-    if (!activeAirline.length) throw new Error("Chuyến bay không còn nhận đặt chỗ.");
-
-    const flight = await tx.flight.findUnique({
-      where: { id: input.flightId },
+    const flights = await tx.flight.findMany({
+      where: { id: { in: flightIds } },
       include: { airline: { select: { status: true } } },
     });
-
-    if (
-      !flight ||
-      flight.status !== "SCHEDULED" ||
-      flight.saleStatus !== "ON_SALE" ||
-      flight.airline.status !== "ACTIVE" ||
-      flight.departureTime <= now
-    ) {
-      throw new Error("Chuyến bay không còn nhận đặt chỗ.");
+    const outbound = flights.find((flight) => flight.id === input.flightId);
+    const inbound = input.returnFlightId
+      ? flights.find((flight) => flight.id === input.returnFlightId)
+      : undefined;
+    if (inbound && outbound &&
+        (outbound.departureCode !== inbound.arrivalCode ||
+         outbound.arrivalCode !== inbound.departureCode ||
+         inbound.departureTime < outbound.arrivalTime)) {
+      throw new Error("Chuyến về không khớp hành trình hoặc thời gian chiều đi.");
     }
 
-    // Các booking đang chiếm ghế.
-    const activeBookings = await tx.booking.findMany({
-      where: {
-        flightId: flight.id,
-        OR: [
-          { status: "CONFIRMED" },
-          {
-            status: "PENDING",
-            expiresAt: { gt: now },
-          },
-        ],
-      },
-      select: {
-        status: true,
-        passengers: {
-          select: { id: true },
+    const prices: number[] = [];
+    for (const flightId of flightIds) {
+      const flight = flights.find((item) => item.id === flightId);
+      if (!flight || flight.status !== "SCHEDULED" || flight.saleStatus !== "ON_SALE" ||
+          flight.airline.status !== "ACTIVE" || flight.departureTime <= now) {
+        throw new Error("Chuyến bay không còn nhận đặt chỗ.");
+      }
+      const activeBookings = await tx.booking.findMany({
+        where: {
+          OR: [{ flightId }, { returnFlightId: flightId }],
+          AND: [{ OR: [
+            { status: "CONFIRMED" },
+            { status: "PENDING", expiresAt: { gt: now } },
+          ] }],
         },
-      },
-    });
-
-    // Ghế đã bán: chỉ tính booking đã xác nhận.
-    const confirmedPassengers = activeBookings.reduce(
-      (total, booking) =>
-        booking.status === "CONFIRMED"
-          ? total + booking.passengers.length
-          : total,
-      0,
-    );
-
-    // Ghế bị chiếm: tính cả booking PENDING còn hạn.
-    const occupiedSeats = activeBookings.reduce(
-      (total, booking) => total + booking.passengers.length,
-      0,
-    );
-
-    if (occupiedSeats + passengers.length > flight.capacity) {
-      throw new Error("Không đủ ghế cho số hành khách yêu cầu.");
+        select: { status: true, passengers: { select: { id: true } } },
+      });
+      const confirmedPassengers = activeBookings.reduce(
+        (sum, booking) => sum + (booking.status === "CONFIRMED" ? booking.passengers.length : 0), 0,
+      );
+      const occupiedSeats = activeBookings.reduce(
+        (sum, booking) => sum + booking.passengers.length, 0,
+      );
+      if (occupiedSeats + passengers.length > flight.capacity) {
+        throw new Error("Không đủ ghế cho số hành khách yêu cầu.");
+      }
+      const price = calculateCurrentPrice({
+        basePrice: flight.basePrice,
+        departureTime: flight.departureTime,
+        capacity: flight.capacity,
+        confirmedPassengers,
+        now,
+      }).currentPrice;
+      if (!Number.isSafeInteger(price)) throw new Error("Tổng tiền vượt giới hạn cho phép.");
+      prices.push(price);
     }
 
-    // Tính lại giá tại thời điểm đặt, không tin giá từ client.
-    const pricing = calculateCurrentPrice({
-      basePrice: flight.basePrice,
-      departureTime: flight.departureTime,
-      capacity: flight.capacity,
-      confirmedPassengers,
-      now,
-    });
-
-    const pricePerPassenger = pricing.currentPrice;
-    const totalAmount = pricePerPassenger * passengers.length;
-
-    if (
-      !Number.isSafeInteger(pricePerPassenger) ||
-      !Number.isSafeInteger(totalAmount)
-    ) {
-      throw new Error("Tổng tiền vượt giới hạn cho phép.");
-    }
+    const totalAmount = prices.reduce((sum, price) => sum + price, 0) * passengers.length;
+    if (!Number.isSafeInteger(totalAmount)) throw new Error("Tổng tiền vượt giới hạn cho phép.");
 
     return tx.booking.create({
       data: {
-        flightId: flight.id,
+        flightId: input.flightId,
+        returnFlightId: input.returnFlightId,
+        outboundUnitPrice: prices[0],
+        returnUnitPrice: prices[1],
         userId: input.userId,
         contactName,
         contactEmail: input.contactEmail.trim(),
@@ -203,6 +184,7 @@ export async function createBooking(input: CreateBookingInput) {
         flight: {
           include: { airline: true },
         },
+        returnFlight: { include: { airline: true } },
         passengers: true,
       },
     });
