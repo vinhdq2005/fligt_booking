@@ -1,6 +1,13 @@
 
+import { randomInt } from "node:crypto";
 import { prisma } from "../../lib/prisma";
 import { calculateCurrentPrice } from "../flights/pricing.service";
+
+const BOOKING_CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateBookingCode() {
+  return Array.from({ length: 6 }, () => BOOKING_CODE_CHARACTERS[randomInt(BOOKING_CODE_CHARACTERS.length)]).join("");
+}
 
 type PassengerInput = {
   fullName: string;
@@ -99,7 +106,7 @@ export async function createBooking(input: CreateBookingInput) {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
-  return prisma.$transaction(async (tx) => {
+  const createWithCode = () => prisma.$transaction(async (tx) => {
     const flightIds = [input.flightId, ...(input.returnFlightId ? [input.returnFlightId] : [])];
     for (const flightId of [...flightIds].sort((a, b) => a - b)) {
       const rows = await tx.$queryRaw<{ id: number }[]>`
@@ -165,6 +172,7 @@ export async function createBooking(input: CreateBookingInput) {
 
     return tx.booking.create({
       data: {
+        bookingCode: generateBookingCode(),
         flightId: input.flightId,
         returnFlightId: input.returnFlightId,
         outboundUnitPrice: prices[0],
@@ -189,4 +197,15 @@ export async function createBooking(input: CreateBookingInput) {
       },
     });
   });
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      return await createWithCode();
+    } catch (error) {
+      if (typeof error !== "object" || error === null || !("code" in error) || error.code !== "P2002") {
+        throw error;
+      }
+    }
+  }
+  throw new Error("Không thể tạo mã đặt chỗ duy nhất. Vui lòng thử lại.");
 }

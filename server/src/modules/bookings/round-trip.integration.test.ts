@@ -39,6 +39,7 @@ test("one round-trip booking issues a ticket for each passenger and flight", asy
       })),
     });
     bookingId = booking.id;
+    assert.match(booking.bookingCode, /^[A-HJ-NP-Z2-9]{6}$/);
     assert.equal(booking.returnFlightId, inbound.id);
     assert.equal(booking.totalAmount, 2 * (booking.outboundUnitPrice! + booking.returnUnitPrice!));
 
