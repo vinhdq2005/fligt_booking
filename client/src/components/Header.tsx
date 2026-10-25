@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { getRoleLabel, getRoleLanding } from '../auth/roleNavigation'
 import logoImg from '../assets/logo.png'
 
 function Header() {
@@ -27,8 +28,8 @@ function Header() {
         <Link to="/my-bookings" style={{ textDecoration: 'none', color: '#334155', fontWeight: 500 }}>Đặt chỗ của tôi</Link>
 
         {user ? (
-          <Link to="/account" className="account-link" style={{ textDecoration: 'none', fontWeight: 600, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            👤 {user.name}
+          <Link to={user.role === 'CUSTOMER' ? '/account' : getRoleLanding(user.role)} className="account-link" style={{ textDecoration: 'none', fontWeight: 600, color: '#2563eb', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            👤 {user.name} · {getRoleLabel(user.role)}
           </Link>
         ) : (
           <Link to="/login" style={{ textDecoration: 'none', color: '#334155', fontWeight: 500 }}>Đăng nhập</Link>

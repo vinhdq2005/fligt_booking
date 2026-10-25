@@ -1,14 +1,14 @@
 
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { login } from '../auth/authApi'
 import { useAuth } from '../auth/AuthContext'
+import { getRoleLanding } from '../auth/roleNavigation'
 import '../styles/auth.css'
 
 function LoginPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { setUser } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -33,20 +33,7 @@ function LoginPage() {
     try {
       const { user } = await login(normalizedEmail, password)
       setUser(user)
-      const requestedPath = (
-        location.state as { from?: string } | null
-      )?.from
-
-      navigate(
-        requestedPath?.startsWith('/') && !requestedPath.startsWith('//')
-          ? requestedPath
-          : user.role === 'ADMIN'
-            ? '/admin'
-            : user.role === 'CUSTOMER'
-              ? '/account'
-              : '/airline',
-        { replace: true },
-      )
+      navigate(getRoleLanding(user.role), { replace: true, state: null })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể đăng nhập.')
     } finally {

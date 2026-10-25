@@ -27,7 +27,7 @@ export default function AdminLayout() {
   const handleLogout = async () => {
     try {
       await logout()
-      navigate('/login', { replace: true })
+      navigate('/login', { replace: true, state: null })
     } catch {
       setLogoutError('Không thể đăng xuất. Thử lại.')
     }

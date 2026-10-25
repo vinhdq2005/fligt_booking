@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { getRoleLanding } from '../auth/roleNavigation'
 
 import MainLayout from '../layouts/MainLayout'
 import HomePage from '../pages/HomePage'
@@ -36,24 +37,17 @@ function ProtectedRoute({
   customerOnly?: boolean
 }) {
   const { user, loading } = useAuth()
-  const location = useLocation()
 
   if (loading) {
     return <main role="status">Đang xác thực…</main>
   }
 
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        state={{ from: location.pathname }}
-        replace
-      />
-    )
+    return <Navigate to="/login" replace state={null} />
   }
 
   if (customerOnly && user.role !== 'CUSTOMER') {
-    return <Navigate to="/forbidden" replace />
+    return <Navigate to={getRoleLanding(user.role)} replace />
   }
 
   return <>{children}</>
@@ -61,24 +55,17 @@ function ProtectedRoute({
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const location = useLocation()
 
   if (loading) {
     return <main role="status">Đang xác thực…</main>
   }
 
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        state={{ from: location.pathname }}
-        replace
-      />
-    )
+    return <Navigate to="/login" replace state={null} />
   }
 
   if (user.role !== 'ADMIN') {
-    return <Navigate to="/forbidden" replace />
+    return <Navigate to={getRoleLanding(user.role)} replace />
   }
 
   return <>{children}</>
@@ -92,20 +79,13 @@ function AirlineGuard({
   role?: 'AIRLINE_FLIGHT_MANAGER' | 'AIRLINE_SALES_MANAGER'
 }) {
   const { user, loading } = useAuth()
-  const location = useLocation()
 
   if (loading) {
     return <main role="status">Đang xác thực…</main>
   }
 
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        state={{ from: location.pathname }}
-        replace
-      />
-    )
+    return <Navigate to="/login" replace state={null} />
   }
 
   const isAirlineUser = [
@@ -114,7 +94,7 @@ function AirlineGuard({
   ].includes(user.role)
 
   if (!isAirlineUser || (role && user.role !== role)) {
-    return <Navigate to="/forbidden" replace />
+    return <Navigate to={getRoleLanding(user.role)} replace />
   }
 
   return <>{children}</>
@@ -123,16 +103,28 @@ function AirlineGuard({
 function AirlineHome() {
   const { user } = useAuth()
 
-  return (
-    <Navigate
-      to={
-        user?.role === 'AIRLINE_FLIGHT_MANAGER'
-          ? '/airline/flights'
-          : '/airline/dashboard'
-      }
-      replace
-    />
-  )
+  if (!user) return <Navigate to="/login" replace state={null} />
+  return <Navigate to={getRoleLanding(user.role)} replace />
+}
+
+function HomeEntry() {
+  const { user, loading } = useAuth()
+
+  if (loading) return <main role="status">Đang xác thực…</main>
+  if (user && user.role !== 'CUSTOMER') {
+    return <Navigate to={getRoleLanding(user.role)} replace />
+  }
+
+  return <HomePage />
+}
+
+function LoginEntry() {
+  const { user, loading } = useAuth()
+
+  if (loading) return <main role="status">Đang xác thực…</main>
+  if (user) return <Navigate to={getRoleLanding(user.role)} replace />
+
+  return <LoginPage />
 }
 
 function ForbiddenPage() {
@@ -260,7 +252,7 @@ function AppRoutes() {
         <Route path="/forbidden" element={<ForbiddenPage />} />
 
         {/* Trang chủ */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomeEntry />} />
 
         {/* Tìm kiếm và xem chuyến bay */}
         <Route
@@ -293,7 +285,7 @@ function AppRoutes() {
         />
 
         {/* Đăng nhập và đăng ký */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<LoginEntry />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Tài khoản cá nhân: vẫn bắt buộc đăng nhập */}
