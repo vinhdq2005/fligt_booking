@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
 import {
   createBooking,
+  getBookingPaymentQr,
   getPublicFlight,
   payBooking,
   type PublicFlight,
+  type VietQrPayment,
 } from '../api'
 import '../styles/payment.css'
 
@@ -39,6 +40,7 @@ type PendingBooking = {
   bookingCode: string
   detailsSignature: string
   totalAmount?: number
+  expiresAt?: string
   outboundUnitPrice?: number | null
   returnUnitPrice?: number | null
 }
@@ -77,8 +79,19 @@ function PaymentPage() {
   const [processing, setProcessing] = useState(false)
   const [bookingCode, setBookingCode] = useState('')
   const [bookedPrice, setBookedPrice] = useState<{ total: number; outbound: number; inbound: number } | null>(null)
+  const [paymentQr, setPaymentQr] = useState<VietQrPayment | null>(null)
 
   const paymentLock = useRef(false)
+
+  useEffect(() => {
+    if (!paymentQr?.expiresAt) return
+    const remaining = new Date(paymentQr.expiresAt).getTime() - Date.now()
+    const timer = window.setTimeout(() => {
+      setPaymentQr(null)
+      setPaymentError('Đặt chỗ đã hết hạn. Tải lại VietQR để tính giá và giữ chỗ mới.')
+    }, Math.max(0, remaining))
+    return () => window.clearTimeout(timer)
+  }, [paymentQr])
 
   useEffect(() => {
     let cancelled = false
@@ -263,7 +276,7 @@ function PaymentPage() {
 
   const pricePerPassenger = isRoundTrip ? (outboundPrice + inboundPrice) : ticketPrice
   const totalPrice = pricePerPassenger * passengers
-  const payableTotal = bookedPrice?.total ?? totalPrice
+  const payableTotal = paymentQr?.amount ?? bookedPrice?.total ?? totalPrice
 
   async function createOrGetPendingBooking(): Promise<string> {
     if (isRoundTrip && (!outboundFlight || !inboundFlight)) {
@@ -295,12 +308,16 @@ function PaymentPage() {
             parsed.returnDate === returnDate &&
             parsed.passengers === passengers &&
             parsed.detailsSignature === detailsSignature &&
+            typeof parsed.expiresAt === 'string' &&
+            new Date(parsed.expiresAt).getTime() > Date.now() &&
             typeof parsed.bookingCode === 'string' &&
             parsed.bookingCode.length > 0
           : parsed.flightId === flight!.id &&
             parsed.date === date &&
             parsed.passengers === passengers &&
             parsed.detailsSignature === detailsSignature &&
+            typeof parsed.expiresAt === 'string' &&
+            new Date(parsed.expiresAt).getTime() > Date.now() &&
             typeof parsed.bookingCode === 'string' &&
             parsed.bookingCode.length > 0
 
@@ -355,6 +372,7 @@ function PaymentPage() {
           bookingCode: code,
           detailsSignature,
           totalAmount: result.item.totalAmount,
+          expiresAt: result.item.expiresAt,
           outboundUnitPrice: result.item.outboundUnitPrice,
           returnUnitPrice: result.item.returnUnitPrice,
         }
@@ -365,6 +383,7 @@ function PaymentPage() {
           bookingCode: code,
           detailsSignature,
           totalAmount: result.item.totalAmount,
+          expiresAt: result.item.expiresAt,
           outboundUnitPrice: result.item.outboundUnitPrice,
         }
 
@@ -385,14 +404,16 @@ function PaymentPage() {
   }
 
   async function handleCreatePaymentQR() {
-    if (paymentLock.current || processing || bookingCode) return
+    if (paymentLock.current || processing || (bookingCode && paymentQr)) return
 
     paymentLock.current = true
     setProcessing(true)
     setPaymentError('')
 
     try {
-      await createOrGetPendingBooking()
+      const code = await createOrGetPendingBooking()
+      const result = await getBookingPaymentQr(code)
+      setPaymentQr(result.item)
     } catch (error) {
       setPaymentError(
         error instanceof Error
@@ -473,16 +494,6 @@ function PaymentPage() {
       </section>
     )
   }
-
-  const qrValue = bookingCode
-    ? JSON.stringify({
-        type: 'FLIGHT_BOOKING_MOCK_PAYMENT',
-        bookingCode,
-        amount: payableTotal,
-        currency: 'VND',
-        description: `Thanh toan dat ve ${bookingCode}`,
-      })
-    : ''
 
   return (
     <section className="payment-page">
@@ -591,43 +602,53 @@ function PaymentPage() {
           {bookingCode && (
             <section className="payment-section">
               <div className="qr-payment-heading">
-                <h2>QR thanh toán mô phỏng</h2>
+                <h2>VietQR theo đặt chỗ</h2>
                 <span className="mock-badge">DEMO</span>
               </div>
 
               <p className="qr-payment-description">
-                Quét mã để xem thông tin thanh toán mô phỏng.
-                Việc quét mã không tự động xác nhận thanh toán.
+                Quét bằng ứng dụng ngân hàng để kiểm tra thông tin chuyển khoản.
+                Website vẫn dùng nút mô phỏng để xác nhận kết quả.
               </p>
 
               <div className="qr-payment-panel">
                 <div className="qr-code-container">
-                  <QRCodeSVG
-                    value={qrValue}
-                    size={220}
-                    level="M"
-                    marginSize={2}
-                    title={`QR thanh toán mô phỏng ${bookingCode}`}
-                  />
+                  {paymentQr ? (
+                    <img src={paymentQr.imageUrl} alt={`VietQR cho đặt chỗ ${bookingCode}`} onError={() => {
+                      setPaymentQr(null)
+                      setPaymentError('Không tải được ảnh VietQR. Vui lòng thử lại.')
+                    }} />
+                  ) : (
+                    <span>Chưa tải được VietQR</span>
+                  )}
                 </div>
 
                 <div className="qr-payment-details">
                   <p className="qr-payment-label">Mã đặt chỗ</p>
                   <p className="qr-booking-code">{bookingCode}</p>
 
-                  <p className="qr-payment-label">Số tiền mô phỏng</p>
+                  <p className="qr-payment-label">{paymentQr ? 'Số tiền trên QR' : 'Số tiền đặt chỗ'}</p>
                   <p className="qr-payment-amount">
                     {formatPrice(payableTotal)}
                   </p>
 
-                  <p className="qr-payment-label">Nội dung</p>
-                  <p>Thanh toán đặt vé {bookingCode}</p>
+                  {paymentQr && <>
+                    <p className="qr-payment-label">Ngân hàng · Số tài khoản</p>
+                    <p>{paymentQr.bankId} · {paymentQr.accountNo}</p>
+                    <p className="qr-payment-label">Người nhận</p>
+                    <p>{paymentQr.accountName}</p>
+                    <p className="qr-payment-label">Nội dung chuyển khoản</p>
+                    <p>{paymentQr.transferContent}</p>
+                  </>}
                 </div>
               </div>
 
+              {!paymentQr && <button type="button" className="back-button" disabled={processing} onClick={() => void handleCreatePaymentQR()}>Tải lại VietQR</button>}
+
               <p className="qr-payment-warning">
-                Đây không phải QR chuyển khoản ngân hàng. Để hoàn tất
-                bài mô phỏng, hãy bấm nút xác nhận bên dưới.
+                Đây là QR ngân hàng: xác nhận trong ứng dụng sẽ chuyển tiền thật.
+                Chỉ quét để xem thông tin, không xác nhận chuyển khoản khi demo.
+                Nút mô phỏng bên dưới không kiểm tra giao dịch ngân hàng.
               </p>
               <p>Mã đặt chỗ đã được lưu trên trình duyệt. Bạn có thể tra cứu trong mục "Đặt chỗ của tôi".</p>
               <button type="button" className="back-button" onClick={() => navigate('/my-bookings')}>

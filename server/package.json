@@ -12,6 +12,7 @@
     "test:airline-workspace": "node --import tsx --test src/modules/airlines/airline-workspace.integration.test.ts",
     "test:airline-dashboard": "node --import tsx --test src/modules/airlines/airline-dashboard.integration.test.ts",
     "test:airline-bookings": "node --import tsx --test src/modules/airlines/airline-bookings.integration.test.ts",
+    "test:vietqr": "node --import tsx --test src/modules/bookings/vietqr.test.ts",
     "create-user": "tsx src/create-user.ts"
   },
   "keywords": [],

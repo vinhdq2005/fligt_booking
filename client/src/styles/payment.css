@@ -511,8 +511,9 @@
   border: 1px solid #e5e7eb;
 }
 
-.qr-code-container svg {
+.qr-code-container img {
   display: block;
+  width: 220px;
   max-width: 100%;
   height: auto;
 }

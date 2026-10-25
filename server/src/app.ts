@@ -16,6 +16,7 @@ import { getAirlineBooking, listAirlineBookings, parseAirlineBookingQuery } from
 
 import { getBookingByCode } from "./modules/bookings/booking-query.service";
 import { payBooking } from "./modules/bookings/payment.service";
+import { getVietQrPayment, VietQrError } from "./modules/bookings/vietqr.service";
 import { createBooking } from "./modules/bookings/booking.service";
 import { listAirportCodes } from "./modules/airports/airport.service";
 
@@ -671,6 +672,23 @@ export function createApp(
   // =========================
   // PUBLIC: THANH TOÁN BOOKING
   // =========================
+
+  app.get("/api/bookings/:code/payment-qr", async (req, res, next) => {
+    try {
+      const code = req.params.code;
+      if (typeof code !== "string" || !code.trim()) {
+        res.status(400).json({ error: "Mã đặt chỗ không hợp lệ." });
+        return;
+      }
+      res.json({ item: await getVietQrPayment(code) });
+    } catch (error) {
+      if (error instanceof VietQrError) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  });
 
   app.post(
     "/api/bookings/:code/pay",

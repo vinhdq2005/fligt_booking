@@ -254,6 +254,24 @@ export async function payBooking(
   );
 }
 
+export type VietQrPayment = {
+  bookingCode: string;
+  amount: number;
+  currency: "VND";
+  bankId: string;
+  accountNo: string;
+  accountName: string;
+  transferContent: string;
+  imageUrl: string;
+  expiresAt: string | null;
+};
+
+export async function getBookingPaymentQr(bookingCode: string): Promise<{ item: VietQrPayment }> {
+  return api<{ item: VietQrPayment }>(
+    `/api/bookings/${encodeURIComponent(bookingCode)}/payment-qr`,
+  );
+}
+
 // ===== BOOKING DETAILS =====
 
 export type BookingTicket = {
