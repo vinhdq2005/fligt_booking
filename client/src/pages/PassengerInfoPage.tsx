@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -6,6 +5,12 @@ import {
   type PublicFlight,
 } from '../api'
 import '../styles/passenger-info.css'
+
+function formatDate(value: string) {
+  if (!value) return ''
+  const [year, month, day] = value.split('-')
+  return `${day}/${month}/${year}`
+}
 
 type Passenger = {
   fullName: string
@@ -16,8 +21,11 @@ type Passenger = {
 }
 
 type SavedInfo = {
-  flightId: number
+  flightId?: number
+  outboundId?: number
+  inboundId?: number
   date: string
+  returnDate?: string
   passengers: Passenger[]
   contactEmail: string
   contactPhone: string
@@ -30,6 +38,11 @@ function PassengerInfoPage() {
   const [searchParams] = useSearchParams()
 
   const flightId = searchParams.get('flightId') || ''
+  const outboundId = searchParams.get('outboundId') || ''
+  const inboundId = searchParams.get('inboundId') || ''
+  const returnDate = searchParams.get('returnDate') || ''
+  const isRoundTrip = Boolean(outboundId && inboundId)
+
   const passengers = Math.min(
     9,
     Math.max(1, Number(searchParams.get('passengers') || '1') || 1),
@@ -37,6 +50,9 @@ function PassengerInfoPage() {
   const date = searchParams.get('date') || ''
 
   const [flight, setFlight] = useState<PublicFlight | null>(null)
+  const [outboundFlight, setOutboundFlight] = useState<PublicFlight | null>(null)
+  const [inboundFlight, setInboundFlight] = useState<PublicFlight | null>(null)
+
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
@@ -45,11 +61,21 @@ function PassengerInfoPage() {
       const raw = sessionStorage.getItem('flight-booking-passenger-info')
       if (!raw) return null
       const parsed = JSON.parse(raw) as SavedInfo
-      return parsed.flightId === Number(flightId) &&
-        parsed.date === date &&
-        Array.isArray(parsed.passengers) &&
-        parsed.passengers.length === passengers
-        ? parsed : null
+      if (isRoundTrip) {
+        return parsed.outboundId === Number(outboundId) &&
+          parsed.inboundId === Number(inboundId) &&
+          parsed.date === date &&
+          parsed.returnDate === returnDate &&
+          Array.isArray(parsed.passengers) &&
+          parsed.passengers.length === passengers
+          ? parsed : null
+      } else {
+        return parsed.flightId === Number(flightId) &&
+          parsed.date === date &&
+          Array.isArray(parsed.passengers) &&
+          parsed.passengers.length === passengers
+          ? parsed : null
+      }
     } catch {
       return null
     }
@@ -74,27 +100,50 @@ function PassengerInfoPage() {
   useEffect(() => {
     let cancelled = false
 
-    async function loadFlight() {
-      const id = Number(flightId)
-
-      if (!flightId || !Number.isInteger(id) || id <= 0) {
-        setLoadError('Mã chuyến bay không hợp lệ.')
-        setLoading(false)
-        return
-      }
-
+    async function loadFlightsData() {
       setLoading(true)
       setLoadError('')
 
       try {
-        const result = await getPublicFlight(id)
+        if (isRoundTrip) {
+          const outId = Number(outboundId)
+          const inId = Number(inboundId)
 
-        if (!cancelled) {
-          setFlight(result.item)
+          if (!Number.isInteger(outId) || outId <= 0 || !Number.isInteger(inId) || inId <= 0) {
+            setLoadError('Mã chuyến bay khứ hồi không hợp lệ.')
+            setLoading(false)
+            return
+          }
+
+          const [outRes, inRes] = await Promise.all([
+            getPublicFlight(outId),
+            getPublicFlight(inId),
+          ])
+
+          if (!cancelled) {
+            setOutboundFlight(outRes.item)
+            setInboundFlight(inRes.item)
+          }
+        } else {
+          const id = Number(flightId)
+
+          if (!flightId || !Number.isInteger(id) || id <= 0) {
+            setLoadError('Mã chuyến bay không hợp lệ.')
+            setLoading(false)
+            return
+          }
+
+          const result = await getPublicFlight(id)
+
+          if (!cancelled) {
+            setFlight(result.item)
+          }
         }
       } catch (err) {
         if (!cancelled) {
           setFlight(null)
+          setOutboundFlight(null)
+          setInboundFlight(null)
           setLoadError(
             err instanceof Error
               ? err.message
@@ -108,12 +157,12 @@ function PassengerInfoPage() {
       }
     }
 
-    void loadFlight()
+    void loadFlightsData()
 
     return () => {
       cancelled = true
     }
-  }, [flightId])
+  }, [flightId, outboundId, inboundId, isRoundTrip])
 
   const updatePassenger = (
     index: number,
@@ -130,7 +179,8 @@ function PassengerInfoPage() {
   }
 
   const handleContinue = () => {
-    if (!flight) return
+    if (isRoundTrip && (!outboundFlight || !inboundFlight)) return
+    if (!isRoundTrip && !flight) return
 
     const hasMissingInfo = passengerList.some(
       (passenger) =>
@@ -185,15 +235,29 @@ function PassengerInfoPage() {
     try {
       sessionStorage.setItem(
         'flight-booking-passenger-info',
-        JSON.stringify({
-          flightId: flight.id,
-          date,
-          passengers: passengerList,
-          contactEmail: contactEmail.trim(),
-          contactPhone: normalizedContactPhone,
-          countryCode: countryCodeDigits,
-          contactPhoneNumber,
-        }),
+        JSON.stringify(
+          isRoundTrip
+            ? {
+                outboundId: outboundFlight!.id,
+                inboundId: inboundFlight!.id,
+                date,
+                returnDate,
+                passengers: passengerList,
+                contactEmail: contactEmail.trim(),
+                contactPhone: normalizedContactPhone,
+                countryCode: countryCodeDigits,
+                contactPhoneNumber,
+              }
+            : {
+                flightId: flight!.id,
+                date,
+                passengers: passengerList,
+                contactEmail: contactEmail.trim(),
+                contactPhone: normalizedContactPhone,
+                countryCode: countryCodeDigits,
+                contactPhoneNumber,
+              }
+        ),
       )
     } catch {
       setError('Không thể lưu thông tin tạm thời. Vui lòng thử lại.')
@@ -202,9 +266,15 @@ function PassengerInfoPage() {
 
     setError('')
 
-    navigate(
-      `/booking/review?flightId=${flight.id}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
-    )
+    if (isRoundTrip) {
+      navigate(
+        `/booking/review?outboundId=${outboundFlight!.id}&inboundId=${inboundFlight!.id}&passengers=${passengers}&date=${encodeURIComponent(date)}&returnDate=${encodeURIComponent(returnDate)}`,
+      )
+    } else {
+      navigate(
+        `/booking/review?flightId=${flight!.id}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+      )
+    }
   }
 
   if (loading) {
@@ -218,7 +288,7 @@ function PassengerInfoPage() {
     )
   }
 
-  if (loadError || !flight) {
+  if (loadError || (isRoundTrip && (!outboundFlight || !inboundFlight)) || (!isRoundTrip && !flight)) {
     return (
       <section className="passenger-info-page">
         <div className="passenger-info-content">
@@ -244,9 +314,19 @@ function PassengerInfoPage() {
         <p className="demo-notice">Các trường có dấu * là bắt buộc. Điền thông tin đúng như trên CCCD.</p>
 
         <p>
-          <strong>Chuyến bay:</strong> {flight.airline.name} {flight.flightNumber}
-          {' · '}
-          <strong>Số hành khách:</strong> {passengers}
+          {isRoundTrip ? (
+            <>
+              <strong>Chiều đi:</strong> {outboundFlight?.airline.name} {outboundFlight?.flightNumber} ({formatDate(date)})<br />
+              <strong>Chiều về:</strong> {inboundFlight?.airline.name} {inboundFlight?.flightNumber} ({formatDate(returnDate)})<br />
+              <strong>Số hành khách:</strong> {passengers}
+            </>
+          ) : (
+            <>
+              <strong>Chuyến bay:</strong> {flight?.airline.name} {flight?.flightNumber}
+              {' · '}
+              <strong>Số hành khách:</strong> {passengers}
+            </>
+          )}
         </p>
 
         <form

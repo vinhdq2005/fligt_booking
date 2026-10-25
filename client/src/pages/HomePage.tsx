@@ -64,7 +64,7 @@ function AirportPicker({
               aria-haspopup="listbox"
               aria-autocomplete="list"
               onFocus={() => setOpen(true)}
-              onBlur={() => setTimeout(() => setOpen(false), 200)} // Delay nhẹ để click được vào suggestion
+              onBlur={() => setTimeout(() => setOpen(false), 200)}
               onChange={(event) => {
                 onChange(
                   event.target.value
@@ -338,9 +338,11 @@ function AirlinePicker({
 function HomePage() {
   const navigate = useNavigate()
 
+  const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('one-way')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [date, setDate] = useState('')
+  const [returnDate, setReturnDate] = useState('')
   const [passengers, setPassengers] = useState(1)
 
   const [airportCodes, setAirportCodes] = useState<string[]>([])
@@ -406,6 +408,16 @@ function HomePage() {
       return
     }
 
+    if (tripType === 'round-trip' && !returnDate) {
+      alert('Vui lòng chọn ngày về cho chuyến khứ hồi.')
+      return
+    }
+
+    if (tripType === 'round-trip' && returnDate < date) {
+      alert('Ngày về không được trước ngày đi.')
+      return
+    }
+
     if (
       !airportCodes.includes(from) ||
       !airportCodes.includes(to)
@@ -429,11 +441,16 @@ function HomePage() {
     }
 
     const searchParams = new URLSearchParams({
+      tripType,
       from,
       to,
       date,
       passengers: String(passengers),
     })
+
+    if (tripType === 'round-trip' && returnDate) {
+      searchParams.set('returnDate', returnDate)
+    }
 
     if (airline) {
       searchParams.set('airline', airline)
@@ -470,7 +487,8 @@ function HomePage() {
                   <input
                     type="radio"
                     name="tripType"
-                    defaultChecked
+                    checked={tripType === 'one-way'}
+                    onChange={() => setTripType('one-way')}
                   />
                   Một chiều
                 </label>
@@ -479,12 +497,16 @@ function HomePage() {
                   <input
                     type="radio"
                     name="tripType"
+                    checked={tripType === 'round-trip'}
+                    onChange={() => setTripType('round-trip')}
                   />
                   Khứ hồi
                 </label>
               </div>
 
-              <div className="search-fields">
+              <div
+                className={`search-fields ${tripType === 'round-trip' ? 'round-trip-layout' : ''}`}
+              >
                 <AirportPicker
                   id="from"
                   label="Điểm đi"
@@ -539,30 +561,53 @@ function HomePage() {
                   </div>
                 </div>
 
-                <div className="search-field">
-                  <span className="field-icon" aria-hidden="true">
-                    👤
-                  </span>
+                {tripType === 'round-trip' && (
+                  <div className="search-field">
+                    <span className="field-icon" aria-hidden="true">
+                      📅
+                    </span>
 
-                  <div>
-                    <label htmlFor="passengers">
-                      Hành khách
-                    </label>
-
-                    <input
-                      id="passengers"
-                      type="number"
-                      min="1"
-                      max="9"
-                      value={passengers}
-                      onChange={(event) =>
-                        setPassengers(
-                          Number(event.target.value),
-                        )
-                      }
-                    />
+                    <div>
+                      <label htmlFor="returnDate">Ngày về</label>
+                      <input
+                        id="returnDate"
+                        type="date"
+                        min={date || new Date().toLocaleDateString('en-CA')}
+                        value={returnDate}
+                        onChange={(event) =>
+                          setReturnDate(event.target.value)
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {tripType === 'one-way' && (
+                  <div className="search-field">
+                    <span className="field-icon" aria-hidden="true">
+                      👤
+                    </span>
+
+                    <div>
+                      <label htmlFor="passengers">
+                        Hành khách
+                      </label>
+
+                      <input
+                        id="passengers"
+                        type="number"
+                        min="1"
+                        max="9"
+                        value={passengers}
+                        onChange={(event) =>
+                          setPassengers(
+                            Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <AirlinePicker
                   value={airline}
@@ -571,6 +616,33 @@ function HomePage() {
                   loading={airlinesLoading}
                   error={airlinesError}
                 />
+
+                {tripType === 'round-trip' && (
+                  <div className="search-field passenger-field">
+                    <span className="field-icon" aria-hidden="true">
+                      👤
+                    </span>
+
+                    <div>
+                      <label htmlFor="passengers">
+                        Hành khách
+                      </label>
+
+                      <input
+                        id="passengers"
+                        type="number"
+                        min="1"
+                        max="9"
+                        value={passengers}
+                        onChange={(event) =>
+                          setPassengers(
+                            Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
@@ -637,11 +709,9 @@ function HomePage() {
 
         <aside className="demo-banner">
           <div>
-            <strong>Thông tin trình diễn</strong>
+            <strong>Cam kết dịch vụ</strong>
             <p>
-              Các chuyến bay, giá vé và thông tin đặt chỗ
-              có thể bao gồm dữ liệu minh họa tùy theo
-              nguồn dữ liệu của hệ thống.
+              Chúng tôi luôn nỗ lực cập nhật lịch trình và giá vé chính xác nhất để mang đến trải nghiệm tốt nhất cho hành khách.
             </p>
           </div>
         </aside>

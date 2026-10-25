@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -14,7 +13,11 @@ function PaymentResultPage() {
   const status = searchParams.get('status')
   const code = searchParams.get('code') || ''
   const flightId = searchParams.get('flightId') || ''
+  const outboundId = searchParams.get('outboundId') || ''
+  const inboundId = searchParams.get('inboundId') || ''
   const date = searchParams.get('date') || ''
+  const returnDate = searchParams.get('returnDate') || ''
+  const isRoundTrip = Boolean(outboundId && inboundId)
 
   const rawPassengers = Number(searchParams.get('passengers') || '1')
   const passengers = Number.isFinite(rawPassengers)
@@ -96,6 +99,12 @@ function PaymentResultPage() {
     })
   }
 
+  function formatDate(value: string): string {
+    if (!value) return ''
+    const [year, month, day] = value.split('-')
+    return `${day}/${month}/${year}`
+  }
+
   return (
     <section className="payment-result-page">
       <div className="payment-result-content">
@@ -175,23 +184,26 @@ function PaymentResultPage() {
                       {booking.flight.airline.name}
                     </p>
 
-                    <p><strong>Chuyến bay:</strong> {booking.flight.flightNumber}</p>
+                    <p>
+                      <strong>Chuyến bay:</strong>{' '}
+                      {booking.flight.flightNumber}
+                    </p>
 
-                <p>
-                  <strong>Hành trình:</strong>{' '}
-                  {booking.flight.departureCode} →{' '}
-                  {booking.flight.arrivalCode}
-                </p>
+                    <p>
+                      <strong>Hành trình:</strong>{' '}
+                      {booking.flight.departureCode} →{' '}
+                      {booking.flight.arrivalCode}
+                    </p>
 
-                <p>
-                  <strong>Giờ khởi hành:</strong>{' '}
-                  {formatTime(booking.flight.departureTime)}
-                </p>
+                    <p>
+                      <strong>Giờ khởi hành:</strong>{' '}
+                      {formatTime(booking.flight.departureTime)}
+                    </p>
 
-                <p>
-                  <strong>Ngày đi:</strong>{' '}
-                  {date || booking.flight.departureTime.slice(0, 10)}
-                </p>
+                    <p>
+                      <strong>Ngày đi:</strong>{' '}
+                      {date || booking.flight.departureTime.slice(0, 10)}
+                    </p>
                   </>
                 )}
 
@@ -268,8 +280,13 @@ function PaymentResultPage() {
                 <strong>Số hành khách:</strong> {passengers} người
               </p>
               <p>
-                <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
+                <strong>Ngày đi:</strong> {date ? formatDate(date) : 'Chưa chọn'}
               </p>
+              {isRoundTrip && (
+                <p>
+                  <strong>Ngày về:</strong> {returnDate ? formatDate(returnDate) : 'Chưa chọn'}
+                </p>
+              )}
               <p>
                 Bạn có thể quay lại bước thanh toán để thử lại.
               </p>
@@ -284,7 +301,9 @@ function PaymentResultPage() {
                 type="button"
                 onClick={() =>
                   navigate(
-                    `/payment?flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+                    isRoundTrip
+                      ? `/payment?outboundId=${encodeURIComponent(outboundId)}&inboundId=${encodeURIComponent(inboundId)}&passengers=${passengers}&date=${encodeURIComponent(date)}&returnDate=${encodeURIComponent(returnDate)}`
+                      : `/payment?flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
                   )
                 }
               >
