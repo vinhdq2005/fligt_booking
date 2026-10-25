@@ -34,8 +34,8 @@ test("dashboard totals count issued tickets and distinct paid bookings across al
     bookingIds.push(booking.id);
     const first = await prisma.passenger.create({ data: { bookingId: booking.id, fullName: "One" } });
     const second = await prisma.passenger.create({ data: { bookingId: booking.id, fullName: "Two" } });
-    await prisma.ticket.create({ data: { passengerId: first.id, price: 100000, status: "ISSUED" } });
-    await prisma.ticket.create({ data: { passengerId: second.id, price: 100000, status: "USED" } });
+    await prisma.ticket.create({ data: { passengerId: first.id, flightId: flight.id, price: 100000, status: "ISSUED" } });
+    await prisma.ticket.create({ data: { passengerId: second.id, flightId: flight.id, price: 100000, status: "USED" } });
     await prisma.payment.create({ data: { bookingId: booking.id, amount: 200000, method: "MOCK", status: "PAID" } });
     const result = await getAirlineDashboard(airline.id, { fromDate: "2026-11-05", toDate: "2026-11-05" });
     assert.equal(result.summary.flights, 1);

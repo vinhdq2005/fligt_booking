@@ -73,15 +73,23 @@ export async function searchFlights(input: FlightSearchInput) {
           },
         },
       },
+      returnBookings: {
+        where: { OR: [
+          { status: "CONFIRMED" },
+          { status: "PENDING", expiresAt: { gt: now } },
+        ] },
+        select: { status: true, passengers: { select: { id: true } } },
+      },
     },
     orderBy: {
       departureTime: "asc",
     },
   });
 
-  return flights.map(({ bookings, ...flight }) => {
+  return flights.map(({ bookings, returnBookings, ...flight }) => {
+    const allBookings = [...bookings, ...returnBookings];
     // Số ghế đã bán thực sự: chỉ tính booking CONFIRMED.
-    const confirmedPassengers = bookings.reduce(
+    const confirmedPassengers = allBookings.reduce(
       (total, booking) =>
         booking.status === "CONFIRMED"
           ? total + booking.passengers.length
@@ -90,7 +98,7 @@ export async function searchFlights(input: FlightSearchInput) {
     );
 
     // Ghế đang sử dụng: gồm CONFIRMED và PENDING còn hạn.
-    const occupiedSeats = bookings.reduce(
+    const occupiedSeats = allBookings.reduce(
       (total, booking) => total + booking.passengers.length,
       0,
     );
@@ -153,6 +161,13 @@ export async function getFlightById(id: number) {
           },
         },
       },
+      returnBookings: {
+        where: { OR: [
+          { status: "CONFIRMED" },
+          { status: "PENDING", expiresAt: { gt: now } },
+        ] },
+        select: { status: true, passengers: { select: { id: true } } },
+      },
     },
   });
 
@@ -167,7 +182,8 @@ export async function getFlightById(id: number) {
     throw new Error("Chuyến bay không còn khả dụng.");
   }
 
-  const confirmedPassengers = flight.bookings.reduce(
+  const allBookings = [...flight.bookings, ...flight.returnBookings];
+  const confirmedPassengers = allBookings.reduce(
     (total, booking) =>
       booking.status === "CONFIRMED"
         ? total + booking.passengers.length
@@ -175,7 +191,7 @@ export async function getFlightById(id: number) {
     0,
   );
 
-  const occupiedSeats = flight.bookings.reduce(
+  const occupiedSeats = allBookings.reduce(
     (total, booking) => total + booking.passengers.length,
     0,
   );
@@ -193,7 +209,7 @@ export async function getFlightById(id: number) {
     now,
   });
 
-  const { bookings, ...flightData } = flight;
+  const { bookings, returnBookings, ...flightData } = flight;
 
   return {
     ...flightData,

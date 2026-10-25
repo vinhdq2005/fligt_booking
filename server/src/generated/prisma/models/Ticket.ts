@@ -29,18 +29,21 @@ export type AggregateTicket = {
 export type TicketAvgAggregateOutputType = {
   id: number | null
   passengerId: number | null
+  flightId: number | null
   price: number | null
 }
 
 export type TicketSumAggregateOutputType = {
   id: number | null
   passengerId: number | null
+  flightId: number | null
   price: number | null
 }
 
 export type TicketMinAggregateOutputType = {
   id: number | null
   passengerId: number | null
+  flightId: number | null
   ticketCode: string | null
   qrToken: string | null
   price: number | null
@@ -52,6 +55,7 @@ export type TicketMinAggregateOutputType = {
 export type TicketMaxAggregateOutputType = {
   id: number | null
   passengerId: number | null
+  flightId: number | null
   ticketCode: string | null
   qrToken: string | null
   price: number | null
@@ -63,6 +67,7 @@ export type TicketMaxAggregateOutputType = {
 export type TicketCountAggregateOutputType = {
   id: number
   passengerId: number
+  flightId: number
   ticketCode: number
   qrToken: number
   price: number
@@ -76,18 +81,21 @@ export type TicketCountAggregateOutputType = {
 export type TicketAvgAggregateInputType = {
   id?: true
   passengerId?: true
+  flightId?: true
   price?: true
 }
 
 export type TicketSumAggregateInputType = {
   id?: true
   passengerId?: true
+  flightId?: true
   price?: true
 }
 
 export type TicketMinAggregateInputType = {
   id?: true
   passengerId?: true
+  flightId?: true
   ticketCode?: true
   qrToken?: true
   price?: true
@@ -99,6 +107,7 @@ export type TicketMinAggregateInputType = {
 export type TicketMaxAggregateInputType = {
   id?: true
   passengerId?: true
+  flightId?: true
   ticketCode?: true
   qrToken?: true
   price?: true
@@ -110,6 +119,7 @@ export type TicketMaxAggregateInputType = {
 export type TicketCountAggregateInputType = {
   id?: true
   passengerId?: true
+  flightId?: true
   ticketCode?: true
   qrToken?: true
   price?: true
@@ -208,6 +218,7 @@ export type TicketGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 export type TicketGroupByOutputType = {
   id: number
   passengerId: number
+  flightId: number
   ticketCode: string
   qrToken: string
   price: number
@@ -242,6 +253,7 @@ export type TicketWhereInput = {
   NOT?: Prisma.TicketWhereInput | Prisma.TicketWhereInput[]
   id?: Prisma.IntFilter<"Ticket"> | number
   passengerId?: Prisma.IntFilter<"Ticket"> | number
+  flightId?: Prisma.IntFilter<"Ticket"> | number
   ticketCode?: Prisma.StringFilter<"Ticket"> | string
   qrToken?: Prisma.StringFilter<"Ticket"> | string
   price?: Prisma.IntFilter<"Ticket"> | number
@@ -249,11 +261,13 @@ export type TicketWhereInput = {
   issuedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   usedAt?: Prisma.DateTimeNullableFilter<"Ticket"> | Date | string | null
   passenger?: Prisma.XOR<Prisma.PassengerScalarRelationFilter, Prisma.PassengerWhereInput>
+  flight?: Prisma.XOR<Prisma.FlightScalarRelationFilter, Prisma.FlightWhereInput>
 }
 
 export type TicketOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   ticketCode?: Prisma.SortOrder
   qrToken?: Prisma.SortOrder
   price?: Prisma.SortOrder
@@ -261,27 +275,32 @@ export type TicketOrderByWithRelationInput = {
   issuedAt?: Prisma.SortOrder
   usedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   passenger?: Prisma.PassengerOrderByWithRelationInput
+  flight?: Prisma.FlightOrderByWithRelationInput
   _relevance?: Prisma.TicketOrderByRelevanceInput
 }
 
 export type TicketWhereUniqueInput = Prisma.AtLeast<{
   id?: number
-  passengerId?: number
   ticketCode?: string
   qrToken?: string
+  passengerId_flightId?: Prisma.TicketPassengerIdFlightIdCompoundUniqueInput
   AND?: Prisma.TicketWhereInput | Prisma.TicketWhereInput[]
   OR?: Prisma.TicketWhereInput[]
   NOT?: Prisma.TicketWhereInput | Prisma.TicketWhereInput[]
+  passengerId?: Prisma.IntFilter<"Ticket"> | number
+  flightId?: Prisma.IntFilter<"Ticket"> | number
   price?: Prisma.IntFilter<"Ticket"> | number
   status?: Prisma.EnumTicketStatusFilter<"Ticket"> | $Enums.TicketStatus
   issuedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   usedAt?: Prisma.DateTimeNullableFilter<"Ticket"> | Date | string | null
   passenger?: Prisma.XOR<Prisma.PassengerScalarRelationFilter, Prisma.PassengerWhereInput>
-}, "id" | "passengerId" | "ticketCode" | "qrToken">
+  flight?: Prisma.XOR<Prisma.FlightScalarRelationFilter, Prisma.FlightWhereInput>
+}, "id" | "ticketCode" | "qrToken" | "passengerId_flightId">
 
 export type TicketOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   ticketCode?: Prisma.SortOrder
   qrToken?: Prisma.SortOrder
   price?: Prisma.SortOrder
@@ -301,6 +320,7 @@ export type TicketScalarWhereWithAggregatesInput = {
   NOT?: Prisma.TicketScalarWhereWithAggregatesInput | Prisma.TicketScalarWhereWithAggregatesInput[]
   id?: Prisma.IntWithAggregatesFilter<"Ticket"> | number
   passengerId?: Prisma.IntWithAggregatesFilter<"Ticket"> | number
+  flightId?: Prisma.IntWithAggregatesFilter<"Ticket"> | number
   ticketCode?: Prisma.StringWithAggregatesFilter<"Ticket"> | string
   qrToken?: Prisma.StringWithAggregatesFilter<"Ticket"> | string
   price?: Prisma.IntWithAggregatesFilter<"Ticket"> | number
@@ -316,12 +336,14 @@ export type TicketCreateInput = {
   status?: $Enums.TicketStatus
   issuedAt?: Date | string
   usedAt?: Date | string | null
-  passenger: Prisma.PassengerCreateNestedOneWithoutTicketInput
+  passenger: Prisma.PassengerCreateNestedOneWithoutTicketsInput
+  flight: Prisma.FlightCreateNestedOneWithoutTicketsInput
 }
 
 export type TicketUncheckedCreateInput = {
   id?: number
   passengerId: number
+  flightId: number
   ticketCode?: string
   qrToken?: string
   price: number
@@ -337,12 +359,14 @@ export type TicketUpdateInput = {
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
   issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  passenger?: Prisma.PassengerUpdateOneRequiredWithoutTicketNestedInput
+  passenger?: Prisma.PassengerUpdateOneRequiredWithoutTicketsNestedInput
+  flight?: Prisma.FlightUpdateOneRequiredWithoutTicketsNestedInput
 }
 
 export type TicketUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   passengerId?: Prisma.IntFieldUpdateOperationsInput | number
+  flightId?: Prisma.IntFieldUpdateOperationsInput | number
   ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
   qrToken?: Prisma.StringFieldUpdateOperationsInput | string
   price?: Prisma.IntFieldUpdateOperationsInput | number
@@ -354,6 +378,7 @@ export type TicketUncheckedUpdateInput = {
 export type TicketCreateManyInput = {
   id?: number
   passengerId: number
+  flightId: number
   ticketCode?: string
   qrToken?: string
   price: number
@@ -374,6 +399,7 @@ export type TicketUpdateManyMutationInput = {
 export type TicketUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   passengerId?: Prisma.IntFieldUpdateOperationsInput | number
+  flightId?: Prisma.IntFieldUpdateOperationsInput | number
   ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
   qrToken?: Prisma.StringFieldUpdateOperationsInput | string
   price?: Prisma.IntFieldUpdateOperationsInput | number
@@ -382,9 +408,14 @@ export type TicketUncheckedUpdateManyInput = {
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type TicketNullableScalarRelationFilter = {
-  is?: Prisma.TicketWhereInput | null
-  isNot?: Prisma.TicketWhereInput | null
+export type TicketListRelationFilter = {
+  every?: Prisma.TicketWhereInput
+  some?: Prisma.TicketWhereInput
+  none?: Prisma.TicketWhereInput
+}
+
+export type TicketOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type TicketOrderByRelevanceInput = {
@@ -393,9 +424,15 @@ export type TicketOrderByRelevanceInput = {
   search: string
 }
 
+export type TicketPassengerIdFlightIdCompoundUniqueInput = {
+  passengerId: number
+  flightId: number
+}
+
 export type TicketCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   ticketCode?: Prisma.SortOrder
   qrToken?: Prisma.SortOrder
   price?: Prisma.SortOrder
@@ -407,12 +444,14 @@ export type TicketCountOrderByAggregateInput = {
 export type TicketAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   price?: Prisma.SortOrder
 }
 
 export type TicketMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   ticketCode?: Prisma.SortOrder
   qrToken?: Prisma.SortOrder
   price?: Prisma.SortOrder
@@ -424,6 +463,7 @@ export type TicketMaxOrderByAggregateInput = {
 export type TicketMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   ticketCode?: Prisma.SortOrder
   qrToken?: Prisma.SortOrder
   price?: Prisma.SortOrder
@@ -435,43 +475,158 @@ export type TicketMinOrderByAggregateInput = {
 export type TicketSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   passengerId?: Prisma.SortOrder
+  flightId?: Prisma.SortOrder
   price?: Prisma.SortOrder
 }
 
-export type TicketCreateNestedOneWithoutPassengerInput = {
-  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
-  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput
-  connect?: Prisma.TicketWhereUniqueInput
+export type TicketCreateNestedManyWithoutFlightInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput> | Prisma.TicketCreateWithoutFlightInput[] | Prisma.TicketUncheckedCreateWithoutFlightInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutFlightInput | Prisma.TicketCreateOrConnectWithoutFlightInput[]
+  createMany?: Prisma.TicketCreateManyFlightInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
 }
 
-export type TicketUncheckedCreateNestedOneWithoutPassengerInput = {
-  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
-  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput
-  connect?: Prisma.TicketWhereUniqueInput
+export type TicketUncheckedCreateNestedManyWithoutFlightInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput> | Prisma.TicketCreateWithoutFlightInput[] | Prisma.TicketUncheckedCreateWithoutFlightInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutFlightInput | Prisma.TicketCreateOrConnectWithoutFlightInput[]
+  createMany?: Prisma.TicketCreateManyFlightInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
 }
 
-export type TicketUpdateOneWithoutPassengerNestedInput = {
-  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
-  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput
-  upsert?: Prisma.TicketUpsertWithoutPassengerInput
-  disconnect?: Prisma.TicketWhereInput | boolean
-  delete?: Prisma.TicketWhereInput | boolean
-  connect?: Prisma.TicketWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TicketUpdateToOneWithWhereWithoutPassengerInput, Prisma.TicketUpdateWithoutPassengerInput>, Prisma.TicketUncheckedUpdateWithoutPassengerInput>
+export type TicketUpdateManyWithoutFlightNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput> | Prisma.TicketCreateWithoutFlightInput[] | Prisma.TicketUncheckedCreateWithoutFlightInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutFlightInput | Prisma.TicketCreateOrConnectWithoutFlightInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutFlightInput | Prisma.TicketUpsertWithWhereUniqueWithoutFlightInput[]
+  createMany?: Prisma.TicketCreateManyFlightInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutFlightInput | Prisma.TicketUpdateWithWhereUniqueWithoutFlightInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutFlightInput | Prisma.TicketUpdateManyWithWhereWithoutFlightInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
 }
 
-export type TicketUncheckedUpdateOneWithoutPassengerNestedInput = {
-  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
-  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput
-  upsert?: Prisma.TicketUpsertWithoutPassengerInput
-  disconnect?: Prisma.TicketWhereInput | boolean
-  delete?: Prisma.TicketWhereInput | boolean
-  connect?: Prisma.TicketWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.TicketUpdateToOneWithWhereWithoutPassengerInput, Prisma.TicketUpdateWithoutPassengerInput>, Prisma.TicketUncheckedUpdateWithoutPassengerInput>
+export type TicketUncheckedUpdateManyWithoutFlightNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput> | Prisma.TicketCreateWithoutFlightInput[] | Prisma.TicketUncheckedCreateWithoutFlightInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutFlightInput | Prisma.TicketCreateOrConnectWithoutFlightInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutFlightInput | Prisma.TicketUpsertWithWhereUniqueWithoutFlightInput[]
+  createMany?: Prisma.TicketCreateManyFlightInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutFlightInput | Prisma.TicketUpdateWithWhereUniqueWithoutFlightInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutFlightInput | Prisma.TicketUpdateManyWithWhereWithoutFlightInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+}
+
+export type TicketCreateNestedManyWithoutPassengerInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput> | Prisma.TicketCreateWithoutPassengerInput[] | Prisma.TicketUncheckedCreateWithoutPassengerInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput | Prisma.TicketCreateOrConnectWithoutPassengerInput[]
+  createMany?: Prisma.TicketCreateManyPassengerInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+}
+
+export type TicketUncheckedCreateNestedManyWithoutPassengerInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput> | Prisma.TicketCreateWithoutPassengerInput[] | Prisma.TicketUncheckedCreateWithoutPassengerInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput | Prisma.TicketCreateOrConnectWithoutPassengerInput[]
+  createMany?: Prisma.TicketCreateManyPassengerInputEnvelope
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+}
+
+export type TicketUpdateManyWithoutPassengerNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput> | Prisma.TicketCreateWithoutPassengerInput[] | Prisma.TicketUncheckedCreateWithoutPassengerInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput | Prisma.TicketCreateOrConnectWithoutPassengerInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutPassengerInput | Prisma.TicketUpsertWithWhereUniqueWithoutPassengerInput[]
+  createMany?: Prisma.TicketCreateManyPassengerInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutPassengerInput | Prisma.TicketUpdateWithWhereUniqueWithoutPassengerInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutPassengerInput | Prisma.TicketUpdateManyWithWhereWithoutPassengerInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+}
+
+export type TicketUncheckedUpdateManyWithoutPassengerNestedInput = {
+  create?: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput> | Prisma.TicketCreateWithoutPassengerInput[] | Prisma.TicketUncheckedCreateWithoutPassengerInput[]
+  connectOrCreate?: Prisma.TicketCreateOrConnectWithoutPassengerInput | Prisma.TicketCreateOrConnectWithoutPassengerInput[]
+  upsert?: Prisma.TicketUpsertWithWhereUniqueWithoutPassengerInput | Prisma.TicketUpsertWithWhereUniqueWithoutPassengerInput[]
+  createMany?: Prisma.TicketCreateManyPassengerInputEnvelope
+  set?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  disconnect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  delete?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  connect?: Prisma.TicketWhereUniqueInput | Prisma.TicketWhereUniqueInput[]
+  update?: Prisma.TicketUpdateWithWhereUniqueWithoutPassengerInput | Prisma.TicketUpdateWithWhereUniqueWithoutPassengerInput[]
+  updateMany?: Prisma.TicketUpdateManyWithWhereWithoutPassengerInput | Prisma.TicketUpdateManyWithWhereWithoutPassengerInput[]
+  deleteMany?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
 }
 
 export type EnumTicketStatusFieldUpdateOperationsInput = {
   set?: $Enums.TicketStatus
+}
+
+export type TicketCreateWithoutFlightInput = {
+  ticketCode?: string
+  qrToken?: string
+  price: number
+  status?: $Enums.TicketStatus
+  issuedAt?: Date | string
+  usedAt?: Date | string | null
+  passenger: Prisma.PassengerCreateNestedOneWithoutTicketsInput
+}
+
+export type TicketUncheckedCreateWithoutFlightInput = {
+  id?: number
+  passengerId: number
+  ticketCode?: string
+  qrToken?: string
+  price: number
+  status?: $Enums.TicketStatus
+  issuedAt?: Date | string
+  usedAt?: Date | string | null
+}
+
+export type TicketCreateOrConnectWithoutFlightInput = {
+  where: Prisma.TicketWhereUniqueInput
+  create: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput>
+}
+
+export type TicketCreateManyFlightInputEnvelope = {
+  data: Prisma.TicketCreateManyFlightInput | Prisma.TicketCreateManyFlightInput[]
+  skipDuplicates?: boolean
+}
+
+export type TicketUpsertWithWhereUniqueWithoutFlightInput = {
+  where: Prisma.TicketWhereUniqueInput
+  update: Prisma.XOR<Prisma.TicketUpdateWithoutFlightInput, Prisma.TicketUncheckedUpdateWithoutFlightInput>
+  create: Prisma.XOR<Prisma.TicketCreateWithoutFlightInput, Prisma.TicketUncheckedCreateWithoutFlightInput>
+}
+
+export type TicketUpdateWithWhereUniqueWithoutFlightInput = {
+  where: Prisma.TicketWhereUniqueInput
+  data: Prisma.XOR<Prisma.TicketUpdateWithoutFlightInput, Prisma.TicketUncheckedUpdateWithoutFlightInput>
+}
+
+export type TicketUpdateManyWithWhereWithoutFlightInput = {
+  where: Prisma.TicketScalarWhereInput
+  data: Prisma.XOR<Prisma.TicketUpdateManyMutationInput, Prisma.TicketUncheckedUpdateManyWithoutFlightInput>
+}
+
+export type TicketScalarWhereInput = {
+  AND?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+  OR?: Prisma.TicketScalarWhereInput[]
+  NOT?: Prisma.TicketScalarWhereInput | Prisma.TicketScalarWhereInput[]
+  id?: Prisma.IntFilter<"Ticket"> | number
+  passengerId?: Prisma.IntFilter<"Ticket"> | number
+  flightId?: Prisma.IntFilter<"Ticket"> | number
+  ticketCode?: Prisma.StringFilter<"Ticket"> | string
+  qrToken?: Prisma.StringFilter<"Ticket"> | string
+  price?: Prisma.IntFilter<"Ticket"> | number
+  status?: Prisma.EnumTicketStatusFilter<"Ticket"> | $Enums.TicketStatus
+  issuedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
+  usedAt?: Prisma.DateTimeNullableFilter<"Ticket"> | Date | string | null
 }
 
 export type TicketCreateWithoutPassengerInput = {
@@ -481,10 +636,12 @@ export type TicketCreateWithoutPassengerInput = {
   status?: $Enums.TicketStatus
   issuedAt?: Date | string
   usedAt?: Date | string | null
+  flight: Prisma.FlightCreateNestedOneWithoutTicketsInput
 }
 
 export type TicketUncheckedCreateWithoutPassengerInput = {
   id?: number
+  flightId: number
   ticketCode?: string
   qrToken?: string
   price: number
@@ -498,15 +655,79 @@ export type TicketCreateOrConnectWithoutPassengerInput = {
   create: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
 }
 
-export type TicketUpsertWithoutPassengerInput = {
-  update: Prisma.XOR<Prisma.TicketUpdateWithoutPassengerInput, Prisma.TicketUncheckedUpdateWithoutPassengerInput>
-  create: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
-  where?: Prisma.TicketWhereInput
+export type TicketCreateManyPassengerInputEnvelope = {
+  data: Prisma.TicketCreateManyPassengerInput | Prisma.TicketCreateManyPassengerInput[]
+  skipDuplicates?: boolean
 }
 
-export type TicketUpdateToOneWithWhereWithoutPassengerInput = {
-  where?: Prisma.TicketWhereInput
+export type TicketUpsertWithWhereUniqueWithoutPassengerInput = {
+  where: Prisma.TicketWhereUniqueInput
+  update: Prisma.XOR<Prisma.TicketUpdateWithoutPassengerInput, Prisma.TicketUncheckedUpdateWithoutPassengerInput>
+  create: Prisma.XOR<Prisma.TicketCreateWithoutPassengerInput, Prisma.TicketUncheckedCreateWithoutPassengerInput>
+}
+
+export type TicketUpdateWithWhereUniqueWithoutPassengerInput = {
+  where: Prisma.TicketWhereUniqueInput
   data: Prisma.XOR<Prisma.TicketUpdateWithoutPassengerInput, Prisma.TicketUncheckedUpdateWithoutPassengerInput>
+}
+
+export type TicketUpdateManyWithWhereWithoutPassengerInput = {
+  where: Prisma.TicketScalarWhereInput
+  data: Prisma.XOR<Prisma.TicketUpdateManyMutationInput, Prisma.TicketUncheckedUpdateManyWithoutPassengerInput>
+}
+
+export type TicketCreateManyFlightInput = {
+  id?: number
+  passengerId: number
+  ticketCode?: string
+  qrToken?: string
+  price: number
+  status?: $Enums.TicketStatus
+  issuedAt?: Date | string
+  usedAt?: Date | string | null
+}
+
+export type TicketUpdateWithoutFlightInput = {
+  ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
+  qrToken?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  passenger?: Prisma.PassengerUpdateOneRequiredWithoutTicketsNestedInput
+}
+
+export type TicketUncheckedUpdateWithoutFlightInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  passengerId?: Prisma.IntFieldUpdateOperationsInput | number
+  ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
+  qrToken?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type TicketUncheckedUpdateManyWithoutFlightInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  passengerId?: Prisma.IntFieldUpdateOperationsInput | number
+  ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
+  qrToken?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type TicketCreateManyPassengerInput = {
+  id?: number
+  flightId: number
+  ticketCode?: string
+  qrToken?: string
+  price: number
+  status?: $Enums.TicketStatus
+  issuedAt?: Date | string
+  usedAt?: Date | string | null
 }
 
 export type TicketUpdateWithoutPassengerInput = {
@@ -516,10 +737,23 @@ export type TicketUpdateWithoutPassengerInput = {
   status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
   issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  flight?: Prisma.FlightUpdateOneRequiredWithoutTicketsNestedInput
 }
 
 export type TicketUncheckedUpdateWithoutPassengerInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
+  flightId?: Prisma.IntFieldUpdateOperationsInput | number
+  ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
+  qrToken?: Prisma.StringFieldUpdateOperationsInput | string
+  price?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.EnumTicketStatusFieldUpdateOperationsInput | $Enums.TicketStatus
+  issuedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  usedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type TicketUncheckedUpdateManyWithoutPassengerInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  flightId?: Prisma.IntFieldUpdateOperationsInput | number
   ticketCode?: Prisma.StringFieldUpdateOperationsInput | string
   qrToken?: Prisma.StringFieldUpdateOperationsInput | string
   price?: Prisma.IntFieldUpdateOperationsInput | number
@@ -533,6 +767,7 @@ export type TicketUncheckedUpdateWithoutPassengerInput = {
 export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   passengerId?: boolean
+  flightId?: boolean
   ticketCode?: boolean
   qrToken?: boolean
   price?: boolean
@@ -540,6 +775,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   issuedAt?: boolean
   usedAt?: boolean
   passenger?: boolean | Prisma.PassengerDefaultArgs<ExtArgs>
+  flight?: boolean | Prisma.FlightDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["ticket"]>
 
 
@@ -547,6 +783,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type TicketSelectScalar = {
   id?: boolean
   passengerId?: boolean
+  flightId?: boolean
   ticketCode?: boolean
   qrToken?: boolean
   price?: boolean
@@ -555,19 +792,22 @@ export type TicketSelectScalar = {
   usedAt?: boolean
 }
 
-export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "passengerId" | "ticketCode" | "qrToken" | "price" | "status" | "issuedAt" | "usedAt", ExtArgs["result"]["ticket"]>
+export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "passengerId" | "flightId" | "ticketCode" | "qrToken" | "price" | "status" | "issuedAt" | "usedAt", ExtArgs["result"]["ticket"]>
 export type TicketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   passenger?: boolean | Prisma.PassengerDefaultArgs<ExtArgs>
+  flight?: boolean | Prisma.FlightDefaultArgs<ExtArgs>
 }
 
 export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Ticket"
   objects: {
     passenger: Prisma.$PassengerPayload<ExtArgs>
+    flight: Prisma.$FlightPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     passengerId: number
+    flightId: number
     ticketCode: string
     qrToken: string
     price: number
@@ -915,6 +1155,7 @@ readonly fields: TicketFieldRefs;
 export interface Prisma__TicketClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   passenger<T extends Prisma.PassengerDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PassengerDefaultArgs<ExtArgs>>): Prisma.Prisma__PassengerClient<runtime.Types.Result.GetResult<Prisma.$PassengerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  flight<T extends Prisma.FlightDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FlightDefaultArgs<ExtArgs>>): Prisma.Prisma__FlightClient<runtime.Types.Result.GetResult<Prisma.$FlightPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -946,6 +1187,7 @@ export interface Prisma__TicketClient<T, Null = never, ExtArgs extends runtime.T
 export interface TicketFieldRefs {
   readonly id: Prisma.FieldRef<"Ticket", 'Int'>
   readonly passengerId: Prisma.FieldRef<"Ticket", 'Int'>
+  readonly flightId: Prisma.FieldRef<"Ticket", 'Int'>
   readonly ticketCode: Prisma.FieldRef<"Ticket", 'String'>
   readonly qrToken: Prisma.FieldRef<"Ticket", 'String'>
   readonly price: Prisma.FieldRef<"Ticket", 'Int'>

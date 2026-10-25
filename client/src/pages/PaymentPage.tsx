@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -19,20 +18,29 @@ type Passenger = {
 }
 
 type SavedPassengerInfo = {
-  flightId: number
+  flightId?: number
+  outboundId?: number
+  inboundId?: number
   date: string
+  returnDate?: string
   passengers: Passenger[]
   contactEmail: string
   contactPhone: string
 }
 
 type PendingBooking = {
-  flightId: number
+  schemaVersion?: number
+  flightId?: number
+  outboundId?: number
+  inboundId?: number
   date: string
+  returnDate?: string
   passengers: number
   bookingCode: string
   detailsSignature: string
   totalAmount?: number
+  outboundUnitPrice?: number | null
+  returnUnitPrice?: number | null
 }
 
 const PASSENGER_STORAGE_KEY = 'flight-booking-passenger-info'
@@ -44,7 +52,11 @@ function PaymentPage() {
   const [searchParams] = useSearchParams()
 
   const flightId = searchParams.get('flightId') || ''
+  const outboundId = searchParams.get('outboundId') || ''
+  const inboundId = searchParams.get('inboundId') || ''
   const date = searchParams.get('date') || ''
+  const returnDate = searchParams.get('returnDate') || ''
+  const isRoundTrip = Boolean(outboundId && inboundId)
 
   const passengerParam = Number(searchParams.get('passengers') || '1')
   const passengers = Math.min(
@@ -56,48 +68,76 @@ function PaymentPage() {
   )
 
   const [flight, setFlight] = useState<PublicFlight | null>(null)
+  const [outboundFlight, setOutboundFlight] = useState<PublicFlight | null>(null)
+  const [inboundFlight, setInboundFlight] = useState<PublicFlight | null>(null)
+
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [paymentError, setPaymentError] = useState('')
   const [processing, setProcessing] = useState(false)
-  const [bookingTotalAmount, setBookingTotalAmount] = useState<number | null>(
-    null,
-  )
   const [bookingCode, setBookingCode] = useState('')
+  const [bookedPrice, setBookedPrice] = useState<{ total: number; outbound: number; inbound: number } | null>(null)
 
   const paymentLock = useRef(false)
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadFlight() {
-      const id = Number(flightId)
-
-      if (!flightId || !Number.isInteger(id) || id <= 0) {
-        setFlight(null)
-        setLoadError('Mã chuyến bay không hợp lệ.')
-        setLoading(false)
-        return
-      }
-
+    async function loadFlightsData() {
       setLoading(true)
       setLoadError('')
 
       try {
-        const result = await getPublicFlight(id)
+        if (isRoundTrip) {
+          const outId = Number(outboundId)
+          const inId = Number(inboundId)
 
-        if (cancelled) return
+          if (!Number.isInteger(outId) || outId <= 0 || !Number.isInteger(inId) || inId <= 0) {
+            setLoadError('Mã chuyến bay khứ hồi không hợp lệ.')
+            setLoading(false)
+            return
+          }
 
-        if (result.item) {
-          setFlight(result.item)
+          const [outRes, inRes] = await Promise.all([
+            getPublicFlight(outId),
+            getPublicFlight(inId),
+          ])
+
+          if (cancelled) return
+
+          if (outRes.item && inRes.item) {
+            setOutboundFlight(outRes.item)
+            setInboundFlight(inRes.item)
+          } else {
+            setLoadError('Không tìm thấy thông tin chuyến bay khứ hồi.')
+          }
         } else {
-          setFlight(null)
-          setLoadError('Không tìm thấy chuyến bay.')
+          const id = Number(flightId)
+
+          if (!flightId || !Number.isInteger(id) || id <= 0) {
+            setFlight(null)
+            setLoadError('Mã chuyến bay không hợp lệ.')
+            setLoading(false)
+            return
+          }
+
+          const result = await getPublicFlight(id)
+
+          if (cancelled) return
+
+          if (result.item) {
+            setFlight(result.item)
+          } else {
+            setFlight(null)
+            setLoadError('Không tìm thấy chuyến bay.')
+          }
         }
       } catch (error) {
         if (cancelled) return
 
         setFlight(null)
+        setOutboundFlight(null)
+        setInboundFlight(null)
         setLoadError(
           error instanceof Error
             ? error.message
@@ -110,12 +150,12 @@ function PaymentPage() {
       }
     }
 
-    void loadFlight()
+    void loadFlightsData()
 
     return () => {
       cancelled = true
     }
-  }, [flightId])
+  }, [flightId, outboundId, inboundId, isRoundTrip])
 
   const formatPrice = (price: number) =>
     `${Number(price).toLocaleString('vi-VN')} ₫`
@@ -152,9 +192,15 @@ function PaymentPage() {
       )
     }
 
+    const isValidMatch = isRoundTrip
+      ? parsed.outboundId === Number(outboundId) &&
+        parsed.inboundId === Number(inboundId) &&
+        parsed.date === date &&
+        parsed.returnDate === returnDate
+      : parsed.flightId === Number(flightId) && parsed.date === date
+
     if (
-      parsed.flightId !== Number(flightId) ||
-      parsed.date !== date ||
+      !isValidMatch ||
       !Array.isArray(parsed.passengers) ||
       parsed.passengers.length !== passengers ||
       typeof parsed.contactEmail !== 'string' ||
@@ -187,64 +233,43 @@ function PaymentPage() {
     return parsed
   }
 
-  /**
-   * Lưu mã đặt chỗ vào trình duyệt để khách có thể xem lại
-   * trong mục "Đặt chỗ của tôi" mà không cần đăng nhập.
-   *
-   * Không lưu thông tin giấy tờ hoặc thông tin hành khách tại đây.
-   */
   function saveBookingCode(code: string) {
     const normalizedCode = code.trim()
-
-    if (!normalizedCode) {
-      throw new Error('Mã đặt chỗ không hợp lệ.')
-    }
-
-    let codes: string[] = []
-
+    if (!normalizedCode) throw new Error('Mã đặt chỗ không hợp lệ.')
+    let codes: string[]
     try {
       const saved = localStorage.getItem(BOOKING_CODES_KEY)
       const parsed: unknown = saved ? JSON.parse(saved) : []
-
-      if (
-        !Array.isArray(parsed) ||
-        !parsed.every(
-          (item): item is string => typeof item === 'string',
-        )
-      ) {
+      if (!Array.isArray(parsed) || !parsed.every((item): item is string => typeof item === 'string')) {
         throw new Error('Danh sách mã đặt chỗ không hợp lệ.')
       }
-
       codes = parsed
     } catch {
-      throw new Error(
-        'Không thể lưu mã đặt chỗ trên trình duyệt. Vui lòng kiểm tra cài đặt lưu trữ của trình duyệt.',
-      )
+      throw new Error('Không thể đọc mã đặt chỗ đã lưu trên trình duyệt.')
     }
-
     if (!codes.includes(normalizedCode)) {
       try {
-        localStorage.setItem(
-          BOOKING_CODES_KEY,
-          JSON.stringify([...codes, normalizedCode]),
-        )
+        localStorage.setItem(BOOKING_CODES_KEY, JSON.stringify([...codes, normalizedCode]))
       } catch {
-        throw new Error(
-          'Trình duyệt không cho phép lưu mã đặt chỗ. Vui lòng kiểm tra dung lượng hoặc quyền lưu trữ.',
-        )
+        throw new Error('Trình duyệt không cho phép lưu mã đặt chỗ.')
       }
     }
   }
 
-  /**
-   * Tạo booking chờ thanh toán hoặc sử dụng lại booking đang chờ
-   * nếu thông tin hành khách không thay đổi.
-   *
-   * Sau khi backend tạo booking thành công, lưu mã đặt chỗ ngay,
-   * không cần chờ thanh toán thành công.
-   */
+  // Tính toán chi phí thống nhất chuẩn xác ở Frontend
+  const ticketPrice = !isRoundTrip && flight ? Number(flight.currentPrice ?? flight.basePrice ?? 0) : 0
+  const outboundPrice = isRoundTrip && outboundFlight ? Number(outboundFlight.currentPrice ?? outboundFlight.basePrice ?? 0) : 0
+  const inboundPrice = isRoundTrip && inboundFlight ? Number(inboundFlight.currentPrice ?? inboundFlight.basePrice ?? 0) : 0
+
+  const pricePerPassenger = isRoundTrip ? (outboundPrice + inboundPrice) : ticketPrice
+  const totalPrice = pricePerPassenger * passengers
+  const payableTotal = bookedPrice?.total ?? totalPrice
+
   async function createOrGetPendingBooking(): Promise<string> {
-    if (!flight) {
+    if (isRoundTrip && (!outboundFlight || !inboundFlight)) {
+      throw new Error('Không có thông tin chuyến bay khứ hồi.')
+    }
+    if (!isRoundTrip && !flight) {
       throw new Error('Không có thông tin chuyến bay.')
     }
 
@@ -262,38 +287,45 @@ function PaymentPage() {
       try {
         const parsed = JSON.parse(pendingRaw) as PendingBooking
 
-        const matches =
-          parsed.flightId === flight.id &&
-          parsed.date === date &&
-          parsed.passengers === passengers &&
-          parsed.detailsSignature === detailsSignature &&
-          typeof parsed.bookingCode === 'string' &&
-          parsed.bookingCode.trim().length > 0
+        const matches = isRoundTrip
+          ? parsed.schemaVersion === 2 &&
+            parsed.outboundId === outboundFlight!.id &&
+            parsed.inboundId === inboundFlight!.id &&
+            parsed.date === date &&
+            parsed.returnDate === returnDate &&
+            parsed.passengers === passengers &&
+            parsed.detailsSignature === detailsSignature &&
+            typeof parsed.bookingCode === 'string' &&
+            parsed.bookingCode.length > 0
+          : parsed.flightId === flight!.id &&
+            parsed.date === date &&
+            parsed.passengers === passengers &&
+            parsed.detailsSignature === detailsSignature &&
+            typeof parsed.bookingCode === 'string' &&
+            parsed.bookingCode.length > 0
 
         if (matches) {
-          // Lưu lại mã phòng trường hợp localStorage trước đó chưa có mã.
           saveBookingCode(parsed.bookingCode)
-
-          if (
-            typeof parsed.totalAmount === 'number' &&
-            Number.isFinite(parsed.totalAmount) &&
-            parsed.totalAmount >= 0
-          ) {
-            setBookingTotalAmount(parsed.totalAmount)
-          }
-
           setBookingCode(parsed.bookingCode)
+          if (typeof parsed.totalAmount === 'number') setBookedPrice({
+            total: parsed.totalAmount,
+            outbound: parsed.outboundUnitPrice ?? parsed.totalAmount / passengers,
+            inbound: parsed.returnUnitPrice ?? 0,
+          })
           return parsed.bookingCode
         }
       } catch {
-        // Nếu dữ liệu lưu không hợp lệ, xóa và tạo lại booking.
+        // Ignore parsing error
       }
 
       sessionStorage.removeItem(PENDING_BOOKING_KEY)
     }
 
+    const targetFlightId = isRoundTrip ? outboundFlight!.id : flight!.id
+
     const result = await createBooking({
-      flightId: flight.id,
+      flightId: targetFlightId,
+      ...(isRoundTrip ? { returnFlightId: inboundFlight!.id } : {}),
       contactName: firstPassenger.fullName.trim(),
       contactEmail: savedInfo.contactEmail.trim(),
       contactPhone: savedInfo.contactPhone,
@@ -311,39 +343,47 @@ function PaymentPage() {
     }
 
     const code = result.item.bookingCode
-    const amount = Number(result.item.totalAmount)
-    const validAmount = Number.isFinite(amount) && amount >= 0
 
-    const pending: PendingBooking = {
-      flightId: flight.id,
-      date,
-      passengers,
-      bookingCode: code,
-      detailsSignature,
-      ...(validAmount ? { totalAmount: amount } : {}),
-    }
+    const pending: PendingBooking = isRoundTrip
+      ? {
+          schemaVersion: 2,
+          outboundId: outboundFlight!.id,
+          inboundId: inboundFlight!.id,
+          date,
+          returnDate,
+          passengers,
+          bookingCode: code,
+          detailsSignature,
+          totalAmount: result.item.totalAmount,
+          outboundUnitPrice: result.item.outboundUnitPrice,
+          returnUnitPrice: result.item.returnUnitPrice,
+        }
+      : {
+          flightId: flight!.id,
+          date,
+          passengers,
+          bookingCode: code,
+          detailsSignature,
+          totalAmount: result.item.totalAmount,
+          outboundUnitPrice: result.item.outboundUnitPrice,
+        }
 
     sessionStorage.setItem(
       PENDING_BOOKING_KEY,
       JSON.stringify(pending),
     )
 
-    // Lưu mã ngay sau khi tạo booking, không cần chờ thanh toán.
     saveBookingCode(code)
-
-    if (validAmount) {
-      setBookingTotalAmount(amount)
-    }
-
     setBookingCode(code)
+    setBookedPrice({
+      total: result.item.totalAmount,
+      outbound: result.item.outboundUnitPrice ?? result.item.totalAmount / passengers,
+      inbound: result.item.returnUnitPrice ?? 0,
+    })
 
     return code
   }
 
-  /**
-   * Bước 1: tạo booking và hiển thị QR thanh toán giả lập.
-   * Chưa xác nhận thanh toán và chưa phát hành vé.
-   */
   async function handleCreatePaymentQR() {
     if (paymentLock.current || processing || bookingCode) return
 
@@ -365,15 +405,14 @@ function PaymentPage() {
     }
   }
 
-  /**
-   * Bước 2: chỉ gọi backend thanh toán khi người dùng xác nhận.
-   */
   async function handlePayment(success: boolean) {
     if (paymentLock.current || processing) return
 
     if (!success) {
       navigate(
-        `/payment/result?status=failure&flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
+        isRoundTrip
+          ? `/payment/result?status=failure&outboundId=${encodeURIComponent(outboundId)}&inboundId=${encodeURIComponent(inboundId)}&passengers=${passengers}&date=${encodeURIComponent(date)}&returnDate=${encodeURIComponent(returnDate)}`
+          : `/payment/result?status=failure&flightId=${encodeURIComponent(flightId)}&passengers=${passengers}&date=${encodeURIComponent(date)}`,
       )
       return
     }
@@ -388,10 +427,8 @@ function PaymentPage() {
     setPaymentError('')
 
     try {
-      // Backend xác nhận thanh toán và phát hành vé.
       await payBooking(bookingCode)
 
-      // Đảm bảo mã vẫn được lưu sau khi thanh toán thành công.
       saveBookingCode(bookingCode)
 
       sessionStorage.removeItem(PENDING_BOOKING_KEY)
@@ -423,7 +460,7 @@ function PaymentPage() {
     )
   }
 
-  if (loadError || !flight) {
+  if (loadError || (isRoundTrip && (!outboundFlight || !inboundFlight)) || (!isRoundTrip && !flight)) {
     return (
       <section className="payment-page">
         <div className="payment-content">
@@ -437,21 +474,11 @@ function PaymentPage() {
     )
   }
 
-  const ticketPrice = Number(
-    flight.currentPrice ?? flight.basePrice ?? 0,
-  )
-
-  const totalPrice =
-    bookingTotalAmount !== null
-      ? bookingTotalAmount
-      : ticketPrice * passengers
-
-  // QR thanh toán mô phỏng được giữ nguyên, không phải QR vé điện tử.
   const qrValue = bookingCode
     ? JSON.stringify({
         type: 'FLIGHT_BOOKING_MOCK_PAYMENT',
         bookingCode,
-        amount: totalPrice,
+        amount: payableTotal,
         currency: 'VND',
         description: `Thanh toan dat ve ${bookingCode}`,
       })
@@ -472,40 +499,83 @@ function PaymentPage() {
           <section className="payment-section">
             <h2>Thông tin chuyến bay</h2>
 
-            <p>
-              <strong>Hãng hàng không:</strong> {flight.airline.name}
-            </p>
+            {isRoundTrip && outboundFlight && inboundFlight ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <span style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-block', marginBottom: '4px' }}>
+                    ✈ CHIỀU ĐI
+                  </span>
+                  <p><strong>Hãng hàng không:</strong> {outboundFlight.airline.name}</p>
+                  <p><strong>Mã chuyến bay:</strong> {outboundFlight.flightNumber}</p>
+                  <p><strong>Hành trình:</strong> {outboundFlight.departureCode} → {outboundFlight.arrivalCode}</p>
+                  <p><strong>Giờ đi - đến:</strong> {formatTime(outboundFlight.departureTime)} - {formatTime(outboundFlight.arrivalTime)}</p>
+                  <p><strong>Ngày đi:</strong> {date || 'Chưa chọn'}</p>
+                </div>
 
-            <p>
-              <strong>Mã chuyến bay:</strong> {flight.flightNumber}
-            </p>
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                  <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-block', marginBottom: '4px' }}>
+                    🛬 CHIỀU VỀ
+                  </span>
+                  <p><strong>Hãng hàng không:</strong> {inboundFlight.airline.name}</p>
+                  <p><strong>Mã chuyến bay:</strong> {inboundFlight.flightNumber}</p>
+                  <p><strong>Hành trình:</strong> {inboundFlight.departureCode} → {inboundFlight.arrivalCode}</p>
+                  <p><strong>Giờ đi - đến:</strong> {formatTime(inboundFlight.departureTime)} - {formatTime(inboundFlight.arrivalTime)}</p>
+                  <p><strong>Ngày về:</strong> {returnDate || 'Chưa chọn'}</p>
+                </div>
+              </div>
+            ) : (
+              flight && (
+                <>
+                  <p>
+                    <strong>Hãng hàng không:</strong> {flight.airline.name}
+                  </p>
 
-            <p>
-              <strong>Hành trình:</strong> {flight.departureCode} →{' '}
-              {flight.arrivalCode}
-            </p>
+                  <p>
+                    <strong>Mã chuyến bay:</strong> {flight.flightNumber}
+                  </p>
 
-            <p>
-              <strong>Giờ khởi hành:</strong>{' '}
-              {formatTime(flight.departureTime)}
-            </p>
+                  <p>
+                    <strong>Hành trình:</strong> {flight.departureCode} →{' '}
+                    {flight.arrivalCode}
+                  </p>
 
-            <p>
-              <strong>Giờ đến:</strong> {formatTime(flight.arrivalTime)}
-            </p>
+                  <p>
+                    <strong>Giờ khởi hành:</strong>{' '}
+                    {formatTime(flight.departureTime)}
+                  </p>
 
-            <p>
-              <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
-            </p>
+                  <p>
+                    <strong>Giờ đến:</strong> {formatTime(flight.arrivalTime)}
+                  </p>
+
+                  <p>
+                    <strong>Ngày đi:</strong> {date || 'Chưa chọn'}
+                  </p>
+                </>
+              )
+            )}
           </section>
 
           <section className="payment-summary">
             <h2>Chi tiết chi phí</h2>
 
-            <div className="summary-row">
-              <span>Giá vé mỗi người</span>
-              <strong>{formatPrice(ticketPrice)}</strong>
-            </div>
+            {isRoundTrip ? (
+              <>
+                <div className="summary-row">
+                  <span>Giá vé chiều đi (mỗi người)</span>
+                  <strong>{formatPrice(bookedPrice?.outbound ?? outboundPrice)}</strong>
+                </div>
+                <div className="summary-row">
+                  <span>Giá vé chiều về (mỗi người)</span>
+                  <strong>{formatPrice(bookedPrice?.inbound ?? inboundPrice)}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="summary-row">
+                <span>Giá vé mỗi người</span>
+                <strong>{formatPrice(bookedPrice?.outbound ?? ticketPrice)}</strong>
+              </div>
+            )}
 
             <div className="summary-row">
               <span>Số hành khách</span>
@@ -514,7 +584,7 @@ function PaymentPage() {
 
             <div className="summary-total">
               <span>Tổng thanh toán</span>
-              <strong>{formatPrice(totalPrice)}</strong>
+              <strong>{formatPrice(payableTotal)}</strong>
             </div>
           </section>
 
@@ -547,7 +617,7 @@ function PaymentPage() {
 
                   <p className="qr-payment-label">Số tiền mô phỏng</p>
                   <p className="qr-payment-amount">
-                    {formatPrice(totalPrice)}
+                    {formatPrice(payableTotal)}
                   </p>
 
                   <p className="qr-payment-label">Nội dung</p>
@@ -559,17 +629,8 @@ function PaymentPage() {
                 Đây không phải QR chuyển khoản ngân hàng. Để hoàn tất
                 bài mô phỏng, hãy bấm nút xác nhận bên dưới.
               </p>
-
-              <p>
-                Mã đặt chỗ đã được lưu trên trình duyệt. Bạn có thể
-                mở mục "Đặt chỗ của tôi" để tra cứu.
-              </p>
-
-              <button
-                type="button"
-                className="back-button"
-                onClick={() => navigate('/my-bookings')}
-              >
+              <p>Mã đặt chỗ đã được lưu trên trình duyệt. Bạn có thể tra cứu trong mục "Đặt chỗ của tôi".</p>
+              <button type="button" className="back-button" onClick={() => navigate('/my-bookings')}>
                 Xem đặt chỗ của tôi
               </button>
             </section>

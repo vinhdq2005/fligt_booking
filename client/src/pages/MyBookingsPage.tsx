@@ -180,12 +180,12 @@ function MyBookingsPage() {
                 </p>
 
                 <p>
-                  <strong>Chuyến bay:</strong>{' '}
+                  <strong>Chuyến đi:</strong>{' '}
                   {booking.flight.flightNumber}
                 </p>
 
                 <p>
-                  <strong>Hành trình:</strong>{' '}
+                  <strong>Hành trình đi:</strong>{' '}
                   {booking.flight.departureCode} →{' '}
                   {booking.flight.arrivalCode}
                 </p>
@@ -194,6 +194,14 @@ function MyBookingsPage() {
                   <strong>Ngày đi:</strong>{' '}
                   {formatDate(booking.flight.departureTime)}
                 </p>
+
+                {booking.returnFlight && (
+                  <>
+                    <p><strong>Chuyến về:</strong> {booking.returnFlight.flightNumber} · {booking.returnFlight.airline.name}</p>
+                    <p><strong>Hành trình về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                    <p><strong>Ngày về:</strong> {formatDate(booking.returnFlight.departureTime)}</p>
+                  </>
+                )}
 
                 <p>
                   <strong>Hành khách:</strong>{' '}

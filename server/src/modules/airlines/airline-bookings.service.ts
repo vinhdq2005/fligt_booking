@@ -77,14 +77,14 @@ export async function listAirlineBookings(airlineId: number, query: AirlineBooki
     ...(query.flightFromDate || query.flightToDate ? { departureTime: dateRange(query.flightFromDate, query.flightToDate) } : {}),
   };
   const where: Prisma.BookingWhereInput = {
-    flight,
+    AND: [{ OR: [{ flight }, { returnFlight: flight }] }, paymentFilter(query.paymentStatus)],
     ...(query.status ? { status: query.status } : {}),
     ...(query.bookingFromDate || query.bookingToDate ? { createdAt: dateRange(query.bookingFromDate, query.bookingToDate) } : {}),
-    ...paymentFilter(query.paymentStatus),
     ...(query.search ? { OR: [
       { bookingCode: { contains: query.search } }, { contactName: { contains: query.search } },
       { contactEmail: { contains: query.search } }, { contactPhone: { contains: query.search } },
       { flight: { flightNumber: { contains: query.search } } },
+      { returnFlight: { flightNumber: { contains: query.search } } },
       { passengers: { some: { fullName: { contains: query.search } } } },
     ] } : {}),
   };
@@ -95,6 +95,7 @@ export async function listAirlineBookings(airlineId: number, query: AirlineBooki
       select: { id: true, bookingCode: true, contactName: true, contactPhone: true, contactEmail: true,
         totalAmount: true, status: true, expiresAt: true, createdAt: true,
         flight: { select: { flightNumber: true, departureCode: true, arrivalCode: true, departureTime: true } },
+        returnFlight: { select: { flightNumber: true, departureCode: true, arrivalCode: true, departureTime: true } },
         _count: { select: { passengers: true } }, payments: { select: { status: true } } } }),
   ]);
   return { items: rows.map(({ _count, payments, ...item }) => ({ ...item, passengerCount: _count.passengers,
@@ -103,12 +104,13 @@ export async function listAirlineBookings(airlineId: number, query: AirlineBooki
 }
 
 export async function getAirlineBooking(airlineId: number, id: number) {
-  const row = await prisma.booking.findFirst({ where: { id, flight: { airlineId } },
+  const row = await prisma.booking.findFirst({ where: { id, OR: [{ flight: { airlineId } }, { returnFlight: { airlineId } }] },
     select: { id: true, bookingCode: true, contactName: true, contactPhone: true, contactEmail: true,
       totalAmount: true, status: true, expiresAt: true, createdAt: true,
       flight: { select: { flightNumber: true, departureCode: true, arrivalCode: true, departureTime: true, arrivalTime: true } },
+      returnFlight: { select: { flightNumber: true, departureCode: true, arrivalCode: true, departureTime: true, arrivalTime: true } },
       passengers: { orderBy: { id: "asc" }, select: { id: true, fullName: true, gender: true, dateOfBirth: true,
-        nationality: true, ticket: { select: { ticketCode: true, price: true, status: true, issuedAt: true, usedAt: true } } } },
+        nationality: true, tickets: { where: { flight: { airlineId } }, orderBy: { id: "asc" }, select: { flightId: true, ticketCode: true, price: true, status: true, issuedAt: true, usedAt: true, flight: { select: { flightNumber: true } } } } } },
       payments: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, amount: true, currency: true,
         method: true, status: true, reviewStatus: true, createdAt: true } } } });
   if (!row) return null;

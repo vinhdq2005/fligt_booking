@@ -74,6 +74,7 @@ const iso = (value: Date | null) => value?.toISOString() ?? null;
 const flightInclude = {
   airline: { select: { name: true } },
   bookings: { select: { status: true, expiresAt: true, passengers: { select: { id: true } } } },
+  returnBookings: { select: { status: true, expiresAt: true, passengers: { select: { id: true } } } },
   _count: { select: { bookings: true } },
 } satisfies Prisma.FlightInclude;
 const bookingInclude = {
@@ -85,10 +86,10 @@ const paymentInclude = { booking: { select: { bookingCode: true, status: true, f
 const auditInclude = { actor: { select: { name: true, role: true } } } as const;
 
 function mapFlight(item: Prisma.FlightGetPayload<{ include: typeof flightInclude }>) {
-  const { bookings, _count, airline, ...flight } = item;
+  const { bookings, returnBookings, _count, airline, ...flight } = item;
   const now = new Date();
-  const occupied = bookings.filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).reduce((sum, booking) => sum + booking.passengers.length, 0);
-  return { ...flight, airlineName: airline.name, availableSeats: Math.max(0, flight.capacity - occupied), bookingCount: _count.bookings };
+  const occupied = [...bookings, ...returnBookings].filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).reduce((sum, booking) => sum + booking.passengers.length, 0);
+  return { ...flight, airlineName: airline.name, availableSeats: Math.max(0, flight.capacity - occupied), bookingCount: _count.bookings + returnBookings.length };
 }
 function mapBooking(item: Prisma.BookingGetPayload<{ include: typeof bookingInclude }>) {
   const { flight, passengers, payments, ...booking } = item;
@@ -166,13 +167,14 @@ export async function getAdminDetail(kind: ListKind, id: number) {
     return withAudit({ ...item, airlineName: item.airline?.name ?? null, airlineStatus: item.airline?.status ?? null, activeAdminCount });
   }
   if (kind === "flights") {
-    const item = await prisma.flight.findUnique({ where: { id }, include: { airline: { select: { name: true, status: true } }, bookings: { select: { bookingCode: true, status: true, expiresAt: true, passengers: { select: { id: true } } } }, _count: { select: { bookings: true } } } });
+    const item = await prisma.flight.findUnique({ where: { id }, include: { airline: { select: { name: true, status: true } }, bookings: { select: { bookingCode: true, status: true, expiresAt: true, passengers: { select: { id: true } } } }, returnBookings: { select: { bookingCode: true, status: true, expiresAt: true, passengers: { select: { id: true } } } }, _count: { select: { bookings: true } } } });
     if (!item) return null;
     const now = new Date();
-    const occupied = item.bookings.filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).reduce((sum, booking) => sum + booking.passengers.length, 0);
-    const { bookings, airline, _count, ...flight } = item;
-    const activeBookingCount = bookings.filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).length;
-    return withAudit({ ...flight, airlineName: airline.name, airlineStatus: airline.status, availableSeats: Math.max(0, flight.capacity - occupied), bookingCount: _count.bookings, activeBookingCount, bookings: bookings.slice(0, 30).map(({ passengers, ...booking }) => booking) });
+    const allBookings = [...item.bookings, ...item.returnBookings];
+    const occupied = allBookings.filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).reduce((sum, booking) => sum + booking.passengers.length, 0);
+    const { bookings, returnBookings, airline, _count, ...flight } = item;
+    const activeBookingCount = allBookings.filter(booking => booking.status === "CONFIRMED" || (booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)).length;
+    return withAudit({ ...flight, airlineName: airline.name, airlineStatus: airline.status, availableSeats: Math.max(0, flight.capacity - occupied), bookingCount: _count.bookings + returnBookings.length, activeBookingCount, bookings: allBookings.slice(0, 30).map(({ passengers, ...booking }) => booking) });
   }
   if (kind === "bookings") {
     const item = await prisma.booking.findUnique({ where: { id }, include: bookingInclude });

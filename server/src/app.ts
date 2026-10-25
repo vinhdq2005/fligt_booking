@@ -587,6 +587,7 @@ export function createApp(
 
       const {
         flightId,
+        returnFlightId,
         contactName,
         contactEmail,
         contactPhone,
@@ -595,6 +596,7 @@ export function createApp(
 
       if (
         typeof flightId !== "number" ||
+        (returnFlightId !== undefined && typeof returnFlightId !== "number") ||
         typeof contactName !== "string" ||
         typeof contactEmail !== "string" ||
         typeof contactPhone !== "string" ||
@@ -621,6 +623,7 @@ export function createApp(
       const bookingUser = await currentUser(req);
       const booking = await createBooking({
         flightId,
+        returnFlightId,
         userId: bookingUser?.role === "CUSTOMER" ? bookingUser.id : undefined,
         contactName,
         contactEmail,
@@ -637,6 +640,8 @@ export function createApp(
       if (error instanceof Error) {
         const validationMessages = [
           "Mã chuyến bay không hợp lệ.",
+          "Mã chuyến bay chiều về không hợp lệ.",
+          "Chuyến về không khớp hành trình hoặc thời gian chiều đi.",
           "Tên người liên hệ phải từ 2 đến 120 ký tự.",
           "Email không hợp lệ.",
           "Số điện thoại không hợp lệ.",

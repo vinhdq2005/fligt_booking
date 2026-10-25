@@ -31,27 +31,19 @@ export async function verifyTicketQR(qrToken: string) {
       status: true,
       issuedAt: true,
       usedAt: true,
+      flight: {
+        select: {
+          flightNumber: true, departureCode: true, arrivalCode: true,
+          departureTime: true, status: true,
+          airline: { select: { code: true, name: true } },
+        },
+      },
       passenger: {
         select: {
           fullName: true,
           booking: {
             select: {
               status: true,
-              flight: {
-                select: {
-                  flightNumber: true,
-                  departureCode: true,
-                  arrivalCode: true,
-                  departureTime: true,
-                  status: true,
-                  airline: {
-                    select: {
-                      code: true,
-                      name: true,
-                    },
-                  },
-                },
-              },
             },
           },
         },
@@ -68,7 +60,7 @@ export async function verifyTicketQR(qrToken: string) {
 
   const { passenger } = ticket;
   const { booking } = passenger;
-  const { flight } = booking;
+  const { flight } = ticket;
 
   const valid =
     ticket.status === "ISSUED" &&
@@ -191,20 +183,13 @@ export async function checkInTicketQR(
         ticketCode: true,
         status: true,
         usedAt: true,
+        flight: { select: { flightNumber: true, departureTime: true, status: true, airlineId: true } },
         passenger: {
           select: {
             fullName: true,
             booking: {
               select: {
                 status: true,
-                flight: {
-                  select: {
-                    flightNumber: true,
-                    departureTime: true,
-                    status: true,
-                    airlineId: true,
-                  },
-                },
               },
             },
           },
@@ -220,7 +205,7 @@ export async function checkInTicketQR(
     }
 
     const booking = ticket.passenger.booking;
-    const flight = booking.flight;
+    const flight = ticket.flight;
 
     if (flight.airlineId !== staff.airlineId) {
       throw new TicketServiceError(

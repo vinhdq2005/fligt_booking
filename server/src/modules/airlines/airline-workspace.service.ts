@@ -67,18 +67,20 @@ export async function getAirlineWorkspace(airlineId: number, query: AirlineWorks
     prisma.airline.findUnique({ where: { id: airlineId }, select: { id: true, code: true, name: true, status: true } }),
     prisma.flight.count({ where }), prisma.flight.count({ where: { AND: [where, { saleStatus: "ON_SALE" }] } }),
     prisma.flight.aggregate({ where, _sum: { capacity: true } }),
-    prisma.passenger.count({ where: { booking: { status: "CONFIRMED", flight: where } } }),
+    prisma.ticket.count({ where: { status: { in: ["ISSUED", "USED"] }, flight: where } }),
     prisma.payment.aggregate({ where: { status: "PAID", booking: { flight: where } }, _sum: { amount: true } }),
     prisma.flight.findMany({ where, orderBy: [{ [query.sort]: query.direction }, { id: "asc" }],
       skip: (query.page - 1) * query.pageSize, take: query.pageSize,
       include: { bookings: { select: { status: true, expiresAt: true, passengers: { select: { id: true } },
-        payments: { where: { status: "PAID" }, select: { amount: true } } } } } }),
+        payments: { where: { status: "PAID" }, select: { amount: true } } } },
+        returnBookings: { select: { status: true, expiresAt: true, passengers: { select: { id: true } } } } } }),
   ]);
   if (!airline) throw new AirlineWorkspaceError(404, "Không tìm thấy hãng bay.");
   const items = flights.map(flight => {
-    const confirmedBookings = flight.bookings.filter(booking => booking.status === "CONFIRMED");
+    const allBookings = [...flight.bookings, ...flight.returnBookings];
+    const confirmedBookings = allBookings.filter(booking => booking.status === "CONFIRMED");
     const soldSeats = confirmedBookings.reduce((sum, booking) => sum + booking.passengers.length, 0);
-    const heldSeats = flight.bookings.filter(booking => booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)
+    const heldSeats = allBookings.filter(booking => booking.status === "PENDING" && booking.expiresAt && booking.expiresAt > now)
       .reduce((sum, booking) => sum + booking.passengers.length, 0);
     const simulatedRevenue = flight.bookings.flatMap(booking => booking.payments).reduce((sum, payment) => sum + payment.amount, 0);
     const currentPrice = flight.status === "SCHEDULED" && flight.departureTime > now && flight.basePrice > 0 && flight.capacity > 0
@@ -106,8 +108,10 @@ export async function setAirlineSalesSettings(input: { airlineId: number; flight
     if (!rows.length) throw new AirlineWorkspaceError(404, "Không tìm thấy chuyến bay của hãng.");
     const flight = await tx.flight.findUniqueOrThrow({ where: { id: input.flightId } });
     if (flight.status !== "SCHEDULED" || flight.departureTime <= new Date()) throw new AirlineWorkspaceError(409, "Chuyến không còn hợp lệ để đặt số ghế và giá.");
-    const occupied = await tx.passenger.count({ where: { booking: { flightId: input.flightId,
-      OR: [{ status: "CONFIRMED" }, { status: "PENDING", expiresAt: { gt: new Date() } }] } } });
+    const occupied = await tx.passenger.count({ where: { booking: {
+      AND: [{ OR: [{ flightId: input.flightId }, { returnFlightId: input.flightId }] },
+        { OR: [{ status: "CONFIRMED" }, { status: "PENDING", expiresAt: { gt: new Date() } }] }],
+    } } });
     if (input.capacity < occupied) throw new AirlineWorkspaceError(409, `Số ghế bán ra không thể nhỏ hơn ${occupied} chỗ đã bán/đang giữ.`);
     await tx.flight.update({ where: { id: input.flightId }, data: { capacity: input.capacity, basePrice: input.basePrice } });
     // Retire any rules saved by the previous UI; pricing now follows calculateCurrentPrice only.

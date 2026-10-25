@@ -214,19 +214,22 @@ export type BookingPassengerInput = {
 };
 
 export type CreateBookingInput = {
-  flightId: number;
-  contactName: string;
-  contactEmail: string;
-  contactPhone: string;
-  passengers: BookingPassengerInput[];
-};
+  flightId: number
+  returnFlightId?: number
+  contactName: string
+  contactEmail: string
+  contactPhone: string
+  passengers: BookingPassengerInput[]
+}
 
 export type CreatedBooking = {
-  bookingCode: string;
-  totalAmount: number;
-  status: string;
-  expiresAt: string;
-};
+  bookingCode: string
+  totalAmount: number
+  outboundUnitPrice?: number | null
+  returnUnitPrice?: number | null
+  status: string
+  expiresAt: string
+}
 
 export async function createBooking(
   input: CreateBookingInput,
@@ -262,15 +265,18 @@ export type BookingTicket = {
 };
 
 export type BookingDetails = {
-  bookingCode: string;
-  contactName: string;
-  contactEmail: string | null;
-  contactPhone: string | null;
-  totalAmount: number;
-  status: string;
-  expiresAt: string;
-  createdAt: string;
-
+  bookingCode: string
+  flightId: number
+  returnFlightId: number | null
+  outboundUnitPrice: number | null
+  returnUnitPrice: number | null
+  contactName: string
+  contactEmail: string | null
+  contactPhone: string | null
+  totalAmount: number
+  status: string
+  expiresAt: string
+  createdAt: string
   flight: {
     flightNumber: string;
     departureCode: string;
@@ -279,17 +285,31 @@ export type BookingDetails = {
     arrivalTime: string;
     basePrice: number;
     airline: {
-      code: string;
-      name: string;
-    };
-  };
-
+      code: string
+      name: string
+    }
+  }
+  returnFlight: BookingDetails['flight'] | null
   passengers: Array<{
-    id: number;
-    fullName: string;
-    ticket: BookingTicket | null;
-  }>;
-
+    id: number
+    fullName: string
+    ticket: {
+      ticketCode: string
+      flightId: number
+      qrToken: string
+      price: number
+      status: string
+      issuedAt: string
+    } | null
+    tickets: Array<{
+      ticketCode: string
+      flightId: number
+      qrToken: string
+      price: number
+      status: string
+      issuedAt: string
+    }>
+  }>
   payments: Array<{
     amount: number;
     currency: string;

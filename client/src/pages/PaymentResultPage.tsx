@@ -144,15 +144,38 @@ function PaymentResultPage() {
               </div>
 
               <div className="result-info">
-                <p>
-                  <strong>Hãng hàng không:</strong>{' '}
-                  {booking.flight.airline.name}
-                </p>
+                {booking.returnFlight ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
+                        ✈ CHIỀU ĐI
+                      </span>
+                      <p style={{ margin: '6px 0 2px' }}><strong>Hãng:</strong> {booking.flight.airline.name}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Chuyến bay:</strong> {booking.flight.flightNumber}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Hành trình:</strong> {booking.flight.departureCode} → {booking.flight.arrivalCode}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Khởi hành:</strong> {formatTime(booking.flight.departureTime)} ({booking.flight.departureTime.slice(0, 10)})</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Giá vé:</strong> {formatPrice(booking.outboundUnitPrice ?? 0)} / người</p>
+                    </div>
 
-                <p>
-                  <strong>Chuyến bay:</strong>{' '}
-                  {booking.flight.flightNumber}
-                </p>
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
+                        🛬 CHIỀU VỀ
+                      </span>
+                      <p style={{ margin: '6px 0 2px' }}><strong>Hãng:</strong> {booking.returnFlight.airline.name}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Chuyến bay:</strong> {booking.returnFlight.flightNumber}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Hành trình:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Khởi hành:</strong> {formatTime(booking.returnFlight.departureTime)} ({booking.returnFlight.departureTime.slice(0, 10)})</p>
+                      <p style={{ margin: '0 0 2px' }}><strong>Giá vé:</strong> {formatPrice(booking.returnUnitPrice ?? 0)} / người</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p>
+                      <strong>Hãng hàng không:</strong>{' '}
+                      {booking.flight.airline.name}
+                    </p>
+
+                    <p><strong>Chuyến bay:</strong> {booking.flight.flightNumber}</p>
 
                 <p>
                   <strong>Hành trình:</strong>{' '}
@@ -169,6 +192,8 @@ function PaymentResultPage() {
                   <strong>Ngày đi:</strong>{' '}
                   {date || booking.flight.departureTime.slice(0, 10)}
                 </p>
+                  </>
+                )}
 
                 <p>
                   <strong>Số hành khách:</strong>{' '}
@@ -208,9 +233,9 @@ function PaymentResultPage() {
                     {booking.passengers.map((passenger) => (
                       <li key={passenger.id}>
                         {passenger.fullName}
-                        {passenger.ticket
-                          ? ` — Mã vé: ${passenger.ticket.ticketCode}`
-                          : ''}
+                        {passenger.tickets.map((ticket) => (
+                          <span key={ticket.ticketCode}> — {ticket.flightId === booking.flightId ? 'Chiều đi' : 'Chiều về'}: {ticket.ticketCode}</span>
+                        ))}
                       </li>
                     ))}
                   </ul>

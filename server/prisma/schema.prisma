@@ -196,7 +196,9 @@ model Flight {
   updatedAt     DateTime     @updatedAt
 
   airline      Airline       @relation(fields: [airlineId], references: [id], onDelete: Restrict)
-  bookings     Booking[]
+  bookings     Booking[] @relation("OutboundBookings")
+  returnBookings Booking[] @relation("ReturnBookings")
+  tickets      Ticket[]
   pricingRules PricingRule[]
 
   @@index([departureCode, arrivalCode, departureTime, status])
@@ -207,6 +209,9 @@ model Booking {
   id          Int           @id @default(autoincrement())
   bookingCode String        @unique @default(cuid()) @db.VarChar(30)
   flightId    Int
+  returnFlightId Int?
+  outboundUnitPrice Int?
+  returnUnitPrice Int?
   userId      Int?
   contactName String        @db.VarChar(120)
   contactEmail String?      @db.VarChar(255)
@@ -217,12 +222,14 @@ model Booking {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  flight     Flight     @relation(fields: [flightId], references: [id], onDelete: Restrict)
+  flight     Flight     @relation("OutboundBookings", fields: [flightId], references: [id], onDelete: Restrict)
+  returnFlight Flight?  @relation("ReturnBookings", fields: [returnFlightId], references: [id], onDelete: Restrict)
   user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   passengers Passenger[]
   payments   Payment[]
 
   @@index([flightId, status])
+  @@index([returnFlightId, status])
   @@index([createdAt])
   @@index([userId, createdAt])
 }
@@ -238,14 +245,15 @@ model Passenger {
   createdAt      DateTime @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  ticket  Ticket?
+  tickets Ticket[]
 
   @@index([bookingId])
 }
 
 model Ticket {
   id             Int          @id @default(autoincrement())
-  passengerId    Int          @unique
+  passengerId    Int
+  flightId       Int
   ticketCode     String       @unique @default(cuid()) @db.VarChar(30)
   qrToken        String       @unique @default(cuid()) @db.VarChar(64)
   price          Int
@@ -254,6 +262,10 @@ model Ticket {
   usedAt         DateTime?
 
   passenger Passenger @relation(fields: [passengerId], references: [id], onDelete: Restrict)
+  flight Flight @relation(fields: [flightId], references: [id], onDelete: Restrict)
+
+  @@unique([passengerId, flightId])
+  @@index([flightId, status])
 }
 
 model PricingRule {

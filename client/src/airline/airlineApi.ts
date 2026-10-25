@@ -29,12 +29,14 @@ export type AirlineBooking = {
   paymentStatus: 'PAID' | 'REFUNDED' | 'PENDING' | 'FAILED' | 'NO_PAYMENT';
   expiresAt: string | null; createdAt: string; passengerCount: number;
   flight: { flightNumber: string; departureCode: string; arrivalCode: string; departureTime: string }
+  returnFlight: { flightNumber: string; departureCode: string; arrivalCode: string; departureTime: string } | null
 }
 export type AirlineBookingDetail = Omit<AirlineBooking, 'passengerCount'> & {
   flight: AirlineBooking['flight'] & { arrivalTime: string }
+  returnFlight: (AirlineBooking['flight'] & { arrivalTime: string }) | null
   passengers: Array<{ id: number; fullName: string; gender: 'MALE' | 'FEMALE' | null; dateOfBirth: string | null;
-    nationality: string | null; ticket: { ticketCode: string; price: number; status: 'ISSUED' | 'USED' | 'CANCELLED';
-      issuedAt: string; usedAt: string | null } | null }>
+    nationality: string | null; tickets: Array<{ ticketCode: string; price: number; status: 'ISSUED' | 'USED' | 'CANCELLED';
+      issuedAt: string; usedAt: string | null; flightId: number; flight: { flightNumber: string } }> }>
   payments: Array<{ id: number; amount: number; currency: string; method: string; status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
     reviewStatus: string; createdAt: string }>
 }
