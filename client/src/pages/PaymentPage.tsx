@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   createBooking,
@@ -269,7 +269,6 @@ function PaymentPage() {
     }
   }
 
-  // Tính toán chi phí thống nhất chuẩn xác ở Frontend
   const ticketPrice = !isRoundTrip && flight ? Number(flight.currentPrice ?? flight.basePrice ?? 0) : 0
   const outboundPrice = isRoundTrip && outboundFlight ? Number(outboundFlight.currentPrice ?? outboundFlight.basePrice ?? 0) : 0
   const inboundPrice = isRoundTrip && inboundFlight ? Number(inboundFlight.currentPrice ?? inboundFlight.basePrice ?? 0) : 0
@@ -603,7 +602,7 @@ function PaymentPage() {
             <section className="payment-section">
               <div className="qr-payment-heading">
                 <h2>VietQR theo đặt chỗ</h2>
-                <span className="mock-badge">DEMO</span>
+                <span className="mock-badge">Kiểm tra thông tin trước khi thanh toán</span>
               </div>
 
               <p className="qr-payment-description">
@@ -647,13 +646,8 @@ function PaymentPage() {
 
               <p className="qr-payment-warning">
                 Đây là QR ngân hàng: xác nhận trong ứng dụng sẽ chuyển tiền thật.
-                Chỉ quét để xem thông tin, không xác nhận chuyển khoản khi demo.
-                Nút mô phỏng bên dưới không kiểm tra giao dịch ngân hàng.
+                Chỉ quét để xem thông tin.
               </p>
-              <p>Mã đặt chỗ đã được lưu trên trình duyệt. Bạn có thể tra cứu trong mục "Đặt chỗ của tôi".</p>
-              <button type="button" className="back-button" onClick={() => navigate('/my-bookings')}>
-                Xem đặt chỗ của tôi
-              </button>
             </section>
           )}
 

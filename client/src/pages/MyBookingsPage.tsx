@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getBookingByCode, type BookingDetails } from '../api'
@@ -19,13 +18,10 @@ function MyBookingsPage() {
 
   function formatDate(value: string) {
     if (!value) return 'Chưa có thông tin'
-
     const date = new Date(value)
-
     if (Number.isNaN(date.getTime())) {
       return value
     }
-
     return date.toLocaleDateString('vi-VN', {
       timeZone: 'Asia/Ho_Chi_Minh',
     })
@@ -59,7 +55,6 @@ function MyBookingsPage() {
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-
     const code = bookingCode.trim()
 
     if (!code) {
@@ -76,20 +71,13 @@ function MyBookingsPage() {
 
     try {
       const result = await getBookingByCode(code)
-
       if (result?.item) {
         setBooking(result.item)
       } else {
-        setError(
-          'Không tìm thấy đặt chỗ với mã này. Vui lòng kiểm tra lại.',
-        )
+        setError('Không tìm thấy đặt chỗ với mã này. Vui lòng kiểm tra lại.')
       }
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Không thể tra cứu đặt chỗ.'
-
+      const message = err instanceof Error ? err.message : 'Không thể tra cứu đặt chỗ.'
       setError(
         message.toLowerCase().includes('404')
           ? 'Không tìm thấy đặt chỗ với mã này. Vui lòng kiểm tra lại.'
@@ -108,157 +96,110 @@ function MyBookingsPage() {
   }
 
   return (
-    <section className="my-bookings-page">
-      <div className="my-bookings-content">
-        <h1>Tra cứu đặt chỗ</h1>
-
-        <p>
-          Nhập mã đặt chỗ để xem thông tin chuyến bay, hành khách
-          và vé điện tử.
-        </p>
-
-        <form
-          className="booking-lookup-form"
-          onSubmit={handleSearch}
-        >
-          <label htmlFor="booking-code">Mã đặt chỗ</label>
-
-          <div className="booking-lookup-controls">
-            <input
-              id="booking-code"
-              name="bookingCode"
-              type="text"
-              value={bookingCode}
-              onChange={(event) =>
-                setBookingCode(event.target.value)
-              }
-              placeholder="Nhập mã đặt chỗ của bạn"
-              autoComplete="off"
-              required
-            />
-
-            <button type="submit" disabled={loading}>
-              {loading ? 'Đang tra cứu...' : 'Tra cứu'}
-            </button>
-          </div>
-        </form>
-
-        {error && (
-          <div className="empty-bookings" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
-
-        {loading && (
-          <div className="empty-bookings">
-            <p>Đang tải thông tin đặt chỗ...</p>
-          </div>
-        )}
-
-        {booking && !loading && (
-          <div className="my-bookings-list">
-            <article className="my-booking-card">
-              <div className="my-booking-header">
-                <div>
-                  <span>Mã đặt chỗ</span>
-                  <strong>{booking.bookingCode}</strong>
-                </div>
-
-                <span
-                  className={`booking-status ${getStatusClass(
-                    booking.status,
-                  )}`}
-                >
-                  {getStatusLabel(booking.status)}
-                </span>
+    <div className="modern-lookup-container">
+      <div className="modern-lookup-hero">
+        <div className="lookup-card-glass">
+          <div className="lookup-left-info">
+            <h1>Tra cứu đặt chỗ</h1>
+            <p>Nhập mã đặt chỗ để xem thông tin chuyến bay, hành khách và vé điện tử.</p>
+            
+            <div className="lookup-features">
+              <div className="feature-item">
+                <span className="feature-icon">📅</span>
+                <span>Thông tin chuyến bay</span>
               </div>
-
-              <div className="my-booking-info">
-                <p>
-                  <strong>Hãng bay:</strong>{' '}
-                  {booking.flight.airline.name}
-                </p>
-
-                <p>
-                  <strong>Chuyến đi:</strong>{' '}
-                  {booking.flight.flightNumber}
-                </p>
-
-                <p>
-                  <strong>Hành trình đi:</strong>{' '}
-                  {booking.flight.departureCode} →{' '}
-                  {booking.flight.arrivalCode}
-                </p>
-
-                <p>
-                  <strong>Ngày đi:</strong>{' '}
-                  {formatDate(booking.flight.departureTime)}
-                </p>
-
-                {booking.returnFlight && (
-                  <>
-                    <p><strong>Chuyến về:</strong> {booking.returnFlight.flightNumber} · {booking.returnFlight.airline.name}</p>
-                    <p><strong>Hành trình về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
-                    <p><strong>Ngày về:</strong> {formatDate(booking.returnFlight.departureTime)}</p>
-                  </>
-                )}
-
-                <p>
-                  <strong>Hành khách:</strong>{' '}
-                  {booking.passengers.length} người
-                </p>
-
-                <p>
-                  <strong>Tổng tiền:</strong>{' '}
-                  {formatPrice(booking.totalAmount)}
-                </p>
+              <div className="feature-item">
+                <span className="feature-icon">👤</span>
+                <span>Thông tin hành khách</span>
               </div>
-
-              <div className="booking-lookup-actions">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(
-                      `/my-bookings/${encodeURIComponent(
-                        booking.bookingCode,
-                      )}`,
-                    )
-                  }
-                >
-                  Xem chi tiết
-                </button>
-
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                >
-                  Tra cứu mã khác
-                </button>
+              <div className="feature-item">
+                <span className="feature-icon">🎫</span>
+                <span>Vé điện tử</span>
               </div>
-            </article>
+            </div>
           </div>
-        )}
 
-        {!searched && !loading && (
-          <div className="empty-bookings">
-            <h2>Tra cứu bằng mã đặt chỗ</h2>
-
-            <p>
-              Nhập mã đặt chỗ bạn nhận được sau khi hoàn tất
-              đặt vé. Hệ thống chỉ hiển thị đặt chỗ khớp với
-              mã bạn cung cấp.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-            >
-              Tìm chuyến bay
-            </button>
+          <div className="lookup-right-form">
+            <form onSubmit={handleSearch} className="glass-form-box">
+              <label htmlFor="booking-code">Mã đặt chỗ</label>
+              <div className="input-group-modern">
+                <input
+                  id="booking-code"
+                  type="text"
+                  value={bookingCode}
+                  onChange={(event) => setBookingCode(event.target.value.toUpperCase())}
+                  placeholder="VD: MYCKG8"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-modern-lookup" disabled={loading}>
+                {loading ? 'Đang tra cứu...' : 'Tra cứu'}
+              </button>
+            </form>
           </div>
-        )}
+        </div>
       </div>
-    </section>
+
+      {error && (
+        <div className="lookup-alert error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {loading && (
+        <div className="lookup-alert">
+          <p>Đang tải thông tin đặt chỗ...</p>
+        </div>
+      )}
+
+      {booking && !loading && (
+        <div className="my-bookings-list" style={{ maxWidth: '900px', margin: '30px auto', padding: '0 20px' }}>
+          <article className="my-booking-card">
+            <div className="my-booking-header">
+              <div>
+                <span>Mã đặt chỗ</span>
+                <strong>{booking.bookingCode}</strong>
+              </div>
+              <span className={`booking-status ${getStatusClass(booking.status)}`}>
+                {getStatusLabel(booking.status)}
+              </span>
+            </div>
+
+            <div className="my-booking-info">
+              <p><strong>Hãng bay:</strong> {booking.flight.airline.name}</p>
+              <p><strong>Chuyến đi:</strong> {booking.flight.flightNumber}</p>
+              <p><strong>Hành trình đi:</strong> {booking.flight.departureCode} → {booking.flight.arrivalCode}</p>
+              <p><strong>Ngày đi:</strong> {formatDate(booking.flight.departureTime)}</p>
+
+              {booking.returnFlight && (
+                <>
+                  <p><strong>Chuyến về:</strong> {booking.returnFlight.flightNumber} · {booking.returnFlight.airline.name}</p>
+                  <p><strong>Hành trình về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                  <p><strong>Ngày về:</strong> {formatDate(booking.returnFlight.departureTime)}</p>
+                </>
+              )}
+
+              <p><strong>Hành khách:</strong> {booking.passengers.length} người</p>
+              <p><strong>Tổng tiền:</strong> {formatPrice(booking.totalAmount)}</p>
+            </div>
+
+            <div className="booking-lookup-actions">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => navigate(`/my-bookings/${encodeURIComponent(booking.bookingCode)}`)}
+              >
+                Xem chi tiết
+              </button>
+              <button type="button" className="outline-button" onClick={clearSearch}>
+                Tra cứu mã khác
+              </button>
+            </div>
+          </article>
+        </div>
+      )}
+    </div>
   )
 }
 
