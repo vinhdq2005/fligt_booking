@@ -102,7 +102,7 @@ function MyBookingsPage() {
           <div className="lookup-left-info">
             <h1>Tra cứu đặt chỗ</h1>
             <p>Nhập mã đặt chỗ để xem thông tin chuyến bay, hành khách và vé điện tử.</p>
-            
+
             <div className="lookup-features">
               <div className="feature-item">
                 <span className="feature-icon">📅</span>
