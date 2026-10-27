@@ -2,6 +2,9 @@
   command = "npm run build:client"
   publish = "client/dist"
 
+[build.environment]
+  NODE_VERSION = "24"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
