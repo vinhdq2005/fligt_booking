@@ -158,6 +158,9 @@ export type PublicFlight = {
 
 export async function getAirportCodes(): Promise<string[]> {
   const result = await api<{ codes: string[] }>("/api/airports");
+  if (!Array.isArray(result.codes)) {
+    throw new Error("Dữ liệu sân bay không hợp lệ.");
+  }
   return result.codes;
 }
 
@@ -168,6 +171,9 @@ export type PublicAirline = {
 
 export async function getPublicAirlines(): Promise<PublicAirline[]> {
   const result = await api<{ items: PublicAirline[] }>("/api/airlines");
+  if (!Array.isArray(result.items)) {
+    throw new Error("Dữ liệu hãng bay không hợp lệ.");
+  }
   return result.items;
 }
 

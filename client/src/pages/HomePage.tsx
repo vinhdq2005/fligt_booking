@@ -625,6 +625,12 @@ function HomePage() {
                 <span aria-hidden="true">🔍</span>
                 Tìm chuyến bay
               </button>
+
+              {(airportsError || airlinesError) && (
+                <p className="search-api-error" role="alert">
+                  Không kết nối được máy chủ dữ liệu. Tìm chuyến bay và đăng nhập cần backend đang hoạt động.
+                </p>
+              )}
             </div>
           </div>
         </div>

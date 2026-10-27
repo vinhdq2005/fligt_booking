@@ -534,3 +534,9 @@
     padding: 12px;
   }
 }
+.search-api-error {
+  margin: 12px 0 0;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.5;
+}
