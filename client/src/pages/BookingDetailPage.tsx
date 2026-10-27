@@ -135,12 +135,6 @@ function BookingDetailPage() {
     }
   }
 
-  // IP LAN của máy tính chạy Vite.
-  // Điện thoại cần kết nối cùng mạng Wi-Fi với máy tính.
-  function getTicketVerificationUrl(qrToken: string) {
-    return `http://192.168.1.159:5173/tickets/verify/${encodeURIComponent(qrToken)}`
-  }
-
   if (loading) {
     return (
       <section className="booking-detail-page">
@@ -271,7 +265,7 @@ function BookingDetailPage() {
           </div>
 
           <div className="booking-detail-section">
-            <h3>Vé điện tử và mã QR</h3>
+            <h3>Vé điện tử và mã QR vé</h3>
 
             {!isConfirmed ? (
               <p>
@@ -281,7 +275,6 @@ function BookingDetailPage() {
             ) : passengers.some((passenger) => passenger.tickets.length > 0) ? (
               <div className="customer-tickets">
                 {passengers.flatMap((passenger, index) => passenger.tickets.map((ticket) => {
-                  const qrToken = ticket?.qrToken
                   const ticketCode = ticket?.ticketCode
 
                   return (
@@ -309,20 +302,20 @@ function BookingDetailPage() {
                         </p>
                       )}
 
-                      {qrToken && ticketCode ? (
+                      {ticketCode ? (
                         <div className="customer-ticket-qr">
                           <QRCodeSVG
-                            value={getTicketVerificationUrl(qrToken)}
+                            value={ticketCode}
                             size={200}
                             level="M"
                             includeMargin
-                            title={`QR xác minh vé ${ticketCode}`}
+                            title={`QR mã vé ${ticketCode}`}
                           />
 
-                          <p>QR xác minh vé điện tử</p>
+                          <p>QR mã vé {ticketCode}</p>
 
                           <small>
-                            Quét mã để xem và xác minh vé.
+                            Quét mã để xem mã vé.
                           </small>
                         </div>
                       ) : (
