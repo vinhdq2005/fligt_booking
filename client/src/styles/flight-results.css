@@ -210,6 +210,41 @@
   gap: 16px;
 }
 
+.summary-trip-type {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.summary-trip-type legend {
+  margin-bottom: 9px;
+  padding: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary-trip-type label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.summary-trip-type input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
 .summary-edit-fields {
   display: grid;
   grid-template-columns: 1fr auto 1fr 1fr 1fr 1fr;

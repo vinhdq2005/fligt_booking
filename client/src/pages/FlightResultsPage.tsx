@@ -40,6 +40,7 @@ function formatDate(value: string) {
 }
 
 type SearchDraft = {
+  tripType: 'one-way' | 'round-trip'
   from: string
   to: string
   date: string
@@ -52,7 +53,7 @@ function FlightResultsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const tripType = searchParams.get('tripType') || 'one-way'
+  const tripType = searchParams.get('tripType') === 'round-trip' ? 'round-trip' : 'one-way'
   const from = (searchParams.get('from') || '').toUpperCase()
   const to = (searchParams.get('to') || '').toUpperCase()
   const date = searchParams.get('date') || ''
@@ -72,7 +73,7 @@ function FlightResultsPage() {
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<SearchDraft>({ from, to, date, returnDate, passengers: String(passengers), airline })
+  const [draft, setDraft] = useState<SearchDraft>({ tripType, from, to, date, returnDate, passengers: String(passengers), airline })
   const [airportCodes, setAirportCodes] = useState<string[]>([])
   const [airlines, setAirlines] = useState<PublicAirline[]>([])
   const [optionsLoading, setOptionsLoading] = useState(false)
@@ -89,10 +90,10 @@ function FlightResultsPage() {
   useEffect(() => {
     setFlightStage('outbound')
     setSelectedOutbound(null)
-  }, [from, to, date, returnDate, airline])
+  }, [tripType, from, to, date, returnDate, airline, passengers])
 
   function openEditor() {
-    setDraft({ from, to, date, returnDate, passengers: String(passengers), airline })
+    setDraft({ tripType, from, to, date, returnDate, passengers: String(passengers), airline })
     setEditError('')
     setEditing(true)
     setOptionsLoading(true)
@@ -141,7 +142,7 @@ function FlightResultsPage() {
       setEditError('Ngày đi không hợp lệ.')
       return
     }
-    if (tripType === 'round-trip') {
+    if (draft.tripType === 'round-trip') {
       if (!draft.returnDate || !/^\d{4}-\d{2}-\d{2}$/.test(draft.returnDate) || Number.isNaN(parsedReturnDate?.getTime())) {
         setEditError('Vui lòng nhập ngày về hợp lệ.')
         return
@@ -157,13 +158,13 @@ function FlightResultsPage() {
     }
 
     const nextSearch = new URLSearchParams({
-      tripType,
+      tripType: draft.tripType,
       from: nextFrom,
       to: nextTo,
       date: draft.date,
       passengers: String(nextPassengers),
     })
-    if (tripType === 'round-trip' && draft.returnDate) {
+    if (draft.tripType === 'round-trip' && draft.returnDate) {
       nextSearch.set('returnDate', draft.returnDate)
     }
     if (nextAirline) nextSearch.set('airline', nextAirline)
@@ -307,6 +308,17 @@ function FlightResultsPage() {
 
           {editing ? (
             <form className="summary-edit-form" onSubmit={(event) => { event.preventDefault(); applySearch() }}>
+              <fieldset className="summary-trip-type">
+                <legend>Loại chuyến</legend>
+                <label>
+                  <input type="radio" name="results-trip-type" value="one-way" checked={draft.tripType === 'one-way'} onChange={() => updateDraft('tripType', 'one-way')} />
+                  Một chiều
+                </label>
+                <label>
+                  <input type="radio" name="results-trip-type" value="round-trip" checked={draft.tripType === 'round-trip'} onChange={() => updateDraft('tripType', 'round-trip')} />
+                  Khứ hồi
+                </label>
+              </fieldset>
               <div className="summary-edit-fields">
                 <label>
                   <span>Điểm đi</span>
@@ -341,11 +353,10 @@ function FlightResultsPage() {
                   <input type="date" value={draft.date} onChange={(event) => updateDraft('date', event.target.value)} />
                 </label>
 
-                {/* Thêm ô Ngày về khi ở chế độ Khứ hồi */}
-                {tripType === 'round-trip' && (
+                {draft.tripType === 'round-trip' && (
                   <label>
                     <span>Ngày về</span>
-                    <input type="date" value={draft.returnDate} onChange={(event) => updateDraft('returnDate', event.target.value)} />
+                    <input type="date" min={draft.date || undefined} value={draft.returnDate} onChange={(event) => updateDraft('returnDate', event.target.value)} />
                   </label>
                 )}
 
