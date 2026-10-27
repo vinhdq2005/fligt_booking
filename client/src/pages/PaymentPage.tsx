@@ -499,12 +499,6 @@ function PaymentPage() {
       <div className="payment-content">
         <h1>Thanh toán đặt vé</h1>
 
-        <p className="demo-notice">
-          Đây là chức năng thanh toán mô phỏng phục vụ bài tập lớn.
-          QR không thực hiện chuyển tiền thật. Không nhập thông tin
-          thẻ ngân hàng thật.
-        </p>
-
         <div className="payment-card">
           <section className="payment-section">
             <h2>Thông tin chuyến bay</h2>
@@ -607,7 +601,7 @@ function PaymentPage() {
 
               <p className="qr-payment-description">
                 Quét bằng ứng dụng ngân hàng để kiểm tra thông tin chuyển khoản.
-                Website vẫn dùng nút mô phỏng để xác nhận kết quả.
+                Kết quả thanh toán thử được xác nhận bằng các nút bên dưới.
               </p>
 
               <div className="qr-payment-panel">

@@ -125,8 +125,7 @@ function PaymentResultPage() {
                 Mã đặt chỗ: <strong>{code || 'Chưa có'}</strong>
               </p>
               <p>
-                Nếu thanh toán đã hoàn tất, hãy thử tải lại trang hoặc kiểm tra
-                kết nối backend.
+                Nếu thanh toán đã hoàn tất, hãy tải lại trang hoặc thử lại sau.
               </p>
               <div className="result-actions">
                 <button type="button" onClick={() => window.location.reload()}>
@@ -145,7 +144,7 @@ function PaymentResultPage() {
               <div className="result-icon success">✓</div>
 
               <h1>Thanh toán thành công</h1>
-              <p>Thông tin đặt chỗ được lấy từ backend.</p>
+              <p>Bạn có thể xem thông tin đặt chỗ và vé bên dưới.</p>
 
               <div className="booking-code">
                 <span>Mã đặt chỗ</span>
@@ -273,7 +272,7 @@ function PaymentResultPage() {
             <div className="result-icon failure">!</div>
 
             <h1>Thanh toán thất bại</h1>
-            <p>Giao dịch mô phỏng chưa hoàn tất.</p>
+            <p>Thanh toán thử chưa hoàn tất.</p>
 
             <div className="result-info">
               <p>

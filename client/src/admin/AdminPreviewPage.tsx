@@ -61,7 +61,7 @@ function DetailDrawer({ title, row, plan, modalOpen, onAction, onClose }: { titl
       <div className="panel-body admin-preview-details">
         {row.sections.map((section) => <section key={section.title} className="admin-detail-section"><h3>{section.title}</h3><dl>{section.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>)}
         {plan && <section className="admin-intervention-section"><h3>Can thiệp quản trị</h3><button className="admin-intervention-button" disabled={Boolean(plan.disabledReason)} onClick={onAction}>{plan.label}</button>{plan.disabledReason && <p className="admin-disabled-reason">{plan.disabledReason}</p>}</section>}
-        <p>Mô phỏng giao diện: thay đổi chỉ có hiệu lực trong phiên này, chưa ghi vào database.</p>
+        <p>Thay đổi ở trang xem trước chỉ có hiệu lực đến khi tải lại.</p>
       </div>
     </aside>
   </div>

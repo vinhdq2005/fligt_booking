@@ -322,9 +322,7 @@ function BookingDetailPage() {
                           <p>QR xác minh vé điện tử</p>
 
                           <small>
-                            Dùng camera điện thoại quét mã để mở trang
-                            xác minh vé. Điện thoại cần kết nối cùng
-                            Wi-Fi với máy tính đang chạy website.
+                            Quét mã để xem và xác minh vé.
                           </small>
                         </div>
                       ) : (
@@ -339,9 +337,7 @@ function BookingDetailPage() {
               </div>
             ) : (
               <p>
-                Đặt chỗ đã xác nhận nhưng dữ liệu QR chưa có trong
-                thông tin vé trả về từ máy chủ. Cần kiểm tra API chi
-                tiết đặt chỗ để bổ sung qrToken và ticketCode.
+                Chưa hiển thị được mã QR vé. Vui lòng tải lại trang hoặc thử lại sau.
               </p>
             )}
           </div>
@@ -409,7 +405,7 @@ function BookingDetailPage() {
           )}
 
           <p className="booking-detail-note">
-            Thông tin đặt chỗ và vé được tải từ hệ thống backend.
+            Giữ mã đặt chỗ để tra cứu lại vé khi cần.
           </p>
         </div>
       </div>

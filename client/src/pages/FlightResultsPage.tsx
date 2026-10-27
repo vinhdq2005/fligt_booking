@@ -233,9 +233,6 @@ function FlightResultsPage() {
       <div className="flight-results-content">
         <div className="results-header-section">
           <h1>Kết quả tìm kiếm chuyến bay</h1>
-          <p className="demo-notice">
-            Hệ thống cung cấp thông tin chuyến bay trực tuyến từ cơ sở dữ liệu.
-          </p>
         </div>
 
         {/* Thanh bước khứ hồi */}
@@ -245,14 +242,14 @@ function FlightResultsPage() {
               flex: 1, padding: '12px 16px', borderRadius: '12px', background: flightStage === 'outbound' ? '#2563eb' : '#e2e8f0',
               color: flightStage === 'outbound' ? '#fff' : '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-              <span>✈ Bước 1: Chọn chuyến đi ({from} → {to})</span>
+              <span>✈ Bước 1: Chọn chiều đi ({from} → {to})</span>
               <span>{formatDate(date)}</span>
             </div>
             <div style={{
               flex: 1, padding: '12px 16px', borderRadius: '12px', background: flightStage === 'inbound' ? '#2563eb' : '#e2e8f0',
               color: flightStage === 'inbound' ? '#fff' : '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-              <span>🛬 Bước 2: Chọn chuyến về ({to} → {from})</span>
+              <span>🛬 Bước 2: Chọn chiều về ({to} → {from})</span>
               <span>{formatDate(returnDate)}</span>
             </div>
           </div>
@@ -282,7 +279,7 @@ function FlightResultsPage() {
                 setSelectedOutbound(null)
               }}
             >
-              <span>←</span> Quay lại chọn lại chuyến đi
+              <span>←</span> Chọn lại chiều đi
               <span style={{ color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
                 Đã chọn: {selectedOutbound?.flightNumber}
               </span>
@@ -294,7 +291,7 @@ function FlightResultsPage() {
           <div className="summary-heading">
             <div>
               <span className="summary-eyebrow">
-                {flightStage === 'outbound' ? 'CHIỀU ĐI (OUTBOUND)' : 'CHIỀU VỀ (INBOUND)'}
+                {flightStage === 'outbound' ? 'CHIỀU ĐI' : 'CHIỀU VỀ'}
               </span>
               <h2>Thông tin tìm kiếm</h2>
             </div>
@@ -514,7 +511,7 @@ function FlightResultsPage() {
                       }}
                     >
                       {enoughSeats
-                        ? (tripType === 'round-trip' && flightStage === 'outbound' ? 'Chọn chuyến đi này' : 'Chọn chuyến bay')
+                        ? (tripType === 'round-trip' ? (flightStage === 'outbound' ? 'Chọn chiều đi' : 'Chọn chiều về') : 'Chọn chuyến bay')
                         : 'Hết chỗ'}
                     </button>
                   </div>

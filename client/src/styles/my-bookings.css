@@ -176,6 +176,22 @@
 
 /* Buttons */
 
+.booking-lookup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.my-booking-card .booking-lookup-actions .outline-button {
+  color: #2563eb;
+  background: #fff;
+}
+
+.my-booking-card .booking-lookup-actions .outline-button:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
 .my-booking-card button,
 .empty-bookings button {
   display: inline-flex;

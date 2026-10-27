@@ -92,8 +92,8 @@ function FlightDetails({ flight, onClose }: { flight: Flight; onClose: () => voi
           </div>)}
         </div>
 
-        <div className="source-note"><Icon name="info" size={18} /><span>Dữ liệu tham khảo từ SerpApi, cập nhật lúc {dateTimeFormatter.format(new Date(flight.fetchedAt))}. Đây chưa phải chuyến bay có tồn chỗ để đặt trên hệ thống.</span></div>
-        <div className="detail-id">Mã lựa chọn #{flight.id} · Mã lượt tìm #{flight.searchId}</div>
+        <div className="source-note"><Icon name="info" size={18} /><span>Cập nhật lúc {dateTimeFormatter.format(new Date(flight.fetchedAt))}. Chuyến bay tham khảo chưa thể đặt vé.</span></div>
+        <div className="detail-id">Mã lựa chọn #{flight.id}</div>
       </div>
     </aside>
   </div>;
@@ -141,8 +141,8 @@ function ImportDialog({ initial, onClose, onImported }: {
     try {
       const result = await importFlights(form);
       setSuccess(result.status === "already_fresh"
-        ? `Dữ liệu đã còn hạn (lượt tìm #${result.searchId}); không gọi SerpApi.`
-        : `Đã nhập ${result.offerCount} lựa chọn chuyến bay (lượt tìm #${result.searchId}).`);
+        ? 'Dữ liệu tham khảo vẫn còn hiệu lực.'
+        : `Đã nhập ${result.offerCount} lựa chọn chuyến bay.`);
       setPreview({ status: "fresh", latestId: result.searchId });
       onImported();
     } catch (cause) {
@@ -159,7 +159,7 @@ function ImportDialog({ initial, onClose, onImported }: {
         <button className="icon-button" aria-label="Đóng" onClick={onClose}><Icon name="close" /></button>
       </div>
       <h2 id="import-title">Nhập dữ liệu chuyến bay</h2>
-      <p className="muted modal-intro">Kiểm tra dữ liệu đã lưu trước. SerpApi chỉ được gọi khi dữ liệu thiếu hoặc hết hạn và bạn xác nhận.</p>
+      <p className="muted modal-intro">Dữ liệu còn hiệu lực sẽ được dùng lại. Bạn cần xác nhận trước khi cập nhật dữ liệu mới.</p>
       <div className="import-form">
         <label>Mã sân bay đi<input value={form.departureCode} onChange={(event) => change("departureCode", event.target.value)} placeholder="HAN" maxLength={3} /></label>
         <label>Mã sân bay đến<input value={form.arrivalCode} onChange={(event) => change("arrivalCode", event.target.value)} placeholder="SGN" maxLength={3} /></label>
@@ -167,11 +167,11 @@ function ImportDialog({ initial, onClose, onImported }: {
       </div>
       {error && <div className="notice notice-error" role="alert">{error}</div>}
       {success && <div className="notice notice-success" role="status">{success}</div>}
-      {preview?.status === "fresh" && !success && <div className="notice notice-success">Đã có dữ liệu còn hạn (lượt tìm #{preview.latestId}). Không cần gọi SerpApi.</div>}
+      {preview?.status === "fresh" && !success && <div className="notice notice-success">Đã có dữ liệu tham khảo còn hiệu lực.</div>}
       {(preview?.status === "missing" || preview?.status === "expired") && <div className="confirm-box">
         <div><Icon name="info" size={20} /><strong>{preview.status === "missing" ? "Chưa có dữ liệu" : "Dữ liệu đã hết hạn"}</strong></div>
-        <p>Gọi SerpApi cho {form.departureCode} → {form.arrivalCode} ngày {dateFormatter.format(new Date(`${form.date}T00:00:00Z`))} và lưu kết quả mới vào database?</p>
-        <button className="primary-button" disabled={busy !== null} onClick={confirmImport}>{busy === "importing" ? "Đang nhập…" : "Xác nhận gọi SerpApi"}</button>
+        <p>Cập nhật dữ liệu tham khảo cho {form.departureCode} → {form.arrivalCode} ngày {dateFormatter.format(new Date(`${form.date}T00:00:00Z`))}?</p>
+        <button className="primary-button" disabled={busy !== null} onClick={confirmImport}>{busy === "importing" ? "Đang nhập…" : "Xác nhận cập nhật"}</button>
       </div>}
       <div className="modal-actions">
         <button className="text-button" onClick={onClose}>{success ? "Đóng" : "Hủy"}</button>
@@ -221,12 +221,12 @@ export default function AdminReferenceFlightsPage() {
 
   return <>
     <div className="content">
-          <div className="page-heading"><div><div className="eyebrow">REFERENCE DATA</div><h1>Dữ liệu tham khảo</h1><p>Các lựa chọn chuyến bay đã lưu từ SerpApi, không có tồn chỗ nội bộ.</p></div><button className="primary-button add-button" onClick={() => setShowImport(true)}><Icon name="plus" size={18} />Nhập dữ liệu mới</button></div>
+          <div className="page-heading"><div><div className="eyebrow">DỮ LIỆU THAM KHẢO</div><h1>Dữ liệu tham khảo</h1><p>Các chuyến bay để tham khảo lịch trình, chưa thể đặt vé.</p></div><button className="primary-button add-button" onClick={() => setShowImport(true)}><Icon name="plus" size={18} />Nhập dữ liệu mới</button></div>
 
           <div className="summary-grid">
             <div className="summary-card"><span>Tổng lựa chọn</span><strong>{result?.summary.total ?? "—"}</strong><small>Trong dữ liệu đã lưu</small><div className="summary-card-icon blue"><Icon name="plane" size={20} /></div></div>
             <div className="summary-card"><span>Dữ liệu còn hạn</span><strong>{result?.summary.fresh ?? "—"}</strong><small>Có thể hiển thị tham khảo</small><div className="summary-card-icon green"><Icon name="clock" size={20} /></div></div>
-            <div className="summary-card"><span>Dữ liệu hết hạn</span><strong>{result?.summary.expired ?? "—"}</strong><small>Có thể nhập lại từ SerpApi</small><div className="summary-card-icon amber"><Icon name="refresh" size={20} /></div></div>
+            <div className="summary-card"><span>Dữ liệu hết hạn</span><strong>{result?.summary.expired ?? "—"}</strong><small>Có thể cập nhật lại</small><div className="summary-card-icon amber"><Icon name="refresh" size={20} /></div></div>
           </div>
 
           <section className="list-card" aria-label="Danh sách chuyến bay">

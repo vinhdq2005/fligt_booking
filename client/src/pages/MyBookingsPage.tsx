@@ -81,7 +81,7 @@ function MyBookingsPage() {
       setError(
         message.toLowerCase().includes('404')
           ? 'Không tìm thấy đặt chỗ với mã này. Vui lòng kiểm tra lại.'
-          : `Không thể tra cứu đặt chỗ. Hãy kiểm tra kết nối backend rồi thử lại. ${message}`,
+          : 'Không thể tra cứu đặt chỗ lúc này. Vui lòng thử lại sau.',
       )
     } finally {
       setLoading(false)
@@ -168,14 +168,14 @@ function MyBookingsPage() {
 
             <div className="my-booking-info">
               <p><strong>Hãng bay:</strong> {booking.flight.airline.name}</p>
-              <p><strong>Chuyến đi:</strong> {booking.flight.flightNumber}</p>
-              <p><strong>Hành trình đi:</strong> {booking.flight.departureCode} → {booking.flight.arrivalCode}</p>
+              <p><strong>Chiều đi:</strong> {booking.flight.flightNumber}</p>
+              <p><strong>Hành trình chiều đi:</strong> {booking.flight.departureCode} → {booking.flight.arrivalCode}</p>
               <p><strong>Ngày đi:</strong> {formatDate(booking.flight.departureTime)}</p>
 
               {booking.returnFlight && (
                 <>
-                  <p><strong>Chuyến về:</strong> {booking.returnFlight.flightNumber} · {booking.returnFlight.airline.name}</p>
-                  <p><strong>Hành trình về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
+                  <p><strong>Chiều về:</strong> {booking.returnFlight.flightNumber} · {booking.returnFlight.airline.name}</p>
+                  <p><strong>Hành trình chiều về:</strong> {booking.returnFlight.departureCode} → {booking.returnFlight.arrivalCode}</p>
                   <p><strong>Ngày về:</strong> {formatDate(booking.returnFlight.departureTime)}</p>
                 </>
               )}
