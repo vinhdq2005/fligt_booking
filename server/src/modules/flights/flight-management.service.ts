@@ -1,5 +1,6 @@
 
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 
 export type CreateFlightInput = {
   flightNumber: string;
@@ -39,7 +40,7 @@ export async function createFlight(input: CreateFlightInput) {
   }
 
   return prisma.$transaction(async tx => {
-    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.airlineId} AND status = 'ACTIVE' FOR UPDATE`;
+    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Airline")} WHERE ${ident("id")} = ${input.airlineId} AND ${ident("status")} = 'ACTIVE' FOR UPDATE`;
     if (!rows.length) throw new Error("Hãng bay đang bị khóa hoặc không tồn tại.");
     return tx.flight.create({
       data: {

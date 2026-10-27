@@ -1,6 +1,7 @@
 
 import { randomInt } from "node:crypto";
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 import { calculateCurrentPrice } from "../flights/pricing.service";
 
 const BOOKING_CODE_CHARACTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -110,7 +111,7 @@ export async function createBooking(input: CreateBookingInput) {
     const flightIds = [input.flightId, ...(input.returnFlightId ? [input.returnFlightId] : [])];
     for (const flightId of [...flightIds].sort((a, b) => a - b)) {
       const rows = await tx.$queryRaw<{ id: number }[]>`
-        SELECT id FROM Flight WHERE id = ${flightId} FOR UPDATE
+        SELECT ${ident("id")} FROM ${ident("Flight")} WHERE ${ident("id")} = ${flightId} FOR UPDATE
       `;
       if (!rows.length) throw new Error("Không tìm thấy chuyến bay.");
     }

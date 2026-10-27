@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 
 export class TicketServiceError extends Error {
   constructor(
@@ -136,9 +137,9 @@ export async function checkInTicketQR(
 
   return prisma.$transaction(async (tx) => {
     const ticketRows = await tx.$queryRaw<{ id: number }[]>`
-      SELECT \`id\`
-      FROM \`Ticket\`
-      WHERE \`qrToken\` = ${token}
+      SELECT ${ident("id")}
+      FROM ${ident("Ticket")}
+      WHERE ${ident("qrToken")} = ${token}
       FOR UPDATE
     `;
 

@@ -1,5 +1,17 @@
 # Backend Flight Booking
 
+## MySQL local and Neon PostgreSQL
+
+Local development uses MySQL by default: keep `DATABASE_URL=mysql://...` in `server/.env` and run `npm.cmd run dev` from `server`. To run the same backend against Neon in a temporary PowerShell session, set `$env:DB_PROVIDER='postgresql'` and keep `NEON_DATABASE_URL=postgresql://...` in `server/.env`. Remove that session variable to use MySQL again. Never commit `.env` or `.local-backups`.
+
+The two Prisma schemas and migration histories are separate: `prisma/schema.prisma` with `prisma7.config.ts` for MySQL, and `prisma/postgres/schema.prisma` with `prisma-postgres.config.ts` for Neon. When application models change, update both schemas and generate both clients with `npm.cmd run prisma:generate:mysql` and `npm.cmd run prisma:generate:postgres`. Apply future PostgreSQL migrations with `npm.cmd run prisma:migrate:postgres`.
+
+The initial MySQL data copy is complete. `npm.cmd run migrate:mysql-to-neon` is a one-time tool that refuses any populated Neon table; it must not be used to sync later edits. Check either database with `npm.cmd run check:database`.
+
+Netlify serves the client and runs the Express API in `netlify/functions/api.mts`. The `/api/*` rewrite in `netlify.toml` must remain above the SPA fallback. In the Netlify site's environment variables, set `DB_PROVIDER=postgresql` and `NEON_DATABASE_URL` to Neon's **pooled** connection string for the production deploy context. Do not put either connection string in `netlify.toml` or client variables. `SERPAPI_API_KEY` is only needed for the optional flight import feature. The site base directory is the repository root; build command is `npm run build:client`, publish directory is `client/dist`.
+
+After deployment, open `/api/airports` on the Netlify domain. It should return JSON with airport codes. A new booking on the public site writes to Neon; MySQL local and Neon do not synchronize after the initial copy.
+
 Backend Express/Prisma dùng MySQL. Từ thư mục `server`, đặt `DATABASE_URL` trong `.env`, chạy `..\node_modules\.bin\prisma.cmd migrate deploy --config prisma7.config.ts` rồi `..\node_modules\.bin\prisma.cmd generate --config prisma7.config.ts`. Chạy server bằng `npm.cmd run dev` (mặc định `127.0.0.1:3001`). `SERPAPI_API_KEY` chỉ cần cho chức năng nhập dữ liệu tham khảo.
 
 ## Tài khoản và phiên đăng nhập

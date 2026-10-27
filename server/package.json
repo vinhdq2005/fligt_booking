@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "prisma:generate:mysql": "prisma generate --config prisma7.config.ts",
+    "prisma:generate:postgres": "prisma generate --config prisma-postgres.config.ts",
+    "prisma:migrate:postgres": "prisma migrate deploy --config prisma-postgres.config.ts",
+    "check:database": "tsx scripts/check-database.ts",
+    "migrate:mysql-to-neon": "tsx scripts/migrate-mysql-to-neon.ts",
     "test": "node --import tsx --test src/app.test.ts src/modules/admin/admin-read.test.ts",
     "test:admin-interventions": "node --import tsx --test src/modules/admin/admin-intervention.integration.test.ts",
     "test:admin-users": "node --import tsx --test src/modules/admin/admin-user.integration.test.ts",
@@ -22,14 +27,18 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.10.0",
+    "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.23.1",
+    "serverless-http": "^4.0.0"
   }
 }

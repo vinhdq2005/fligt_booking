@@ -153,7 +153,7 @@ export function createApp(
     const value = req.headers.cookie?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
     return value && /^[a-f0-9]{64}$/.test(value) ? value : null;
   };
-  const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/", maxAge: SESSION_AGE_MS };
+  const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production" || Boolean(process.env.URL), path: "/", maxAge: SESSION_AGE_MS };
   const currentUser = async (req: express.Request): Promise<AuthUser | null> => {
     const token = tokenFromCookie(req);
     if (!token) return null;

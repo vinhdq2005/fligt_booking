@@ -1,22 +1,41 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient as MySqlClient } from "../generated/prisma/client";
+import { PrismaClient as PostgresClient } from "../generated/prisma-postgres/client";
 
-const connectionString = process.env.DATABASE_URL;
+export const databaseProvider = process.env.DB_PROVIDER === "postgresql" ? "postgresql" : "mysql";
+const connectionString = databaseProvider === "postgresql"
+  ? process.env.NEON_DATABASE_URL ?? process.env.DATABASE_URL
+  : process.env.DATABASE_URL;
 
 if (!connectionString) {
-  throw new Error("Thiếu DATABASE_URL trong server/.env");
+  throw new Error(`Missing database URL for ${databaseProvider}`);
 }
 
-const url = new URL(connectionString);
+function createMySqlClient(urlString: string) {
+  const url = new URL(urlString);
+  if (url.protocol !== "mysql:") throw new Error("DATABASE_URL must be a MySQL URL in local mode");
+  const adapter = new PrismaMariaDb({
+    host: url.hostname,
+    port: Number(url.port || 3306),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: decodeURIComponent(url.pathname.slice(1)),
+    connectionLimit: 5,
+  });
+  return new MySqlClient({ adapter });
+}
 
-const adapter = new PrismaMariaDb({
-  host: url.hostname,
-  port: Number(url.port || 3306),
-  user: decodeURIComponent(url.username),
-  password: decodeURIComponent(url.password),
-  database: decodeURIComponent(url.pathname.slice(1)),
-  connectionLimit: 5,
-});
+function createPostgresClient(urlString: string) {
+  const url = new URL(urlString);
+  if (url.protocol !== "postgresql:" && url.protocol !== "postgres:") {
+    throw new Error("Neon URL must be a PostgreSQL URL");
+  }
+  return new PostgresClient({ adapter: new PrismaPg({ connectionString: urlString, max: 2, idleTimeoutMillis: 10000 }) });
+}
 
-export const prisma = new PrismaClient({ adapter });
+// Both schemas have the same application models. Keep one model type for service code.
+export const prisma: MySqlClient = databaseProvider === "postgresql"
+  ? createPostgresClient(connectionString) as unknown as MySqlClient
+  : createMySqlClient(connectionString);

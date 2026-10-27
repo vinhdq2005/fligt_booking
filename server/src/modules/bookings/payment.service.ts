@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 
 type PayBookingResult = {
   message: string;
@@ -36,9 +37,9 @@ export async function payBooking(
   const result = await prisma.$transaction(async (tx) => {
     // Khóa booking để hạn chế hai yêu cầu thanh toán đồng thời.
     const locked = await tx.$queryRaw<{ id: number }[]>`
-      SELECT id
-      FROM Booking
-      WHERE bookingCode = ${code}
+      SELECT ${ident("id")}
+      FROM ${ident("Booking")}
+      WHERE ${ident("bookingCode")} = ${code}
       FOR UPDATE
     `;
 

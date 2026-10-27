@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 import { hashPassword } from "../auth/auth.service";
 
 export type StaffRole = "AIRLINE_FLIGHT_MANAGER" | "AIRLINE_SALES_MANAGER";
@@ -26,7 +27,7 @@ export async function createAirlineStaff(input: CreateStaffInput) {
   try {
     return await prisma.$transaction(async tx => {
       // Serialize creation with airline locking so new staff cannot be activated for a locked airline.
-      const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.airlineId} FOR UPDATE`;
+      const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Airline")} WHERE ${ident("id")} = ${input.airlineId} FOR UPDATE`;
       if (!rows.length) throw new CreateStaffError(404, "Không tìm thấy hãng bay.");
       const airline = await tx.airline.findUniqueOrThrow({ where: { id: input.airlineId }, select: { status: true } });
       if (airline.status !== "ACTIVE") throw new CreateStaffError(409, "Hãng bay đang bị khóa.");

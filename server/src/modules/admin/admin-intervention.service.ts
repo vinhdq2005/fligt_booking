@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 import type { Prisma } from "../../generated/prisma/client";
 
 export const interventionActions = [
@@ -49,7 +50,7 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
       let after: Record<string, unknown>;
       const now = new Date();
       if (input.action === "LOCK_AIRLINE" || input.action === "UNLOCK_AIRLINE") {
-        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.entityId} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Airline")} WHERE ${ident("id")} = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy hãng bay.");
         const airline = await tx.airline.findUniqueOrThrow({ where: { id: input.entityId }, select: { status: true } });
         const status = input.action === "LOCK_AIRLINE" ? "LOCKED" : "ACTIVE";
@@ -59,8 +60,8 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         if (status === "LOCKED") await tx.authSession.deleteMany({ where: { user: { airlineId: input.entityId } } });
       } else if (input.action === "LOCK_USER" || input.action === "UNLOCK_USER") {
         // Lock all active admin rows in one order so two admins cannot lock each other as the last admin.
-        await tx.$queryRaw<{ id: number }[]>`SELECT id FROM User WHERE role = 'ADMIN' AND status = 'ACTIVE' ORDER BY id FOR UPDATE`;
-        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM User WHERE id = ${input.entityId} FOR UPDATE`;
+        await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("User")} WHERE ${ident("role")} = 'ADMIN' AND ${ident("status")} = 'ACTIVE' ORDER BY ${ident("id")} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("User")} WHERE ${ident("id")} = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy tài khoản.");
         const user = await tx.user.findUniqueOrThrow({ where: { id: input.entityId }, select: { status: true, role: true, airlineId: true } });
         const status = input.action === "LOCK_USER" ? "LOCKED" : "ACTIVE";
@@ -76,7 +77,7 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         await tx.user.update({ where: { id: input.entityId }, data: { status } });
         if (status === "LOCKED") await tx.authSession.deleteMany({ where: { userId: input.entityId } });
       } else if (input.action === "HIDE_FLIGHT" || input.action === "REOPEN_FLIGHT") {
-        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${input.entityId} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Flight")} WHERE ${ident("id")} = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy chuyến bay.");
         const flight = await tx.flight.findUniqueOrThrow({ where: { id: input.entityId }, include: { airline: { select: { status: true } } } });
         const saleStatus = input.action === "HIDE_FLIGHT" ? "HIDDEN" : "ON_SALE";
@@ -92,10 +93,10 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         await tx.flight.update({ where: { id: input.entityId }, data: { saleStatus } });
       } else if (input.action === "CANCEL_BOOKING_EXCEPTION") {
         // Payment serializes on Booking; lock it before reading state to avoid a stale snapshot.
-        const rows = await tx.$queryRaw<{ flightId: number; returnFlightId: number | null }[]>`SELECT flightId, returnFlightId FROM Booking WHERE id = ${input.entityId} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ flightId: number; returnFlightId: number | null }[]>`SELECT ${ident("flightId")}, ${ident("returnFlightId")} FROM ${ident("Booking")} WHERE ${ident("id")} = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy booking.");
         for (const flightId of [rows[0].flightId, rows[0].returnFlightId].filter((id): id is number => id !== null).sort((a, b) => a - b)) {
-          await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${flightId} FOR UPDATE`;
+          await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Flight")} WHERE ${ident("id")} = ${flightId} FOR UPDATE`;
         }
         const booking = await tx.booking.findUniqueOrThrow({ where: { id: input.entityId }, include: { flight: true, returnFlight: true, passengers: { include: { tickets: true } }, payments: true } });
         if (booking.status === "CANCELLED") return { status: "already_applied" };
@@ -111,7 +112,7 @@ export async function runAdminIntervention(input: InterventionInput): Promise<In
         if (ticketIds.length) await tx.ticket.updateMany({ where: { id: { in: ticketIds } }, data: { status: "CANCELLED" } });
         if (paidIds.length) await tx.payment.updateMany({ where: { id: { in: paidIds } }, data: { reviewStatus: "NEEDS_REVIEW" } });
       } else {
-        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Payment WHERE id = ${input.entityId} FOR UPDATE`;
+        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Payment")} WHERE ${ident("id")} = ${input.entityId} FOR UPDATE`;
         if (!rows.length) throw new InterventionError(404, "Không tìm thấy thanh toán.");
         const payment = await tx.payment.findUniqueOrThrow({ where: { id: input.entityId }, select: { reviewStatus: true, status: true, amount: true } });
         if (payment.reviewStatus === "NEEDS_REVIEW") return { status: "already_applied" };

@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { sqlIdentifier as ident } from "../../lib/sql-identifier";
 import type { Prisma } from "../../generated/prisma/client";
 import { calculateCurrentPrice } from "../flights/pricing.service";
 
@@ -102,9 +103,9 @@ export async function setAirlineSalesSettings(input: { airlineId: number; flight
       !Number.isSafeInteger(input.basePrice) || input.basePrice < 1000 || input.basePrice > 1_000_000_000)
     throw new AirlineWorkspaceError(400, "Số ghế phải từ 1–10.000 và giá gốc từ 1.000–1.000.000.000 VND.");
   return prisma.$transaction(async tx => {
-    const airline = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.airlineId} AND status = 'ACTIVE' FOR UPDATE`;
+    const airline = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Airline")} WHERE ${ident("id")} = ${input.airlineId} AND ${ident("status")} = 'ACTIVE' FOR UPDATE`;
     if (!airline.length) throw new AirlineWorkspaceError(409, "Hãng bay đang bị khóa.");
-    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${input.flightId} AND airlineId = ${input.airlineId} FOR UPDATE`;
+    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Flight")} WHERE ${ident("id")} = ${input.flightId} AND ${ident("airlineId")} = ${input.airlineId} FOR UPDATE`;
     if (!rows.length) throw new AirlineWorkspaceError(404, "Không tìm thấy chuyến bay của hãng.");
     const flight = await tx.flight.findUniqueOrThrow({ where: { id: input.flightId } });
     if (flight.status !== "SCHEDULED" || flight.departureTime <= new Date()) throw new AirlineWorkspaceError(409, "Chuyến không còn hợp lệ để đặt số ghế và giá.");
@@ -124,9 +125,9 @@ export async function setAirlineSalesSettings(input: { airlineId: number; flight
 
 export async function setAirlineSaleStatus(input: { airlineId: number; flightId: number; actorId: number; saleStatus: "ON_SALE" | "HIDDEN" }) {
   return prisma.$transaction(async tx => {
-    const airline = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Airline WHERE id = ${input.airlineId} AND status = 'ACTIVE' FOR UPDATE`;
+    const airline = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Airline")} WHERE ${ident("id")} = ${input.airlineId} AND ${ident("status")} = 'ACTIVE' FOR UPDATE`;
     if (!airline.length) throw new AirlineWorkspaceError(409, "Hãng bay đang bị khóa.");
-    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM Flight WHERE id = ${input.flightId} AND airlineId = ${input.airlineId} FOR UPDATE`;
+    const rows = await tx.$queryRaw<{ id: number }[]>`SELECT ${ident("id")} FROM ${ident("Flight")} WHERE ${ident("id")} = ${input.flightId} AND ${ident("airlineId")} = ${input.airlineId} FOR UPDATE`;
     if (!rows.length) throw new AirlineWorkspaceError(404, "Không tìm thấy chuyến bay của hãng.");
     const flight = await tx.flight.findUniqueOrThrow({ where: { id: input.flightId } });
     if (flight.saleStatus === input.saleStatus) return { status: "already_applied" as const };
