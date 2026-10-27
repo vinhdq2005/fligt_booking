@@ -6,6 +6,7 @@ import {
   type PublicAirline,
 } from '../api'
 import { mockAirports } from '../mocks/mockAirports'
+import PriceDatePicker from '../components/PriceDatePicker'
 import '../styles/home.css'
 
 type AirportPickerProps = {
@@ -542,45 +543,16 @@ function HomePage() {
                   error={airportsError}
                 />
 
-                <div className="search-field">
-                  <span className="field-icon" aria-hidden="true">
-                    📅
-                  </span>
-
-                  <div>
-                    <label htmlFor="date">Ngày đi</label>
-                    <input
-                      id="date"
-                      type="date"
-                      min={new Date().toLocaleDateString('en-CA')}
-                      value={date}
-                      onChange={(event) =>
-                        setDate(event.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                {tripType === 'round-trip' && (
-                  <div className="search-field">
-                    <span className="field-icon" aria-hidden="true">
-                      📅
-                    </span>
-
-                    <div>
-                      <label htmlFor="returnDate">Ngày về</label>
-                      <input
-                        id="returnDate"
-                        type="date"
-                        min={date || new Date().toLocaleDateString('en-CA')}
-                        value={returnDate}
-                        onChange={(event) =>
-                          setReturnDate(event.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
+                <PriceDatePicker
+                  tripType={tripType}
+                  from={from}
+                  to={to}
+                  date={date}
+                  returnDate={returnDate}
+                  passengers={passengers}
+                  airline={airline}
+                  onChange={(nextDate, nextReturnDate) => { setDate(nextDate); setReturnDate(nextReturnDate) }}
+                />
 
                 {tripType === 'one-way' && (
                   <div className="search-field">

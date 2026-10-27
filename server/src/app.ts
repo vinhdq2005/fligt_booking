@@ -22,6 +22,7 @@ import { listAirportCodes } from "./modules/airports/airport.service";
 
 import {
   searchFlights,
+  getFlightCalendarPrices,
   getFlightById,
 } from "./modules/flights/flight-search.service";
 
@@ -498,6 +499,32 @@ export function createApp(
     try {
       res.json({ codes: await listAirportCodes() });
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/flights/calendar-prices", async (req, res, next) => {
+    try {
+      const { from, to, start, end, airline, passengers } = req.query;
+      if ([from, to, start, end, passengers].some(value => typeof value !== "string") ||
+          (airline !== undefined && typeof airline !== "string")) {
+        res.status(400).json({ error: "Thông tin lịch giá không hợp lệ." });
+        return;
+      }
+      const items = await getFlightCalendarPrices({
+        from: from as string,
+        to: to as string,
+        start: start as string,
+        end: end as string,
+        passengers: Number(passengers),
+        airline: airline as string | undefined,
+      });
+      res.json({ items });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Thông tin lịch giá không hợp lệ.") {
+        res.status(400).json({ error: error.message });
+        return;
+      }
       next(error);
     }
   });

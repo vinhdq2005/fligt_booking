@@ -1,0 +1,44 @@
+.price-date-picker { position: relative; min-width: 0; }
+.price-date-picker.search-field { padding: 12px 14px; }
+.price-date-trigger { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: #0f172a; text-align: left; cursor: pointer; }
+.price-date-trigger span { color: #64748b; font-size: 12px; font-weight: 600; }
+.price-date-trigger strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; }
+.price-date-editor { align-self: stretch; display: flex; height: 48px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; }
+.price-date-editor .price-date-trigger span { display: none; }
+.price-date-editor .price-date-trigger strong { font-size: 14px; font-weight: 600; }
+.price-date-editor:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.price-calendar { position: absolute; z-index: 1200; top: calc(100% + 10px); right: 0; width: min(740px, calc(100vw - 32px)); padding: 18px; border: 1px solid #dbe4f0; border-radius: 16px; background: #fff; box-shadow: 0 24px 60px rgba(15,23,42,.22); color: #1e293b; }
+.price-date-picker.search-field > .price-calendar { display: block; flex: none; }
+.price-calendar-top, .price-calendar-months-nav, .price-calendar-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.price-calendar-top { padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; }
+.price-calendar-top > div { display: flex; flex-direction: column; gap: 4px; }
+.price-calendar-top strong { font-size: 17px; }
+.price-calendar-top span, .price-calendar-months-nav span { color: #64748b; font-size: 12px; }
+.price-calendar-close { width: 30px; height: 30px; border: 0; border-radius: 8px; background: #f1f5f9; color: #475569; font-size: 22px; cursor: pointer; }
+.price-calendar-months-nav { padding: 12px 0 8px; }
+.price-calendar-months-nav button { width: 32px; height: 32px; border: 1px solid #dbe4f0; border-radius: 8px; background: #fff; color: #2563eb; font-size: 24px; cursor: pointer; }
+.price-calendar-months-nav button:disabled { color: #cbd5e1; cursor: default; }
+.price-calendar-months { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.price-calendar-month h3 { margin: 0 0 10px; text-align: center; font-size: 15px; }
+.price-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.price-calendar-weekday { padding: 5px 0; color: #94a3b8; text-align: center; font-size: 11px; }
+.price-calendar-day { display: flex; min-width: 0; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 3px 1px; border: 1px solid transparent; border-radius: 8px; background: #fff; color: #334155; cursor: pointer; }
+.price-calendar-day:hover:not(:disabled) { border-color: #93c5fd; background: #eff6ff; }
+.price-calendar-day.selected { background: #2563eb; color: #fff; }
+.price-calendar-day.selected:hover:not(:disabled) { background: #1d4ed8; color: #fff; }
+.price-calendar-day.between { background: #dbeafe; }
+.price-calendar-day:disabled { color: #cbd5e1; cursor: default; }
+.price-calendar-day span { font-size: 13px; font-weight: 700; }
+.price-calendar-day small { color: #2563eb; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.price-calendar-day.selected small { color: #fff; }
+.price-calendar-day:disabled small { color: #cbd5e1; }
+.price-calendar-message { margin: 12px 0 0; color: #b45309; font-size: 12px; }
+.price-calendar-footer { margin-top: 13px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #475569; font-size: 12px; }
+.price-calendar-footer button { border: 1px solid #bfdbfe; border-radius: 7px; background: #fff; color: #2563eb; padding: 7px 10px; cursor: pointer; }
+.price-calendar-disclaimer { margin: 8px 0 0; color: #94a3b8; font-size: 11px; }
+.hero-content .price-calendar .price-calendar-message { margin: 12px 0 0; max-width: none; color: #b45309; font-size: 12px; text-shadow: none; }
+.hero-content .price-calendar .price-calendar-disclaimer { margin: 8px 0 0; max-width: none; color: #94a3b8; font-size: 11px; text-shadow: none; }
+@media (max-width: 760px) {
+  .price-calendar { position: fixed; inset: 80px 16px auto; width: auto; max-height: min(70vh, 650px); overflow-y: auto; }
+  .price-calendar-months { grid-template-columns: 1fr; }
+}

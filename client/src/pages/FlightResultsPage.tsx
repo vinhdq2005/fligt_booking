@@ -8,6 +8,7 @@ import {
   type PublicFlight,
 } from '../api'
 import { mockAirports } from '../mocks/mockAirports'
+import PriceDatePicker from '../components/PriceDatePicker'
 import '../styles/flight-results.css'
 
 function formatTime(value: string) {
@@ -228,6 +229,9 @@ function FlightResultsPage() {
 
   const currentFromAirport = mockAirports.find((airport) => airport.code === activeFrom)
   const currentToAirport = mockAirports.find((airport) => airport.code === activeTo)
+  const availableFlights = tripType === 'round-trip' && flightStage === 'inbound' && selectedOutbound
+    ? flights.filter(flight => new Date(flight.departureTime) >= new Date(selectedOutbound.arrivalTime))
+    : flights
 
   return (
     <section className="flight-results-page">
@@ -348,17 +352,20 @@ function FlightResultsPage() {
                     onChange={(event) => updateDraft('to', event.target.value.replace(/[^a-z]/gi, '').toUpperCase())}
                   />
                 </label>
-                <label>
-                  <span>Ngày đi</span>
-                  <input type="date" value={draft.date} onChange={(event) => updateDraft('date', event.target.value)} />
-                </label>
-
-                {draft.tripType === 'round-trip' && (
-                  <label>
-                    <span>Ngày về</span>
-                    <input type="date" min={draft.date || undefined} value={draft.returnDate} onChange={(event) => updateDraft('returnDate', event.target.value)} />
-                  </label>
-                )}
+                <div className="summary-edit-date-field">
+                  <span>{draft.tripType === 'round-trip' ? 'Ngày đi – Ngày về' : 'Ngày đi'}</span>
+                  <PriceDatePicker
+                    variant="editor"
+                    tripType={draft.tripType}
+                    from={draft.from}
+                    to={draft.to}
+                    date={draft.date}
+                    returnDate={draft.returnDate}
+                    passengers={Number(draft.passengers)}
+                    airline={airlines.find(item => item.code === draft.airline || item.name === draft.airline)?.code}
+                    onChange={(nextDate, nextReturnDate) => setDraft(current => ({ ...current, date: nextDate, returnDate: nextReturnDate }))}
+                  />
+                </div>
 
                 <label>
                   <span>Hành khách</span>
@@ -440,7 +447,7 @@ function FlightResultsPage() {
               </button>
             </div>
           </div>
-        ) : flights.length === 0 ? (
+        ) : availableFlights.length === 0 ? (
           <div className="empty-results">
             <h2>Không tìm thấy chuyến bay</h2>
             <p>Không có chuyến bay phù hợp trong cơ sở dữ liệu với điều kiện tìm kiếm hiện tại.</p>
@@ -450,7 +457,7 @@ function FlightResultsPage() {
           </div>
         ) : (
           <div className="flight-list">
-            {flights.map((flight) => {
+            {availableFlights.map((flight) => {
               const flightFromAirport = mockAirports.find((airport) => airport.code === flight.departureCode)
               const flightToAirport = mockAirports.find((airport) => airport.code === flight.arrivalCode)
               const enoughSeats = flight.availableSeats >= passengers

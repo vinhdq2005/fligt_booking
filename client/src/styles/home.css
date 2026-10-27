@@ -120,6 +120,10 @@
   grid-column: 1 / span 3; /* Hãng bay nằm bên trái hàng 2 */
 }
 
+.search-fields.round-trip-layout .price-date-picker {
+  grid-column: 4 / span 2;
+}
+
 .search-fields.round-trip-layout .passenger-field {
   grid-column: 4 / span 2; /* Hành khách nằm bên phải hàng 2 */
 }
@@ -487,7 +491,8 @@
 
   .airline-picker,
   .search-fields.round-trip-layout .airline-picker,
-  .search-fields.round-trip-layout .passenger-field {
+  .search-fields.round-trip-layout .passenger-field,
+  .search-fields.round-trip-layout .price-date-picker {
     grid-column: 1 / -1;
   }
 
@@ -515,7 +520,8 @@
 
   .airline-picker,
   .search-fields.round-trip-layout .airline-picker,
-  .search-fields.round-trip-layout .passenger-field {
+  .search-fields.round-trip-layout .passenger-field,
+  .search-fields.round-trip-layout .price-date-picker {
     grid-column: auto;
   }
 

@@ -8,6 +8,73 @@ export type FlightSearchInput = {
   airline?: string;
 };
 
+export type FlightCalendarInput = Omit<FlightSearchInput, "date"> & {
+  start: string;
+  end: string;
+  passengers: number;
+};
+
+export async function getFlightCalendarPrices(input: FlightCalendarInput) {
+  const from = input.from.trim().toUpperCase();
+  const to = input.to.trim().toUpperCase();
+  const airline = input.airline?.trim().toUpperCase();
+  const parseDay = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const day = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === value ? day : null;
+  };
+  const start = parseDay(input.start);
+  const end = parseDay(input.end);
+  if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to) || from === to ||
+      (airline && !/^[A-Z0-9]{2,10}$/.test(airline)) || !start || !end ||
+      end <= start || end.getTime() - start.getTime() > 63 * 86400000 ||
+      !Number.isInteger(input.passengers) || input.passengers < 1 || input.passengers > 9) {
+    throw new Error("Thông tin lịch giá không hợp lệ.");
+  }
+
+  const now = new Date();
+  const flights = await prisma.flight.findMany({
+    where: {
+      departureCode: from,
+      arrivalCode: to,
+      departureTime: { gte: start, lt: end, gt: now },
+      status: "SCHEDULED",
+      saleStatus: "ON_SALE",
+      airline: { status: "ACTIVE", ...(airline ? { code: airline } : {}) },
+    },
+    include: {
+      bookings: { where: { OR: [
+        { status: "CONFIRMED" },
+        { status: "PENDING", expiresAt: { gt: now } },
+      ] }, select: { status: true, passengers: { select: { id: true } } } },
+      returnBookings: { where: { OR: [
+        { status: "CONFIRMED" },
+        { status: "PENDING", expiresAt: { gt: now } },
+      ] }, select: { status: true, passengers: { select: { id: true } } } },
+    },
+  });
+
+  const lowestByDate = new Map<string, number>();
+  for (const flight of flights) {
+    const bookings = [...flight.bookings, ...flight.returnBookings];
+    const occupied = bookings.reduce((sum, booking) => sum + booking.passengers.length, 0);
+    if (flight.capacity - occupied < input.passengers) continue;
+    const confirmed = bookings.reduce((sum, booking) =>
+      sum + (booking.status === "CONFIRMED" ? booking.passengers.length : 0), 0);
+    const price = calculateCurrentPrice({
+      basePrice: flight.basePrice,
+      departureTime: flight.departureTime,
+      capacity: flight.capacity,
+      confirmedPassengers: confirmed,
+      now,
+    }).currentPrice;
+    const date = flight.departureTime.toISOString().slice(0, 10);
+    lowestByDate.set(date, Math.min(lowestByDate.get(date) ?? Infinity, price));
+  }
+  return [...lowestByDate].sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, price]) => ({ date, price }));
+}
+
 export async function searchFlights(input: FlightSearchInput) {
   const from = input.from.trim().toUpperCase();
   const to = input.to.trim().toUpperCase();

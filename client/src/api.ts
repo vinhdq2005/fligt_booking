@@ -176,6 +176,25 @@ export type PublicFlightSearchResult = {
   total: number;
 };
 
+export async function getFlightCalendarPrices(filters: {
+  from: string;
+  to: string;
+  start: string;
+  end: string;
+  passengers: number;
+  airline?: string;
+}): Promise<{ items: { date: string; price: number }[] }> {
+  const query = new URLSearchParams({
+    from: filters.from,
+    to: filters.to,
+    start: filters.start,
+    end: filters.end,
+    passengers: String(filters.passengers),
+  });
+  if (filters.airline) query.set("airline", filters.airline);
+  return api(`/api/flights/calendar-prices?${query.toString()}`);
+}
+
 export async function searchPublicFlights(filters: {
   from: string;
   to: string;
