@@ -216,7 +216,7 @@ function AppRoutes() {
           path="awaiting-sale"
           element={
             <AirlineGuard role="AIRLINE_SALES_MANAGER">
-              <SalesManagerPage awaitingOnly />
+              <SalesManagerPage key="awaiting-sale" awaitingOnly />
             </AirlineGuard>
           }
         />
@@ -225,7 +225,7 @@ function AppRoutes() {
           path="sales"
           element={
             <AirlineGuard role="AIRLINE_SALES_MANAGER">
-              <SalesManagerPage />
+              <SalesManagerPage key="sales" />
             </AirlineGuard>
           }
         />
